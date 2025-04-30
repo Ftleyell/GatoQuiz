@@ -1,0 +1,25 @@
+/* src/style.css */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+  background-color: #f0f0f0; /* Un color de fondo base */
+  display: flex; /* Para centrar el contenedor si es necesario */
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  overflow: hidden; /* Evita barras de scroll si el canvas ocupa todo */
+}
+
+#app {
+  /* Estilos para el contenedor principal del juego */
+  /* Por ejemplo, si vas a usar un canvas, podrías definir aquí su borde o tamaño inicial */
+  border: 1px solid #ccc;
+  background-color: #fff; /* Fondo del área de juego */
+  position: relative; /* Útil si elementos del juego se posicionan absolutamente dentro */
+}
+
+/* Puedes añadir más estilos base aquí */
+canvas {
+    display: block; /* Evita espacio extra debajo del canvas */
+}
