@@ -23,3 +23,48 @@ body {
 canvas {
     display: block; /* Evita espacio extra debajo del canvas */
 }
+#cat-container {
+  position: fixed; /* O absolute, dependiendo de tu layout */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* El contenedor no intercepta clics */
+  overflow: hidden; /* Evita que los gatos fuera de pantalla causen scroll */
+  z-index: 10; /* Asegura que esté por encima del fondo pero debajo de la UI principal */
+}
+
+.cat {
+  position: absolute; /* Permite posicionar con top/left o transform */
+  border-radius: 50%; /* Hacerlos circulares */
+  background-color: #ccc; /* Color base si no hay imagen */
+  background-size: cover;
+  background-position: center;
+  /* Transiciones opcionales para suavizar cambios de tamaño/sombra */
+  transition: box-shadow 0.3s ease-out, width 0.3s ease-out, height 0.3s ease-out;
+  cursor: grab; /* Cursor para indicar que se pueden arrastrar */
+  pointer-events: auto; /* Los gatos SÍ interceptan clics/arrastres */
+  /* Evitar selección de texto al arrastrar */
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  will-change: transform; /* Optimización para transformaciones frecuentes */
+}
+
+.cat:active {
+    cursor: grabbing; /* Cursor al arrastrar */
+}
+
+/* Añade aquí los estilos para .glow-* (glow-gray, glow-green, etc.) si los usas */
+/* Ejemplo: */
+/* .glow-blue {
+  box-shadow: inset -2px -2px 5px rgba(0,0,0,0.3),
+              0 0 8px 3px rgba(0, 150, 255, 0.6);
+} */
+
+/* Estilos para la UI del Quiz (si usas estas clases en QuizGameplayState) */
+.quiz-ui-container {
+    /* ... tus estilos ... */
+    z-index: 20; /* Debe estar sobre el cat-container */
+}
