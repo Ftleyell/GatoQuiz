@@ -1,7 +1,8 @@
 // src/game/GameManager.ts
 
-import { PhysicsManager } from '../systems/physics/PhysicsManager'; // Update the path to the correct location
-// Import StateMachine y otros sistemas/managers cuando se necesiten
+import { PhysicsManager } from '../systems/PhysicsManager';
+import { QuizSystem } from '../systems/QuizSystem'; // <-- Importación añadida
+// Import StateMachine cuando la necesites más adelante
 // import { StateMachine } from './StateMachine';
 
 /**
@@ -11,6 +12,7 @@ import { PhysicsManager } from '../systems/physics/PhysicsManager'; // Update th
  */
 export class GameManager {
   private physicsManager: PhysicsManager;
+  private quizSystem: QuizSystem; // <-- Propiedad añadida
   // private stateMachine: StateMachine;
   private lastTimestamp: number = 0;
   private isRunning: boolean = false;
@@ -25,6 +27,7 @@ export class GameManager {
 
     // Inicializar sistemas centrales
     this.physicsManager = new PhysicsManager();
+    this.quizSystem = new QuizSystem(); // <-- Instanciación añadida
     // this.stateMachine = new StateMachine();
   }
 
@@ -46,13 +49,60 @@ export class GameManager {
    */
   public async preload(): Promise<void> {
     console.log('GameManager: preload');
-    // Ejemplo: Cargar preguntas del quiz, imágenes de gatos, sonidos...
-    // await loadAssets();
+    try {
+      // Cargar preguntas del quiz
+      // Asegúrate que la ruta '/data/questions.json' es correcta respecto a tu carpeta 'public'
+      const loaded = await this.quizSystem.loadQuestions('/data/questions.json'); // <-- Llamada añadida
+      if (!loaded) {
+        console.error(
+          'GameManager: Falló la carga de preguntas. Verifica la ruta y el archivo JSON.',
+          this.quizSystem.getLastError()
+        );
+         // Mostrar error al usuario podría ir aquí
+         this.containerElement.innerHTML = `Error al cargar preguntas: ${this.quizSystem.getLastError()}`;
+         throw new Error("Failed to load questions."); // Detener inicialización si las preguntas son críticas
+      } else {
+        console.log('GameManager: Preguntas cargadas.');
+      }
+
+      // Podrías cargar otros assets aquí también
+      // await loadOtherAssets();
+
+      // --- Añade aquí las llamadas de prueba temporales si quieres ---
+      //     (Recuerda quitar o comentar esto para la versión final)
+      console.log("--- Probando QuizSystem (Temporal) ---");
+      const firstQ = this.quizSystem.selectNextQuestion();
+      console.log("Primera pregunta seleccionada:", firstQ);
+      if (firstQ) {
+        console.log("Validando respuesta 'A':", this.quizSystem.validateAnswer(firstQ.id, 'A'));
+        console.log("Validando respuesta correcta:", this.quizSystem.validateAnswer(firstQ.id, firstQ.correctAnswerKey));
+      } else {
+          console.log("No se pudo seleccionar la primera pregunta.");
+      }
+      const easyQ = this.quizSystem.selectNextQuestion('easy'); // Intenta seleccionar otra (si hay más 'easy')
+      console.log("Pregunta fácil seleccionada:", easyQ);
+       if (!easyQ && firstQ?.difficulty !== 'easy') {
+           console.log("No se pudo seleccionar una pregunta fácil (quizás solo había una y ya se usó, o no hay de esa dificultad).");
+       }
+       this.quizSystem.resetAvailableQuestions(); // Resetea para futuras pruebas si es necesario
+      console.log("--- Fin pruebas QuizSystem ---");
+      // --- Fin de las llamadas de prueba ---
+
+
+    } catch (error) {
+      console.error('GameManager: Error durante preload:', error);
+      // Asegurarse que el error se muestre si no se hizo antes
+      if (this.containerElement.innerHTML === '') { // Evitar sobreescribir mensaje específico de preguntas
+          this.containerElement.innerHTML = `Error durante la carga: ${error instanceof Error ? error.message : String(error)}`;
+      }
+      // Re-lanzar el error para detener la cadena de inicialización si es un fallo crítico
+      throw error;
+    }
   }
 
   /**
    * Crea las entidades iniciales del juego, configura la UI y establece el estado inicial.
-   * Se llama después de init() y preload().
+   * Se llama después de init() y preload() si fueron exitosos.
    */
   public create(): void {
     console.log('GameManager: create');
@@ -152,5 +202,21 @@ export class GameManager {
   //   this.stateMachine.addState('MainMenu', new MainMenuState(this));
   //   this.stateMachine.addState('Gameplay', new GameplayState(this));
   //   // ... otros estados
+  // }
+
+  // --- Método para acceder al QuizSystem si otros módulos lo necesitan ---
+  public getQuizSystem(): QuizSystem {
+      return this.quizSystem;
+  }
+
+  // --- Método para acceder al PhysicsManager si otros módulos lo necesitan ---
+   public getPhysicsManager(): PhysicsManager {
+       return this.physicsManager;
+   }
+
+  // --- Método para acceder al StateMachine si otros módulos lo necesitan ---
+  // public getStateMachine(): StateMachine {
+  //     if (!this.stateMachine) throw new Error("StateMachine no inicializada.");
+  //     return this.stateMachine;
   // }
 }

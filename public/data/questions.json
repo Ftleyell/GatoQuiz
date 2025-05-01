@@ -1,0 +1,24 @@
+[
+    {
+      "id": 1,
+      "text": "¿Cuántas vidas se dice que tiene un gato?",
+      "options": [
+        {"key": "A", "text": "Una"},
+        {"key": "B", "text": "Siete"},
+        {"key": "C", "text": "Nueve"}
+      ],
+      "correctAnswerKey": "C",
+      "difficulty": "easy"
+    },
+    {
+      "id": 2,
+      "text": "¿Qué sentido tienen los gatos más desarrollado?",
+      "options": [
+        {"key": "A", "text": "Olfato"},
+        {"key": "B", "text": "Oído"},
+        {"key": "C", "text": "Vista"}
+      ],
+      "correctAnswerKey": "B",
+      "difficulty": "easy"
+    }
+  ]
