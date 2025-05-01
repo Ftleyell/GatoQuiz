@@ -4,21 +4,23 @@ import { IComponent } from './IComponent';
 
 /**
  * Componente que almacena valores asociados a la entidad,
- * como rareza, valor en puntos, etc., según GDD Sec 2.6.
+ * como rareza, valor en puntos y tamaño actual.
  */
 export class ValueComponent implements IComponent {
   public readonly type = 'ValueComponent';
-  public rarity: number = 0; // Podría ser un enum o string también ('common', 'rare', etc.)
-  public scoreValue: number = 0; // Valor al ser 'liberado' o interactuado
-  // Otras propiedades potenciales: 'growthLevel', 'canMerge', etc.
+  public rarity: number = 0;
+  public scoreValue: number = 0;
+  public currentSize: number = 0; // <-- AÑADIDO: Para rastrear tamaño
 
   /**
    * Crea una instancia de ValueComponent.
    * @param rarity - Nivel de rareza inicial.
    * @param scoreValue - Valor en puntos inicial.
+   * @param initialSize - Tamaño inicial del gato. // <-- AÑADIDO
    */
-  constructor(rarity: number = 0, scoreValue: number = 0) {
+  constructor(rarity: number = 0, scoreValue: number = 0, initialSize: number = 0) { // <-- AÑADIDO initialSize
     this.rarity = rarity;
     this.scoreValue = scoreValue;
+    this.currentSize = initialSize; // <-- AÑADIDO
   }
 }
