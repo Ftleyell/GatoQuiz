@@ -2,14 +2,14 @@
 
 import { PhysicsManager } from '../systems/PhysicsManager';
 import { QuizSystem } from '../systems/QuizSystem';
-import { StateMachine, IState } from './StateMachine'; // <-- Modificado: StateMachine e IState importados
+import { StateMachine } from './StateMachine'; // Removido IState ya que no se usa directamente aquí
+import { AudioManager } from '../systems/AudioManager'; // <-- IMPORTAR AudioManager
 
-// <-- Imports de los nuevos estados añadidos -->
 import { LoadingState } from './states/LoadingState';
 import { MainMenuState } from './states/MainMenuState';
 import { QuizGameplayState } from './states/QuizGameplayState';
 import { ResultsState } from './states/ResultsState';
-
+import { GameOverState } from './states/GameOverState';
 
 /**
  * GameManager: Clase principal que orquesta el ciclo de vida del juego,
@@ -18,175 +18,144 @@ import { ResultsState } from './states/ResultsState';
 export class GameManager {
   private physicsManager: PhysicsManager;
   private quizSystem: QuizSystem;
-  private stateMachine: StateMachine; // <-- Descomentado/Añadido
+  private stateMachine: StateMachine;
+  private audioManager: AudioManager; // <-- AÑADIR PROPIEDAD AudioManager
   private lastTimestamp: number = 0;
   private isRunning: boolean = false;
   private gameLoopRequestId?: number;
 
   private containerElement: HTMLElement;
 
+  // --- Manejo de Vidas (centralizado aquí) ---
+  private static readonly INITIAL_LIVES = 3;
+  private lives: number = GameManager.INITIAL_LIVES;
+  // -------------------------------------------
+
   constructor(container: HTMLElement) {
     this.containerElement = container;
     console.log('GameManager Creado');
 
-    // Inicializar sistemas centrales
     this.physicsManager = new PhysicsManager();
     this.quizSystem = new QuizSystem();
-    this.stateMachine = new StateMachine(); // <-- Descomentado/Añadido
+    this.stateMachine = new StateMachine();
+    this.audioManager = new AudioManager(); // <-- INSTANCIAR AudioManager
   }
 
-  /**
-   * Inicializa los sistemas del juego y prepara los recursos necesarios.
-   */
   public async init(): Promise<void> {
     console.log('GameManager: init');
+    this.resetLives();
     this.physicsManager.init();
-
-    // Configurar los estados ANTES de cargar assets (si LoadingState los maneja) o DESPUÉS
-    this.setupStates(); // <-- Llamada añadida
-
-    await this.preload(); // Cargar assets iniciales
+    this.setupStates();
+    // La inicialización del AudioManager (this.audioManager.init()) se hará desde main.ts
+    // tras la interacción del usuario.
+    await this.preload();
   }
 
-  /**
-   * Carga los assets necesarios antes de que el juego comience.
-   */
   public async preload(): Promise<void> {
     console.log('GameManager: preload');
-    // Cambiar al estado de carga antes de empezar a cargar
-    // this.stateMachine.changeState('Loading'); // Opcional: si LoadingState muestra progreso
-
     try {
       const loaded = await this.quizSystem.loadQuestions('/data/questions.json');
       if (!loaded) {
-        console.error(
-          'GameManager: Falló la carga de preguntas. Verifica la ruta y el archivo JSON.',
-          this.quizSystem.getLastError()
-        );
-        this.containerElement.innerHTML = `Error al cargar preguntas: ${this.quizSystem.getLastError()}`;
+        console.error('GameManager: Falló la carga inicial de preguntas.'); // Mensaje de error más específico
         throw new Error('Failed to load questions.');
       } else {
         console.log('GameManager: Preguntas cargadas.');
       }
-      // Cargar otros assets aquí
     } catch (error) {
-      console.error('GameManager: Error durante preload:', error);
-       if (this.containerElement.innerHTML === '') {
-           this.containerElement.innerHTML = `Error durante la carga: ${error instanceof Error ? error.message : String(error)}`;
-       }
-      throw error; // Detener si la carga falla
+      console.error('GameManager: Error durante preload:', error); // Log de error más específico
+      throw error; // Re-lanzar para que se maneje en main.ts
     }
   }
 
-  /**
-   * Crea las entidades iniciales y establece el estado inicial del juego.
-   */
   public create(): void {
     console.log('GameManager: create');
-    // Iniciar el primer estado del juego (después de cargar todo)
-    this.stateMachine.changeState('MainMenu'); // <-- Cambio de estado inicial añadido
+    this.quizSystem.resetAvailableQuestions();
+    this.stateMachine.changeState('MainMenu');
   }
 
-  /**
-   * El bucle principal del juego.
-   */
   private gameLoop(timestamp: number): void {
     if (!this.isRunning) return;
-
     const deltaTime = (timestamp - this.lastTimestamp) / 1000.0;
     this.lastTimestamp = timestamp;
-
-    this.update(deltaTime);
-
+    // Evitar saltos enormes en deltaTime si la pestaña estuvo inactiva
+    const clampedDeltaTime = Math.min(deltaTime, 0.1); // Limitar a 100ms (10 FPS min)
+    this.update(clampedDeltaTime);
     this.gameLoopRequestId = requestAnimationFrame(this.gameLoop.bind(this));
   }
 
-
-  /**
-   * Actualiza la lógica del juego (a través de la StateMachine).
-   */
   public update(deltaTime: number): void {
-    this.stateMachine.update(deltaTime); // <-- Descomentado/Añadido: Delega el update al estado actual
-    this.render(); // Render se llama después de actualizar el estado
+    this.stateMachine.update(deltaTime);
+    // La lógica de renderizado ahora está principalmente dentro de los estados o sistemas específicos
+    // this.render(); <-- Render se maneja internamente donde sea necesario
   }
 
-  /**
-   * Dibuja el estado actual del juego en la pantalla.
-   * (Podría delegarse al estado actual también si cada estado renderiza diferente)
-   */
-  public render(): void {
-    // console.log('GameManager: render');
-    // Podrías hacer: this.stateMachine.render() si los estados tuvieran un método render
-  }
+  // Se elimina el método render() vacío si no tiene lógica central aquí
 
-  /**
-   * Inicia el bucle principal del juego.
-   */
   public start(): void {
-     if (this.isRunning) return;
-     console.log('GameManager: Iniciando bucle de juego...');
-     this.isRunning = true;
-     this.lastTimestamp = performance.now();
-     this.physicsManager.start();
-     this.gameLoopRequestId = requestAnimationFrame(this.gameLoop.bind(this));
-   }
+    if (this.isRunning) return;
+    console.log('GameManager: Iniciando bucle de juego...');
+    this.isRunning = true;
+    this.lastTimestamp = performance.now();
+    this.physicsManager.start();
+    this.gameLoopRequestId = requestAnimationFrame(this.gameLoop.bind(this));
+  }
 
-  /**
-   * Detiene el bucle principal del juego.
-   */
-   public stop(): void {
-     if (!this.isRunning) return;
-     console.log('GameManager: Deteniendo bucle de juego...');
-     this.isRunning = false;
-     if (this.gameLoopRequestId) {
-       cancelAnimationFrame(this.gameLoopRequestId);
-       this.gameLoopRequestId = undefined;
-     }
-     this.physicsManager.stop();
-   }
+  public stop(): void {
+    if (!this.isRunning) return;
+    console.log('GameManager: Deteniendo bucle de juego...');
+    this.isRunning = false;
+    if (this.gameLoopRequestId) cancelAnimationFrame(this.gameLoopRequestId);
+    this.gameLoopRequestId = undefined;
+    this.physicsManager.stop();
+  }
 
-  /**
-   * Libera recursos y limpia antes de cerrar el juego.
-   */
   public shutdown(): void {
     console.log('GameManager: shutdown');
     this.stop();
-    // Avisar al estado actual para que limpie si es necesario
-    if (this.stateMachine.getCurrentStateName()) {
-        this.stateMachine.changeState('__shutdown__'); // Un estado dummy para forzar el exit()
+    // Cambiar a un estado 'dummy' para asegurar que exit() se llama en el estado actual
+    if (this.stateMachine.getCurrentStateName() && this.stateMachine.getCurrentStateName() !== '__shutdown__') {
+        this.stateMachine.changeState('__shutdown__');
     }
+    // Limpiar contenedor
     this.containerElement.innerHTML = '';
+    // Aquí podrías añadir limpieza de otros managers si tuvieran métodos shutdown()
+    // this.physicsManager.shutdown();
+    // this.audioManager.shutdown(); // (Si tuviera un método shutdown)
   }
 
-  /**
-   * Configura e instancia los diferentes estados del juego.
-   * @private
-   */
-  private setupStates(): void { // <-- Método añadido
+  private setupStates(): void {
     console.log('GameManager: Configurando estados...');
     this.stateMachine.addState('Loading', new LoadingState(this));
     this.stateMachine.addState('MainMenu', new MainMenuState(this));
     this.stateMachine.addState('QuizGameplay', new QuizGameplayState(this));
     this.stateMachine.addState('Results', new ResultsState(this));
-    // Añadir un estado 'dummy' para manejar el shutdown si es necesario
-    this.stateMachine.addState('__shutdown__', { enter: ()=>{}, exit: ()=>{}, update: ()=>{} });
+    this.stateMachine.addState('GameOver', new GameOverState(this));
+    // Estado dummy para asegurar limpieza al hacer shutdown
+    this.stateMachine.addState('__shutdown__', { enter: () => {}, exit: () => {}, update: () => {} });
   }
 
-  // --- Getters para que los estados accedan a los sistemas ---
-
-  public getQuizSystem(): QuizSystem {
-      return this.quizSystem;
+  // --- Métodos para Vidas ---
+  public getLives(): number {
+    return this.lives;
   }
 
-  public getPhysicsManager(): PhysicsManager {
-       return this.physicsManager;
-   }
-
-  public getStateMachine(): StateMachine { // <-- Getter descomentado/añadido
-       return this.stateMachine;
-   }
-
-   public getContainerElement(): HTMLElement { // <-- Getter útil para los estados que manipulan UI
-        return this.containerElement;
+  public decrementLives(): void {
+    if (this.lives > 0) {
+      this.lives--;
+      console.log(`Vida perdida. Vidas restantes: ${this.lives}`);
     }
+  }
+
+  public resetLives(): void {
+    this.lives = GameManager.INITIAL_LIVES;
+    console.log(`Vidas reseteadas a: ${this.lives}`);
+  }
+  // --------------------------
+
+  // --- Getters para Sistemas ---
+  public getQuizSystem(): QuizSystem { return this.quizSystem; }
+  public getPhysicsManager(): PhysicsManager { return this.physicsManager; }
+  public getStateMachine(): StateMachine { return this.stateMachine; }
+  public getAudioManager(): AudioManager { return this.audioManager; } // <-- AÑADIR GETTER
+  public getContainerElement(): HTMLElement { return this.containerElement; }
 }

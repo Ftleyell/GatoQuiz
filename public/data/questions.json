@@ -20,5 +20,148 @@
       ],
       "correctAnswerKey": "B",
       "difficulty": "easy"
+    },
+    {
+      "id": 3,
+      "text": "¿Qué animal es conocido como el mejor amigo del hombre?",
+      "options": [
+        {"key": "A", "text": "Perro"},
+        {"key": "B", "text": "Gato"},
+        {"key": "C", "text": "Conejo"}
+      ],
+      "correctAnswerKey": "A",
+      "difficulty": "easy"
+    },
+    {
+      "id": 4,
+      "text": "¿Qué planeta es conocido como el planeta rojo?",
+      "options": [
+        {"key": "A", "text": "Marte"},
+        {"key": "B", "text": "Júpiter"},
+        {"key": "C", "text": "Saturno"}
+      ],
+      "correctAnswerKey": "A",
+      "difficulty": "medium"
+    },
+    {
+      "id": 5,
+      "text": "¿Cuál es el océano más grande del mundo?",
+      "options": [
+        {"key": "A", "text": "Océano Pacífico"},
+        {"key": "B", "text": "Océano Atlántico"},
+        {"key": "C", "text": "Océano Índico"}
+      ],
+      "correctAnswerKey": "A",
+      "difficulty": "hard"
+    },
+    {
+      "id": 6,
+      "text": "¿Qué gas es esencial para la respiración humana?",
+      "options": [
+        {"key": "A", "text": "Oxígeno"},
+        {"key": "B", "text": "Nitrógeno"},
+        {"key": "C", "text": "Dióxido de carbono"}
+      ],
+      "correctAnswerKey": "A",
+      "difficulty": "easy"
+    },
+    {
+      "id": 7,
+      "text": "¿Qué instrumento se utiliza para medir la temperatura?",
+      "options": [
+        {"key": "A", "text": "Termómetro"},
+        {"key": "B", "text": "Barómetro"},
+        {"key": "C", "text": "Higrómetro"}
+      ],
+      "correctAnswerKey": "A",
+      "difficulty": "medium"
+    },
+    {
+      "id": 8,
+      "text": "¿Qué país es conocido como la tierra del sol naciente?",
+      "options": [
+        {"key": "A", "text": "Japón"},
+        {"key": "B", "text": "China"},
+        {"key": "C", "text": "Corea del Sur"}
+      ],
+      "correctAnswerKey": "A",
+      "difficulty": "hard"
+    },
+    {
+      "id": 9,
+      "text": "¿Qué elemento químico tiene el símbolo H?",
+      "options": [
+        {"key": "A", "text": "Hidrógeno"},
+        {"key": "B", "text": "Helio"},
+        {"key": "C", "text": "Hierro"}
+      ],
+      "correctAnswerKey": "A",
+      "difficulty": "easy"
+    },
+    {
+      "id": 10,
+      "text": "¿Qué continente es el más grande en términos de superficie?",
+      "options": [
+        {"key": "A", "text": "Asia"},
+        {"key": "B", "text": "África"},
+        {"key": "C", "text": "América"}
+      ],
+      "correctAnswerKey": "A",
+      "difficulty": "medium"
+    },
+    {
+      "id": 11,
+      "text": "¿Qué científico propuso la teoría de la relatividad?",
+      "options": [
+        {"key": "A", "text": "Albert Einstein"},
+        {"key": "B", "text": "Isaac Newton"},
+        {"key": "C", "text": "Galileo Galilei"}
+      ],
+      "correctAnswerKey": "A",
+      "difficulty": "hard"
+    },
+    {
+      "id": 12,
+      "text": "¿Cuál es el idioma más hablado en el mundo?",
+      "options": [
+        {"key": "A", "text": "Inglés"},
+        {"key": "B", "text": "Chino mandarín"},
+        {"key": "C", "text": "Español"}
+      ],
+      "correctAnswerKey": "B",
+      "difficulty": "easy"
+    },
+    {
+      "id": 13,
+      "text": "¿Qué país tiene la mayor población del mundo?",
+      "options": [
+        {"key": "A", "text": "India"},
+        {"key": "B", "text": "Estados Unidos"},
+        {"key": "C", "text": "China"}
+      ],
+      "correctAnswerKey": "C",
+      "difficulty": "medium"
+    },
+    {
+      "id": 14,
+      "text": "¿Qué océano se encuentra entre África y Australia?",
+      "options": [
+        {"key": "A", "text": "Océano Atlántico"},
+        {"key": "B", "text": "Océano Índico"},
+        {"key": "C", "text": "Océano Pacífico"}
+      ],
+      "correctAnswerKey": "B",
+      "difficulty": "hard"
+    },
+    {
+      "id": 15,
+      "text": "¿Qué país es famoso por sus canguros?",
+      "options": [
+        {"key": "A", "text": "Australia"},
+        {"key": "B", "text": "Canadá"},
+        {"key": "C", "text": "Sudáfrica"}
+      ],
+      "correctAnswerKey": "A",
+      "difficulty": "easy"
     }
   ]
