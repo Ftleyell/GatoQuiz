@@ -50,7 +50,43 @@ canvas {
   -moz-user-select: none;
   -ms-user-select: none;
   will-change: transform; /* Optimización para transformaciones frecuentes */
+  box-shadow: inset -2px -2px 5px rgba(0,0,0,0.3); /* Sombra interna base */
+  transition: box-shadow 0.3s ease-out; /* Para suavizar cambios si es necesario */
 }
+
+/* Sobrescribir box-shadow para cada nivel de brillo/rareza */
+.glow-gray {
+  box-shadow: inset -3px -3px 8px rgba(0,0,0,0.4), /* Sombra interna */
+              1px 1px 3px rgba(0,0,0,0.2),      /* Sombra externa sutil */
+              0 0 10px 4px rgba(180, 180, 180, 0.7); /* Brillo Gris */
+}
+
+.glow-green {
+  box-shadow: inset -3px -3px 8px rgba(0,0,0,0.4),
+              1px 1px 3px rgba(0,0,0,0.2),
+              0 0 12px 5px rgba(0, 255, 0, 0.7); /* Brillo Verde */
+}
+
+.glow-blue {
+  box-shadow: inset -3px -3px 8px rgba(0,0,0,0.4),
+              1px 1px 3px rgba(0,0,0,0.2),
+              0 0 12px 5px rgba(0, 150, 255, 0.7); /* Brillo Azul */
+}
+
+.glow-violet {
+  box-shadow: inset -3px -3px 8px rgba(0,0,0,0.4),
+              1px 1px 3px rgba(0,0,0,0.2),
+              0 0 14px 6px rgba(180, 0, 255, 0.65); /* Brillo Violeta */
+}
+
+.glow-orange {
+  box-shadow: inset -3px -3px 8px rgba(0,0,0,0.4),
+              1px 1px 3px rgba(0,0,0,0.2),
+              0 0 15px 7px rgba(255, 140, 0, 0.7); /* Brillo Naranja/Legendario */
+}
+
+/* -------------------------------------------------------------- */
+
 
 .cat:active {
     cursor: grabbing; /* Cursor al arrastrar */
