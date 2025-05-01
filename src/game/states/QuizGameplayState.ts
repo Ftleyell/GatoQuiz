@@ -32,9 +32,9 @@ export class QuizGameplayState implements IState {
   private readonly BASE_POINTS_PER_CORRECT = 10;
   private readonly DIFFICULTY_BONUS: { [key: string]: number } = {
       "easy": 0,
-      "medium": 5, // Ejemplo - ¡Ajustar según GDD!
-      "hard": 10, // Ejemplo - ¡Ajustar según GDD!
-      // Definir bonus para todas las dificultades usadas en questions.json
+      "medium": 5, // Ajustar según GDD!
+      "hard": 10, // Ajustar según GDD!
+      // Añadir otras dificultades si existen
   };
 
   constructor(gameManager: GameManager) {
@@ -59,11 +59,8 @@ export class QuizGameplayState implements IState {
   }
 
   private calculateScore(difficulty: string): { pointsEarned: number; basePoints: number; difficultyBonus: number; comboMultiplierBonus: number } {
-    // Asegurar que la dificultad exista en DIFFICULTY_BONUS o usar 0 por defecto
     const difficultyBonus = this.DIFFICULTY_BONUS[difficulty] ?? 0;
-    // Calcular puntos base basados en racha (ej: 10 puntos * racha)
     const basePoints = this.BASE_POINTS_PER_CORRECT * this.consecutiveCorrectAnswers;
-    // Obtener multiplicador de combo actual (podría venir de GameManager/PlayerState si es mejorable)
     const comboMultiplierBonus = Math.max(0, (basePoints + difficultyBonus) * (this.currentComboMultiplier - 1));
     const pointsEarned = Math.round(basePoints + difficultyBonus + comboMultiplierBonus);
     return { pointsEarned, basePoints, difficultyBonus, comboMultiplierBonus };
@@ -76,29 +73,22 @@ export class QuizGameplayState implements IState {
     const scoreCalculation = this.calculateScore(difficulty);
     this.score += scoreCalculation.pointsEarned;
 
-    // Actualizar UIs
     this.updateScoreUI();
     this.updateComboUI();
     this.updateLivesUI();
 
-    // Feedback detallado
     let feedbackText = `¡Correcto! +${scoreCalculation.pointsEarned} puntos`;
-    // ... (código de feedback detallado sin cambios) ...
+    // ... (código de feedback detallado) ...
     this.updateFeedbackUI(feedbackText, true);
 
-    // *** Integración Audio ***
     this.gameManager.getAudioManager().playSound('correct');
-    // **************************
 
-    // *** Integración Gatos ***
-    // Añadir un gato por cada respuesta correcta (luego se puede ajustar con mejoras)
-    console.log("Añadiendo gato como recompensa...");
-    this.gameManager.getCatManager().addCat({}); // Llama a addCat sin configuración específica por ahora
-    // *************************
+    // *** Integración Gatos CORREGIDA ***
+    // Añadir un gato usando el ID de una plantilla válida
+    console.log("Añadiendo gato 'common_gray' como recompensa..."); // Asumiendo que tienes esta plantilla
+    this.gameManager.getCatManager().addCat('common_gray'); // <-- CORRECCIÓN: Pasar el ID como string
+    // **********************************
 
-    // TODO: Lógica para añadir tinta (Fase 3)
-
-    // Programar la siguiente pregunta
     this.scheduleNextQuestion(2000);
   }
 
@@ -106,7 +96,6 @@ export class QuizGameplayState implements IState {
   private handleIncorrectAnswer(): void {
     console.log("Respuesta Incorrecta.");
 
-    // TODO: Implementar lógica real de escudo
     const hasShield = false; // Placeholder
 
     if (hasShield) {
@@ -121,7 +110,6 @@ export class QuizGameplayState implements IState {
         this.gameManager.getAudioManager().playSound('incorrect');
     }
 
-    // Comprobar Game Over
     if (this.gameManager.getLives() <= 0) {
       console.log("Game Over condition met!");
       this.updateFeedbackUI('¡Has perdido!', false);
@@ -129,9 +117,8 @@ export class QuizGameplayState implements IState {
         clearTimeout(this.nextQuestionTimeoutId);
         this.nextQuestionTimeoutId = null;
       }
-      // Pasar score final al estado GameOver
       setTimeout(() => {
-        this.gameManager.getStateMachine().changeState('GameOver', { finalScore: this.score }); // Pasar score
+        this.gameManager.getStateMachine().changeState('GameOver', { finalScore: this.score });
       }, 1500);
     } else {
       this.scheduleNextQuestion(2000);
@@ -158,7 +145,7 @@ export class QuizGameplayState implements IState {
 
   // Muestra la siguiente pregunta en la UI
   private displayNextQuestion(): void {
-    this.clearUI(); // Limpia UI anterior y listeners
+    this.clearUI();
 
     const quizSystem = this.gameManager.getQuizSystem();
     this.currentQuestion = quizSystem.selectNextQuestion();
@@ -169,7 +156,7 @@ export class QuizGameplayState implements IState {
       return;
     }
 
-    // --- Creación de UI (sin cambios respecto a la versión anterior) ---
+    // --- Creación de UI (sin cambios) ---
     const appContainer = this.gameManager.getContainerElement();
 
     this.quizContainer = document.createElement('div');
@@ -225,14 +212,12 @@ export class QuizGameplayState implements IState {
     feedbackElement.className = 'feedback-area mt-4 text-lg h-8 text-center font-bold';
     this.quizContainer.appendChild(feedbackElement);
 
-    // Asegurarse que el quiz UI se añada al #app y no a otro sitio
     const mainAppContainer = document.getElementById('app');
     if (mainAppContainer) {
         mainAppContainer.appendChild(this.quizContainer);
     } else {
         console.error("#app container not found during UI display!");
     }
-
 
     this.updateScoreUI();
     this.updateLivesUI();
@@ -266,11 +251,11 @@ export class QuizGameplayState implements IState {
   }
 
   // --- Métodos de Actualización de UI ---
+  // (Sin cambios en updateScoreUI, updateComboUI, updateLivesUI, updateFeedbackUI)
   private updateScoreUI(): void {
     const scoreElement = document.getElementById('quiz-score');
     if (scoreElement) scoreElement.textContent = this.score.toString();
   }
-
   private updateComboUI(): void {
     const comboElement = document.getElementById('quiz-combo');
     if (comboElement) {
@@ -282,28 +267,26 @@ export class QuizGameplayState implements IState {
       }
     }
   }
-
   private updateLivesUI(): void {
     const livesElement = document.getElementById('quiz-lives-count');
     if (livesElement) {
       livesElement.textContent = this.gameManager.getLives().toString();
     }
   }
-
-  private updateFeedbackUI(message: string, isCorrect: boolean): void {
-      const feedbackElement = document.getElementById('quiz-feedback');
-      if (feedbackElement) {
-          feedbackElement.textContent = message;
-          feedbackElement.classList.remove('text-green-400', 'text-red-400', 'text-blue-400');
-          if (message.includes("Escudo")) {
-              feedbackElement.classList.add('text-blue-400');
-          } else if (isCorrect) {
-              feedbackElement.classList.add('text-green-400');
-          } else {
-              feedbackElement.classList.add('text-red-400');
-          }
-      }
-  }
+   private updateFeedbackUI(message: string, isCorrect: boolean): void {
+       const feedbackElement = document.getElementById('quiz-feedback');
+       if (feedbackElement) {
+           feedbackElement.textContent = message;
+           feedbackElement.classList.remove('text-green-400', 'text-red-400', 'text-blue-400');
+           if (message.includes("Escudo")) {
+               feedbackElement.classList.add('text-blue-400');
+           } else if (isCorrect) {
+               feedbackElement.classList.add('text-green-400');
+           } else {
+               feedbackElement.classList.add('text-red-400');
+           }
+       }
+   }
 
   // Deshabilita los botones de opción
   private disableOptions(): void {
@@ -328,15 +311,12 @@ export class QuizGameplayState implements IState {
     });
     this.optionListeners.clear();
 
-    // Buscar y eliminar específicamente el contenedor del quiz
     const specificQuizContainer = document.getElementById('quiz-ui-active');
     if (specificQuizContainer && specificQuizContainer.parentNode) {
       specificQuizContainer.parentNode.removeChild(specificQuizContainer);
     }
 
-    this.quizContainer = null; // Resetear la referencia
-    this.currentQuestion = null; // Resetear pregunta actual
-
-    // No limpiar el feedback aquí, se limpia/actualiza en displayNextQuestion o updateFeedbackUI
+    this.quizContainer = null;
+    this.currentQuestion = null;
   }
 } // Fin de la clase QuizGameplayState

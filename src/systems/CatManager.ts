@@ -6,30 +6,28 @@ import { RenderComponent } from '../game/components/RenderComponent';
 import { ValueComponent } from '../game/components/ValueComponent';
 import { PhysicsManager } from './PhysicsManager';
 // import { RenderManager } from './RenderManager'; // Futuro
+import { CatTemplate } from '../types/CatTemplate'; // <-- IMPORTAR interfaz
 import Matter from 'matter-js';
 
-// Constantes básicas (podrían venir de un archivo de config o plantillas)
-const INITIAL_CAT_SIZE = 45; // px
-const CAT_COLLISION_CATEGORY = 0x0002; // Ejemplo de categoría de colisión para gatos
+// Constantes básicas (podrían moverse a un archivo de configuración)
+const CAT_COLLISION_CATEGORY = 0x0002;
+const WALL_COLLISION_CATEGORY = 0x0001;
+// Podríamos definir aquí categorías para otros elementos (tinta, herramientas, etc.)
+// const INK_COLLISION_CATEGORY = 0x0004;
 
-// Interfaz placeholder para la configuración de un gato
-interface CatConfig {
-    id?: string | number;
-    templateId?: string; // Por ahora no se usa, pero podría definir tamaño/apariencia/etc.
-    initialPosition?: { x: number; y: number };
-    size?: number;
-    rarity?: number;
-    scoreValue?: number;
-    // ...otras opciones de plantilla
-}
-
-
+/**
+ * CatManager: Sistema responsable de crear, destruir y gestionar
+ * el ciclo de vida de las entidades CatEntity, ahora basado en plantillas.
+ */
 export class CatManager {
   private cats: Map<string | number, CatEntity> = new Map();
   private physicsManager: PhysicsManager;
   // private renderManager: RenderManager;
-  private nextCatId: number = 0;
-  private catContainerElement: HTMLElement | null = null; // Referencia al contenedor DOM
+  private nextCatIdCounter: number = 0; // Contador para IDs únicos de entidad
+  private catContainerElement: HTMLElement | null = null;
+
+  // Almacenamiento para las plantillas cargadas
+  private templates: Map<string, CatTemplate> = new Map();
 
   constructor(
       physicsManager: PhysicsManager
@@ -37,117 +35,166 @@ export class CatManager {
   ) {
     this.physicsManager = physicsManager;
     // this.renderManager = renderManager;
-    this.catContainerElement = document.getElementById('cat-container'); // Obtener contenedor
+    this.catContainerElement = document.getElementById('cat-container');
     if (!this.catContainerElement) {
         console.error("CatManager: Elemento '#cat-container' no encontrado en el DOM!");
     }
     console.log('CatManager Creado.');
   }
 
+  /**
+   * Carga y almacena las plantillas de gato para su uso posterior.
+   * Debería ser llamado durante la fase de carga del juego.
+   * @param templateData - Un array de objetos CatTemplate.
+   */
+  public loadTemplates(templateData: CatTemplate[]): void {
+      this.templates.clear(); // Limpiar plantillas anteriores si se recarga
+      if (!Array.isArray(templateData)) {
+          console.error("CatManager: Formato de datos de plantilla inválido. Se esperaba un array.");
+          return;
+      }
+      templateData.forEach(template => {
+          if (template && template.id) {
+              this.templates.set(template.id, template);
+          } else {
+              console.warn("CatManager: Plantilla inválida o sin ID encontrada.", template);
+          }
+      });
+      console.log(`CatManager: ${this.templates.size} plantillas de gato cargadas/registradas.`);
+  }
+
 
   /**
-   * Crea una nueva entidad Gato con cuerpo físico y elemento DOM.
-   * @param config - Configuración inicial (posición, tamaño, etc.).
-   * @returns La entidad CatEntity creada o null si falla la creación.
+   * Crea una nueva entidad Gato basada en el ID de una plantilla cargada.
+   * @param templateId - El ID de la CatTemplate a usar (ej: 'common', 'rare_blue').
+   * @param initialPosition - (Opcional) Posición inicial para sobreescribir la de la plantilla.
+   * @returns La entidad CatEntity creada o null si falla la creación o la plantilla no existe.
    */
-  public addCat(config: CatConfig = {}): CatEntity | null {
+  public addCat(templateId: string, initialPosition?: { x: number; y: number }): CatEntity | null {
     if (!this.catContainerElement) {
         console.error("CatManager: No se puede añadir gato, falta #cat-container.");
         return null;
     }
 
-    const catId = config.id ?? `cat_${this.nextCatId++}`;
-    const size = config.size ?? INITIAL_CAT_SIZE;
-    const rarity = config.rarity ?? 0;
-    const scoreValue = config.scoreValue ?? 1; // Valor base ejemplo
+    // 1. Buscar la plantilla
+    const template = this.templates.get(templateId);
+    if (!template) {
+        console.error(`CatManager: Plantilla con ID '${templateId}' no encontrada.`);
+        return null;
+    }
 
-    // Posición inicial (centro de la pantalla arriba, o según config)
-    const initialX = config.initialPosition?.x ?? window.innerWidth / 2;
-    // Asegurar que no spawnee demasiado arriba (ej: justo debajo del borde superior + su radio)
-    const initialY = config.initialPosition?.y ?? size / 2 + 10;
+    // 2. Generar ID único para la *entidad*
+    const entityId = `cat_entity_${this.nextCatIdCounter++}`;
+    const size = template.initialSize; // Tamaño definido por la plantilla
+    const rarity = template.rarity;
+    const scoreValue = template.scoreValue ?? 0; // Usar 0 si no está definido
+
+    // Usar posición proporcionada o calcular una por defecto si no se da
+    const x = initialPosition?.x ?? window.innerWidth / 2;
+    const y = initialPosition?.y ?? size / 2 + 10;
 
 
-    // 1. Crear Cuerpo Físico (PhysicsComponent)
-    // Opciones básicas de física (ajustar según GDD/sensación deseada)
-    const bodyOptions: Matter.IBodyDefinition = {
+    // 3. Crear Cuerpo Físico (PhysicsComponent) usando la plantilla
+    const defaultPhysics: Matter.IBodyDefinition = { // Valores por defecto robustos
         restitution: 0.6,
         friction: 0.1,
         frictionAir: 0.01,
-        density: 0.005, // Afecta la masa basada en el tamaño
-        label: 'cat', // Etiqueta para identificar en colisiones
-        collisionFilter: {
-            category: CAT_COLLISION_CATEGORY,
-            // Define con qué PUEDE colisionar (ej: paredes, otros gatos, líneas de tinta)
-            mask: 0x0001 | CAT_COLLISION_CATEGORY /* | INK_LINE_CATEGORY etc */
-        },
-        // Propiedades personalizadas que podemos añadir al cuerpo si es útil
-        // customData: { entityId: catId }
+        density: 0.005,
     };
-    const body = Matter.Bodies.circle(initialX, initialY, size / 2, bodyOptions);
-    // Añadir una velocidad angular inicial aleatoria (como en consola ok.html)
-    Matter.Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.2);
+    const bodyOptions: Matter.IBodyDefinition = {
+        ...defaultPhysics, // Empezar con defaults
+        ...(template.physicsOptions ?? {}), // Sobrescribir con opciones de plantilla si existen
+        label: 'cat', // Etiqueta fija
+        collisionFilter: { // Filtro de colisión fijo (o configurable en plantilla?)
+            category: CAT_COLLISION_CATEGORY,
+            mask: WALL_COLLISION_CATEGORY | CAT_COLLISION_CATEGORY /* | INK_COLLISION_CATEGORY etc */
+        },
+        // Añadir datos personalizados al cuerpo si son útiles para colisiones/queries
+        plugin: {
+             entityId: entityId, // Asociar ID de entidad al cuerpo físico
+             rarity: rarity,     // Guardar rareza para lógica de fusión/interacción
+             templateId: templateId
+        }
+    };
+    const body = Matter.Bodies.circle(x, y, size / 2, bodyOptions);
+    Matter.Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.2); // Velocidad angular inicial
     const physicsComp = new PhysicsComponent(body);
 
 
-    // 2. Crear Elemento Visual (RenderComponent)
+    // 4. Crear Elemento Visual (RenderComponent) usando la plantilla
     const element = document.createElement('div');
-    element.id = catId.toString(); // Asignar ID al elemento DOM
-    element.classList.add('cat'); // Clase CSS base
+    element.id = entityId;
+    element.classList.add('cat'); // Clase base
     element.style.width = `${size}px`;
     element.style.height = `${size}px`;
-    // Posición inicial se establecerá en updateCats basado en la física
-    // Placeholder de apariencia (se puede mejorar con plantillas)
-    element.style.backgroundColor = `hsl(${Math.random() * 360}, 70%, 70%)`;
-    // TODO: Cargar imagen de cataas.com o sprite basado en plantilla/rarity
-    // TODO: Aplicar clase de glow basada en rarity si corresponde
 
-    // Añadir al contenedor DOM
+    // Aplicar opciones de renderizado de la plantilla
+    const renderOpts = template.renderOptions ?? {};
+    if (renderOpts.glowClass) {
+        element.classList.add(renderOpts.glowClass); // Añadir clase de brillo
+    }
+    // Usar imagen de Cataas si no hay spriteKey ni imageUrl (como antes)
+    const imageUrl = renderOpts.imageUrl ?? `https://cataas.com/cat?${Date.now()}&width=${Math.round(size)}&height=${Math.round(size)}`; // Añadir tamaño a cataas
+    if (imageUrl && !renderOpts.spriteKey) { // Priorizar spriteKey si existe
+        element.style.backgroundImage = `url('${imageUrl}')`;
+        // Fallback de color si la imagen falla
+        const img = new Image();
+        img.onerror = () => {
+            console.warn(`Fallo al cargar imagen ${imageUrl} para gato ${entityId}. Usando color de fondo.`);
+            element.style.backgroundImage = 'none';
+            if (renderOpts.backgroundColor) {
+                element.style.backgroundColor = renderOpts.backgroundColor;
+            }
+        };
+        img.src = imageUrl;
+    } else if (renderOpts.backgroundColor) {
+         element.style.backgroundColor = renderOpts.backgroundColor; // Usar color si no hay imagen
+    }
+    // TODO: Lógica para usar spriteKey si se implementa un sistema de spritesheets
+
     this.catContainerElement.appendChild(element);
     const renderComp = new RenderComponent(element);
 
 
-    // 3. Crear otros Componentes (ValueComponent)
+    // 5. Crear otros Componentes (ValueComponent)
     const valueComp = new ValueComponent(rarity, scoreValue);
 
 
-    // 4. Crear la Entidad CatEntity
-    const newCat = new CatEntity(catId, physicsComp, renderComp, valueComp);
+    // 6. Crear la Entidad CatEntity
+    const newCat = new CatEntity(entityId, physicsComp, renderComp, valueComp);
 
 
-    // 5. Añadir cuerpo físico al mundo de Matter.js
+    // 7. Añadir cuerpo físico al mundo de Matter.js
     if (physicsComp.body) {
         try {
             Matter.World.add(this.physicsManager.getWorld(), physicsComp.body);
         } catch (error) {
-            console.error(`CatManager: Error al añadir cuerpo físico del gato ${catId} al mundo:`, error);
-            // Limpiar elemento DOM si falla la física
-            if (element.parentNode) {
-                element.parentNode.removeChild(element);
-            }
+            console.error(`CatManager: Error al añadir cuerpo físico ${entityId} al mundo:`, error);
+            if (element.parentNode) element.parentNode.removeChild(element);
             return null;
         }
     } else {
-        console.error(`CatManager: No se pudo crear el cuerpo físico para el gato ${catId}.`);
-         if (element.parentNode) {
-             element.parentNode.removeChild(element);
-         }
+        console.error(`CatManager: No se pudo crear el cuerpo físico para ${entityId}.`);
+         if (element.parentNode) element.parentNode.removeChild(element);
         return null;
     }
 
 
-    // 6. Añadir entidad al mapa del manager
-    this.cats.set(catId, newCat);
-    console.log(`CatManager: Gato añadido con ID ${catId}`);
+    // 8. Añadir entidad al mapa del manager
+    this.cats.set(entityId, newCat);
+    console.log(`CatManager: Gato '${templateId}' añadido con ID de entidad ${entityId}`);
     return newCat;
   }
 
+
+  // --- Métodos removeCat, updateCats, getCat, getAllCats, removeAllCats (Sin cambios respecto a la versión anterior) ---
 
   /**
    * Elimina una entidad Gato por su ID del manager, del mundo físico y del DOM.
    * @param catId - El ID de la entidad Gato a eliminar.
    */
-  public removeCat(catId: string | number): void {
-    // console.log(`CatManager: Intentando eliminar gato ${catId}`); // Log más útil
+   public removeCat(catId: string | number): void {
+    // console.log(`CatManager: Intentando eliminar gato ${catId}`);
     const cat = this.cats.get(catId);
 
     if (cat) {
@@ -155,7 +202,6 @@ export class CatManager {
       if (cat.physics.body) {
           try {
              Matter.World.remove(this.physicsManager.getWorld(), cat.physics.body);
-             // console.log(`CatManager: Cuerpo físico del gato ${catId} eliminado.`);
           } catch(error) {
               console.warn(`CatManager: Error al intentar eliminar cuerpo físico del gato ${catId}:`, error);
           }
@@ -164,14 +210,10 @@ export class CatManager {
       // 2. Quitar elemento visual del DOM
       if (cat.render.element && cat.render.element.parentNode) {
         cat.render.element.parentNode.removeChild(cat.render.element);
-        // console.log(`CatManager: Elemento visual del gato ${catId} eliminado.`);
       }
 
       // 3. Eliminar la entidad del mapa del manager
       this.cats.delete(catId);
-      // console.log(`CatManager: Entidad gato ${catId} eliminada del manager.`);
-    } else {
-        // console.warn(`CatManager: No se encontró el gato con ID ${catId} para eliminar.`); // Menos verboso
     }
   }
 
@@ -182,45 +224,27 @@ export class CatManager {
    * @param deltaTime - Tiempo transcurrido desde el último frame (en segundos).
    */
   public updateCats(deltaTime: number): void {
-    // Iterar sobre todos los gatos gestionados
     this.cats.forEach((cat) => {
       const body = cat.physics.body;
       const element = cat.render.element;
 
-      // Si no hay cuerpo o elemento, o no es visible, no hacer nada para este gato
       if (!body || !element) return;
 
       if (cat.render.isVisible) {
-        // Asegurar que sea visible si corresponde
          if (element.style.display === 'none') {
              element.style.display = '';
          }
-         // Actualizar posición y rotación del elemento DOM
-         // La posición de Matter.js es el centro; CSS transform-origin suele ser el centro por defecto para rotate,
-         // pero translate se aplica desde la esquina superior izquierda.
-         const size = parseFloat(element.style.width || '0'); // Obtener tamaño actual
+         const size = parseFloat(element.style.width || '0');
          const halfSize = size / 2;
-         // Aplicar transformación para centrar el elemento en la posición del cuerpo
          element.style.transform = `translate(${body.position.x - halfSize}px, ${body.position.y - halfSize}px) rotate(${body.angle}rad)`;
 
-         // Aquí se podría actualizar el tamaño visual si cambia (ej: por comer otros gatos)
-         // const currentBodyRadius = body.circleRadius || size / 2; // Matter v0.19+ tiene circleRadius
-         // const currentVisualSize = size;
-         // if (Math.abs(currentBodyRadius * 2 - currentVisualSize) > 1) { // Si hay diferencia notable
-         //     const newSize = currentBodyRadius * 2;
-         //     element.style.width = `${newSize}px`;
-         //     element.style.height = `${newSize}px`;
-         // }
+         // TODO: Actualizar tamaño visual si cambia en body.plugin.currentSize o body.circleRadius?
 
       } else {
-        // Ocultar si no es visible
         if (element.style.display !== 'none') {
             element.style.display = 'none';
         }
       }
-
-      // TODO: Podría añadirse lógica para limitar velocidad máxima aquí también
-      // limitCatSpeed(body); // Función helper
     });
   }
 
@@ -242,24 +266,19 @@ export class CatManager {
     return Array.from(this.cats.values());
   }
 
-  /**
+   /**
    * Elimina todos los gatos gestionados. Útil para reiniciar el nivel.
    */
-  public removeAllCats(): void {
-      console.log(`CatManager: Eliminando ${this.cats.size} gatos...`);
-      const catIds = Array.from(this.cats.keys());
-      catIds.forEach(catId => this.removeCat(catId));
-      if (this.cats.size > 0) {
-          console.warn("CatManager: No se eliminaron todos los gatos correctamente.");
-          this.cats.clear();
-      }
-      this.nextCatId = 0;
-      console.log("CatManager: Todos los gatos eliminados.");
-  }
-
-  // --- Métodos Helper Futuros ---
-  // loadTemplates(url: string) { /* ... Cargar JSON de plantillas ... */ }
-  // applyTemplate(cat: CatEntity, templateId: string) { /* ... Configurar componentes basado en plantilla ... */ }
-  // limitCatSpeed(body: Matter.Body) { /* ... Lógica para limitar velocidad ... */ }
+   public removeAllCats(): void {
+       console.log(`CatManager: Eliminando ${this.cats.size} gatos...`);
+       const catIds = Array.from(this.cats.keys());
+       catIds.forEach(catId => this.removeCat(catId));
+       if (this.cats.size > 0) {
+           console.warn("CatManager: No se eliminaron todos los gatos correctamente.");
+           this.cats.clear();
+       }
+       this.nextCatIdCounter = 0; // Resetear contador de IDs
+       console.log("CatManager: Todos los gatos eliminados.");
+   }
 
 } // Fin de la clase CatManager
