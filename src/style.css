@@ -1,27 +1,306 @@
 /* src/style.css */
+
+/* Añade aquí los estilos para .glow-* (glow-gray, glow-green, etc.) si los usas */
+/* Ejemplo: */
+/* .glow-blue {
+  box-shadow: inset -2px -2px 5px rgba(0,0,0,0.3),
+              0 0 8px 3px rgba(0, 150, 255, 0.6);
+} */
+
+/* Estilos para la UI del Quiz (si usas estas clases en QuizGameplayState) */
+.quiz-ui-container {
+    /* ... tus estilos ... */
+    z-index: 20; /* Debe estar sobre el cat-container */
+}
+/* --- Estilos Base (Asegúrate que estos existan) --- */
 body {
   margin: 0;
-  padding: 0;
-  font-family: sans-serif;
-  background-color: #f0f0f0; /* Un color de fondo base */
-  display: flex; /* Para centrar el contenedor si es necesario */
-  justify-content: center;
-  align-items: center;
+  font-family: sans-serif; /* O la fuente que uses */
+  position: relative; /* Para elementos posicionados fijos */
   min-height: 100vh;
-  overflow: hidden; /* Evita barras de scroll si el canvas ocupa todo */
+  background-color: #111827; /* Fondo oscuro ejemplo */
+  color: #e5e7eb; /* Color de texto base */
+  overflow: hidden; /* Prevenir scroll */
 }
 
 #app {
-  /* Estilos para el contenedor principal del juego */
-  /* Por ejemplo, si vas a usar un canvas, podrías definir aquí su borde o tamaño inicial */
-  border: 1px solid #ccc;
-  background-color: #fff; /* Fondo del área de juego */
-  position: relative; /* Útil si elementos del juego se posicionan absolutamente dentro */
+  /* Contenedor principal del juego */
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-/* Puedes añadir más estilos base aquí */
-canvas {
-    display: block; /* Evita espacio extra debajo del canvas */
+#cat-container {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 10;
+  overflow: hidden;
+}
+
+/* --- Estilos Controles Laterales (Ejemplo) --- */
+.control-container {
+    position: fixed;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    z-index: 30; /* Encima de los gatos pero debajo de popups */
+}
+
+.control-button {
+    background-color: rgba(31, 41, 55, 0.8); /* Fondo semi-transparente */
+    color: #e5e7eb;
+    border: 1px solid #4b5563;
+    border-radius: 0.5rem;
+    padding: 0.6rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+    font-size: 1.5rem; /* Tamaño del icono/emoji */
+    width: 50px;
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.control-button:hover {
+    background-color: rgba(55, 65, 81, 0.9);
+    border-color: #6b7280;
+}
+.control-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+
+/* --- Estilos Tienda --- */
+
+/* Overlay General */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none; /* Oculto por defecto */
+  opacity: 0;
+  justify-content: center;
+  align-items: center;
+  transition: opacity 0.3s ease-in-out;
+  z-index: 100; /* Encima de todo excepto quizás otros popups */
+}
+
+/* Backdrop con Blur (Opcional) */
+.blur-backdrop {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background-color: rgba(17, 24, 39, 0.5); /* Fondo oscuro semi-transparente */
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  opacity: 0;
+  transition: opacity 0.4s ease-in-out;
+  pointer-events: none; /* No debe interceptar clics */
+  z-index: 99; /* Detrás del popup de la tienda */
+  display: none; /* Oculto por defecto */
+}
+.blur-backdrop.visible {
+    display: block;
+    opacity: 1;
+    pointer-events: auto; /* Permitir clic si es necesario (para cerrar?) */
+}
+
+
+/* Estilo específico para el overlay de la tienda */
+.shop-overlay {
+  /* Puedes añadir un fondo aquí si no usas el blur backdrop */
+  /* background-color: rgba(0, 0, 0, 0.6); */
+}
+
+.shop-overlay.visible {
+  display: flex; /* Mostrar cuando tenga la clase */
+  opacity: 1;
+}
+
+/* Contenedor del contenido de la tienda */
+.shop-content-box {
+  background-color: rgba(17, 24, 39, 0.97); /* Fondo oscuro casi opaco */
+  padding: 1.5rem 2rem;
+  border-radius: 1rem;
+  border: 1px solid #4b5563; /* Borde sutil */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6); /* Sombra pronunciada */
+  max-width: 90%;
+  width: 450px; /* Ancho máximo */
+  position: relative; /* Para posicionar el botón de cierre */
+  color: #e5e7eb; /* Color de texto */
+  max-height: 90vh; /* Altura máxima */
+  overflow-y: auto; /* Scroll si el contenido excede la altura */
+  display: flex;
+  flex-direction: column; /* Apilar elementos verticalmente */
+}
+
+/* Botón de cierre */
+.shop-close-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  color: #9ca3af; /* Gris claro */
+  font-size: 2rem; /* Tamaño grande */
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  padding: 0.25rem;
+}
+.shop-close-btn:hover {
+  color: #e5e7eb; /* Blanco al pasar el mouse */
+}
+
+/* Título y Puntuación */
+.shop-title-text {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+.shop-score-text {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  color: #a5b4fc; /* Color para destacar puntos */
+}
+
+/* Contenedor de los ítems */
+#shop-items-container {
+    /* No necesita estilos específicos si las secciones manejan el layout */
+    margin-bottom: 1rem; /* Espacio antes del tooltip */
+}
+
+/* Estilos para Secciones (Opcional, si usas categorías) */
+.shop-section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #9ca3af; /* Gris */
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 1rem; /* Espacio entre secciones */
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid #4b5563; /* Línea divisoria */
+    text-align: left;
+}
+.shop-section-items {
+    display: flex; /* Organizar ítems */
+    flex-wrap: wrap; /* Permitir que pasen a la siguiente línea */
+    gap: 1rem; /* Espacio entre ítems */
+    justify-content: flex-start; /* Alinear al inicio */
+}
+
+
+/* Estilo de cada ítem */
+.shop-item {
+  background-color: rgba(55, 65, 81, 0.7); /* Fondo gris oscuro semi-transparente */
+  border: 2px solid #4b5563;
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 65px; /* Tamaño fijo */
+  height: 65px;
+  position: relative;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.shop-item:hover {
+  background-color: rgba(75, 85, 99, 0.8);
+  border-color: #6b7280;
+  transform: translateY(-2px); /* Efecto hover */
+  box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+}
+
+/* Icono dentro del ítem */
+.shop-item-icon {
+  font-size: 1.8rem; /* Tamaño del emoji/icono */
+  line-height: 1;
+  /* Centrado por flex en el padre */
+}
+
+/* Estados de los ítems */
+.shop-item.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: #374151; /* Borde más oscuro */
+}
+.shop-item.disabled:hover { /* Evitar efectos hover en deshabilitado */
+  background-color: rgba(55, 65, 81, 0.7);
+  border-color: #374151;
+  transform: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.shop-item.purchased { /* Ítem no mejorable ya comprado */
+   border-color: #f59e0b; /* Borde dorado */
+   opacity: 0.7;
+   cursor: default;
+}
+.shop-item.purchased:hover { /* Evitar efectos hover */
+  background-color: rgba(55, 65, 81, 0.7);
+  border-color: #f59e0b;
+  transform: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.shop-item.max-level { /* Ítem mejorable al nivel máximo */
+   border-color: #34d399; /* Borde verde */
+   opacity: 0.8;
+   cursor: default;
+}
+.shop-item.max-level:hover { /* Evitar efectos hover */
+  background-color: rgba(55, 65, 81, 0.7);
+  border-color: #34d399;
+  transform: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+/* Tooltip */
+.shop-tooltip-box {
+  position: absolute; /* Posicionar relativo al .shop-content-box */
+  bottom: 1rem; /* En la parte inferior */
+  left: 1rem;
+  right: 1rem;
+  background-color: rgba(17, 24, 39, 0.98); /* Fondo muy oscuro */
+  border: 1px solid #6b7280; /* Borde gris */
+  border-radius: 0.5rem;
+  padding: 1rem;
+  color: #d1d5db; /* Color de texto gris claro */
+  font-size: 0.9rem;
+  text-align: left;
+  z-index: 110; /* Encima de los ítems */
+  opacity: 0; /* Oculto por defecto */
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  pointer-events: none; /* No interceptar clics */
+  min-height: 80px; /* Altura mínima */
+}
+.shop-tooltip-box.visible {
+  opacity: 1;
+  visibility: visible;
+}
+.tooltip-item-name { font-size: 1.1rem; font-weight: 600; color: #f9fafb; margin-bottom: 0.25rem; }
+.tooltip-item-level { font-size: 0.85rem; color: #6ee7b7; margin-bottom: 0.25rem; font-weight: bold; }
+.tooltip-item-effect { margin-bottom: 0.5rem; }
+.tooltip-item-cost { font-weight: 600; color: #facc15; } /* Amarillo para costo */
+.tooltip-item-status { font-style: italic; color: #fca5a5; margin-top: 0.5rem; } /* Rojo pálido para estado */
+
+/* Clase helper para ocultar elementos (como el nivel o estado del tooltip) */
+.hidden {
+    display: none !important;
 }
 #cat-container {
   position: fixed; /* O absolute, dependiendo de tu layout */
@@ -90,17 +369,4 @@ canvas {
 
 .cat:active {
     cursor: grabbing; /* Cursor al arrastrar */
-}
-
-/* Añade aquí los estilos para .glow-* (glow-gray, glow-green, etc.) si los usas */
-/* Ejemplo: */
-/* .glow-blue {
-  box-shadow: inset -2px -2px 5px rgba(0,0,0,0.3),
-              0 0 8px 3px rgba(0, 150, 255, 0.6);
-} */
-
-/* Estilos para la UI del Quiz (si usas estas clases en QuizGameplayState) */
-.quiz-ui-container {
-    /* ... tus estilos ... */
-    z-index: 20; /* Debe estar sobre el cat-container */
 }
