@@ -1,49 +1,68 @@
 // src/types/ShopItemData.ts
-// NO MÁS IMPORTACIONES DE PlayerData o ShopManager aquí
 
 /**
  * Estructura de los datos brutos de un ítem de tienda, tal como se cargan desde JSON.
- */
-// --- 2. src/types/ShopItemData.ts ---
-
-/**
- * Estructura de los datos brutos de un ítem de tienda, tal como se cargan desde JSON.
+ * Define los parámetros para calcular costos, efectos y condiciones.
  */
 export interface ShopItemJsonData {
+  /** Identificador único del ítem (ej: 'life', 'unlockDrawing', 'comboMultiplier') */
   id: string;
+
+  /** Nombre del ítem que se mostrará en la UI (tooltip). */
   name: string;
+
+  /** Icono o emoji para representar el ítem en la UI. */
   icon: string;
+
+  /** (Opcional) Categoría a la que pertenece el ítem (para organizar la tienda). */
   category?: string;
+
+  /** Indica si el ítem se puede comprar múltiples veces para subir de nivel. */
   isLeveled: boolean;
+
+  /** (Opcional) Nivel máximo alcanzable si el ítem es 'isLeveled'. */
   maxLevel?: number;
-  levelRef?: string; // Clave en PlayerData para el nivel (si isLeveled)
 
-  cost: { // Parámetros para calcular el costo
+  /** (Opcional) Clave en PlayerData que almacena el nivel actual de este ítem (si isLeveled). */
+  levelRef?: string;
+
+  /** Parámetros para calcular el costo actual del ítem. */
+  cost: {
+    /** Costo base inicial. */
     base: number;
-    type?: 'linear' | 'exponential'; // Cómo calcular si es leveled
-    perLevel?: number;    // Para linear
-    multiplier?: number;  // Para exponential
-    levelRef?: string;    // Clave en PlayerData para calcular costo basado en otro nivel (ej: vidas)
+    /** (Opcional) Tipo de cálculo para ítems mejorables ('linear' o 'exponential'). */
+    type?: 'linear' | 'exponential';
+    /** (Opcional) Incremento por nivel para costo 'linear'. */
+    perLevel?: number;
+    /** (Opcional) Multiplicador por nivel para costo 'exponential'. */
+    multiplier?: number;
+    /** (Opcional) Clave en PlayerData para calcular costo basado en otro valor (ej: costo de vida basado en vidas actuales). */
+    levelRef?: string;
   };
 
-  effectTemplate: string; // Plantilla de texto con placeholders
+  /** Plantilla de texto para mostrar el efecto, con placeholders como {lives}, {currentValue}, etc. */
+  effectTemplate: string;
 
-  // Parámetros para verificar si se puede comprar (además del costo)
+  /** (Opcional) Parámetros para verificar si el ítem se puede comprar (además del costo). */
   purchaseCheck?: {
+    /** Condición a evaluar ('lessThan', 'isFalse', 'isTrue', etc.). */
     condition: 'lessThan' | 'lessThanOrEqual' | 'isFalse' | 'isTrue' | 'greaterThan' | 'greaterThanOrEqual';
-    valueRef: string; // Clave en PlayerData a verificar
-    limit?: number;   // Límite para condiciones de comparación
+    /** Clave en PlayerData cuyo valor se usará en la condición. */
+    valueRef: string;
+    /** (Opcional) Límite numérico para condiciones de comparación. */
+    limit?: number;
   };
 
-   // Parámetros para verificar si ya está "comprado" o activo (para no-levelables)
+   /** (Opcional) Parámetros para verificar si el ítem ya está "comprado" o activo (para ítems no mejorables). */
   isPurchasedCheck?: {
-      condition: 'isTrue' | 'isFalse' | 'greaterThan'; // Añadir más si es necesario
-      valueRef: string; // Clave en PlayerData a verificar
-      limit?: number;   // Límite para greaterThan
+      /** Condición a evaluar ('isTrue', 'isFalse', 'greaterThan', etc.). */
+      condition: 'isTrue' | 'isFalse' | 'greaterThan';
+      /** Clave en PlayerData cuyo valor se usará en la condición. */
+      valueRef: string;
+      /** (Opcional) Límite numérico para la condición 'greaterThan'. */
+      limit?: number;
   };
 
-  actionId: string; // Identificador de la función a ejecutar en ShopManager
+  /** Identificador único de la función de acción a ejecutar en ShopManager al comprar. */
+  actionId: string;
 }
-
-// Podríamos mantener una interfaz interna en ShopManager si se procesan estos datos,
-// pero por ahora, ShopManager trabajará directamente con ShopItemJsonData.

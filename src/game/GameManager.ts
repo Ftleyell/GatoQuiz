@@ -60,12 +60,10 @@ export class GameManager {
    */
   public async init(): Promise<void> {
     console.log('GameManager: init');
-    this.playerData.reset();
-    this.physicsManager.init(this.getWorldContainer());
-    await this.preload(); // Carga de datos JSON (incluyendo tienda)
-    // *** CORRECCIÓN: Eliminar la llamada redundante a shopManager.init aquí ***
-    // this.shopManager.init(shopItemDefinitions); // <-- ELIMINADA
-    // ***********************************************************************
+    this.playerData.reset(); // Reinicia los datos del jugador
+    this.physicsManager.init(this.getWorldContainer()); // Inicializa la física
+    await this.preload(); // Carga datos JSON (preguntas, plantillas, tienda)
+    // ShopManager se inicializa dentro de preload ahora
     console.log("GameManager init completado (ShopManager inicializado desde preload).");
   }
 
@@ -121,22 +119,22 @@ export class GameManager {
    */
   public create(): void {
     console.log('GameManager: create');
-    this.quizSystem.resetAvailableQuestions();
-    this.catManager.removeAllCats();
-    this.stateMachine.changeState('MainMenu'); // Empezar en el menú
+    this.quizSystem.resetAvailableQuestions(); // Reinicia las preguntas disponibles
+    this.catManager.removeAllCats(); // Elimina gatos de partidas anteriores
+    this.stateMachine.changeState('MainMenu'); // Empieza en el menú principal
   }
 
   /**
    * El bucle principal del juego.
-   * @param timestamp - Tiempo actual.
+   * @param timestamp - Tiempo actual proporcionado por requestAnimationFrame.
    */
   private gameLoop(timestamp: number): void {
-    if (!this.isRunning) return;
-    const deltaTime = (timestamp - this.lastTimestamp) / 1000.0;
-    this.lastTimestamp = timestamp;
-    const clampedDeltaTime = Math.min(deltaTime, 0.1); // Limitar delta time
-    this.update(clampedDeltaTime);
-    this.gameLoopRequestId = requestAnimationFrame(this.gameLoop.bind(this));
+    if (!this.isRunning) return; // Si el juego no está corriendo, no hace nada
+    const deltaTime = (timestamp - this.lastTimestamp) / 1000.0; // Calcula tiempo transcurrido en segundos
+    this.lastTimestamp = timestamp; // Actualiza el último timestamp
+    const clampedDeltaTime = Math.min(deltaTime, 0.1); // Limita el deltaTime para evitar saltos grandes
+    this.update(clampedDeltaTime); // Llama al método de actualización
+    this.gameLoopRequestId = requestAnimationFrame(this.gameLoop.bind(this)); // Solicita el próximo frame
   }
 
   /**
@@ -144,49 +142,51 @@ export class GameManager {
    * @param deltaTime - Tiempo desde el último frame en segundos.
    */
   public update(deltaTime: number): void {
-    this.stateMachine.update(deltaTime);
-    this.catManager.updateCats(deltaTime); // Sincronizar visuales de gatos
+    this.stateMachine.update(deltaTime); // Actualiza el estado actual
+    this.catManager.updateCats(deltaTime); // Actualiza la posición visual de los gatos
   }
 
   /** Inicia el bucle de juego y la física. */
   public start(): void {
-    if (this.isRunning) return;
+    if (this.isRunning) return; // Evita iniciar si ya está corriendo
     console.log('GameManager: Iniciando bucle de juego...');
     this.isRunning = true;
-    this.lastTimestamp = performance.now();
-    this.physicsManager.start(); // Iniciar runner de física
-    this.gameLoopRequestId = requestAnimationFrame(this.gameLoop.bind(this));
+    this.lastTimestamp = performance.now(); // Establece el tiempo inicial
+    this.physicsManager.start(); // Inicia el runner de física
+    this.gameLoopRequestId = requestAnimationFrame(this.gameLoop.bind(this)); // Inicia el bucle
   }
 
   /** Detiene el bucle de juego y la física. */
   public stop(): void {
-    if (!this.isRunning) return;
+    if (!this.isRunning) return; // Evita detener si ya está detenido
     console.log('GameManager: Deteniendo bucle de juego...');
     this.isRunning = false;
-    if (this.gameLoopRequestId) cancelAnimationFrame(this.gameLoopRequestId);
+    if (this.gameLoopRequestId) cancelAnimationFrame(this.gameLoopRequestId); // Cancela el próximo frame
     this.gameLoopRequestId = undefined;
-    this.physicsManager.stop(); // Detener runner de física
+    this.physicsManager.stop(); // Detiene el runner de física
   }
 
-  /** Limpia recursos al cerrar el juego. */
+  /** Limpia recursos y detiene sistemas al cerrar el juego. */
   public shutdown(): void {
     console.log('GameManager: shutdown');
-    this.stop();
-    this.physicsManager.shutdown();
-    // Intentar salir del estado actual de forma segura
+    this.stop(); // Detiene el bucle y la física
+    this.physicsManager.shutdown(); // Limpia listeners de física
+    // Intenta salir del estado actual de forma segura
     if (this.stateMachine.getCurrentStateName() && this.stateMachine.getCurrentStateName() !== '__shutdown__') {
         try { this.stateMachine.changeState('__shutdown__'); }
         catch (e) { console.warn("Error en exit() del estado durante shutdown:", e) }
     }
-    this.catManager.removeAllCats(); // Eliminar gatos
-    this.containerElement.innerHTML = ''; // Limpiar UI
-    this.setBodyStateClass(null); // Limpiar clase CSS del body
-    this.shopManager.destroy(); // Limpiar listeners de la tienda
+    this.catManager.removeAllCats(); // Elimina todos los gatos
+    this.containerElement.innerHTML = ''; // Limpia la UI principal
+    this.setBodyStateClass(null); // Limpia la clase CSS del body
+    this.shopManager.destroy(); // Limpia listeners de la tienda
   }
 
   /** Devuelve el elemento contenedor para la física/mouse. */
   private getWorldContainer(): HTMLElement {
-      return document.body; // O un contenedor específico si se prefiere
+      // Podría ser un div específico si no quieres que el mouse constraint
+      // funcione sobre toda la página. Por ahora, body está bien.
+      return document.body;
   }
 
   /** Configura e instancia los estados del juego. */
@@ -196,95 +196,116 @@ export class GameManager {
     this.stateMachine.addState('QuizGameplay', new QuizGameplayState(this));
     this.stateMachine.addState('Results', new ResultsState(this));
     this.stateMachine.addState('GameOver', new GameOverState(this));
-    this.stateMachine.addState('__shutdown__', { enter: () => {}, exit: () => {}, update: () => {} }); // Estado dummy
+    this.stateMachine.addState('__shutdown__', { enter: () => {}, exit: () => {}, update: () => {} }); // Estado dummy para limpieza
   }
 
   /**
    * Actualiza la clase CSS en el elemento <body> para reflejar el estado actual.
+   * Útil para mostrar/ocultar elementos de UI contextualmente.
    * @param stateName - Nombre descriptivo del estado actual (ej: 'mainmenu', 'gameplay').
    */
   public setBodyStateClass(stateName: string | null): void {
     const body = document.body;
+    // Elimina la clase del estado anterior si existe
     if (this.previousBodyStateClass) {
         body.classList.remove(`state-${this.previousBodyStateClass}`);
     }
+    // Añade la nueva clase si se proporciona un nombre
     if (stateName) {
         const newStateClass = `state-${stateName}`;
         body.classList.add(newStateClass);
-        this.previousBodyStateClass = stateName;
+        this.previousBodyStateClass = stateName; // Guarda la clase actual para la próxima vez
     } else {
-        this.previousBodyStateClass = null;
+        this.previousBodyStateClass = null; // Limpia si no hay estado
     }
   }
 
 
-  // --- Métodos para Vidas ---
+  // --- Métodos para Vidas (Delegan a PlayerData y notifican UI) ---
+  /** Obtiene las vidas actuales del jugador. */
   public getLives(): number { return this.playerData.lives; }
+  /** Decrementa una vida y actualiza la UI. */
   public decrementLives(): void {
       if (this.playerData.lives > 0) {
           this.playerData.lives--;
-          this.updateExternalLivesUI();
+          this.updateExternalLivesUI(); // Notifica al estado actual para actualizar la UI
       }
   }
+  /** Incrementa una vida y actualiza la UI. */
   public incrementLives(): void {
        this.playerData.lives++;
-       this.updateExternalLivesUI();
+       this.updateExternalLivesUI(); // Notifica al estado actual para actualizar la UI
   }
-  // --------------------------
+  // --------------------------------------------------------------
 
   // --- Métodos para Tienda ---
+  /** Abre el popup de la tienda. */
   public openShop(): void { this.shopManager.openShop(); }
+  /** Cierra el popup de la tienda. */
   public closeShop(): void { this.shopManager.closeShop(); }
   // --------------------------
 
-  // --- Método para habilitar dibujo ---
+  // --- Método para habilitar la función de dibujo ---
+  /** Activa la UI relacionada con la función de dibujo (llamado por ShopManager). */
   public enableDrawingFeature(): void {
       console.log("GameManager: Habilitando función de dibujo...");
+      // Busca los elementos de UI relevantes por ID
       const rightControls = document.getElementById('right-controls');
       const inkLabel = document.getElementById('ink-label');
       const inkBar = document.getElementById('ink-bar-container');
       const scoreArea = document.getElementById('score-area');
+      // Modifica clases/estilos para mostrarlos
       if (rightControls) rightControls.classList.add('drawing-unlocked');
       if (inkLabel) inkLabel.classList.remove('hidden');
       if (inkBar) inkBar.classList.remove('hidden');
       if (scoreArea) scoreArea.classList.add('ink-visible');
-      this.updateInkUI(); // Actualizar estado inicial
+      this.updateInkUI(); // Actualiza la barra de tinta (implementación pendiente)
       // Aquí se inicializaría el InkManager si existiera
   }
 
   // --- Método para actualizar UI de tinta (placeholder) ---
+  /** Actualiza la barra de progreso de tinta (implementación pendiente). */
   public updateInkUI(): void {
-      // TODO: Implementar lógica para actualizar barra de tinta
+      // TODO: Implementar lógica para obtener tinta de PlayerData
+      // y actualizar el estilo '--ink-percentage' del elemento #ink-bar-fill
       console.warn("GameManager.updateInkUI() - Implementación pendiente.");
   }
   // -----------------------------------------------------
 
-  // --- MÉTODOS DE ACTUALIZACIÓN DE UI EXTERNA ---
+  // --- MÉTODOS DE ACTUALIZACIÓN DE UI EXTERNA (Llaman a métodos del estado actual si existen) ---
+  /** Notifica al estado actual para actualizar la UI de vidas. */
   public updateExternalLivesUI(): void {
     const currentState = this.getCurrentState();
+    // Llama a updateLivesUI() solo si el estado actual tiene ese método
     if (typeof (currentState as any)?.updateLivesUI === 'function') {
         (currentState as any).updateLivesUI();
     }
   }
+  /** Notifica al estado actual para actualizar la UI del escudo. */
   public updateExternalShieldUI(isActive: boolean): void {
     const currentState = this.getCurrentState();
+    // Llama a updateShieldIcon() solo si el estado actual tiene ese método
     if (typeof (currentState as any)?.updateShieldIcon === 'function') {
         (currentState as any).updateShieldIcon(isActive);
     } else {
-         console.warn("updateExternalShieldUI: El estado actual no tiene updateShieldIcon().");
+         // Podría ser normal si el estado actual no maneja este icono (ej. MainMenu)
+         // console.warn("updateExternalShieldUI: El estado actual no tiene updateShieldIcon().");
     }
   }
+  /** Notifica al estado actual para actualizar la UI de la pista. */
   public updateExternalHintUI(charges: number): void {
      const currentState = this.getCurrentState();
+     // Llama a updateHintIcon() solo si el estado actual tiene ese método
      if (typeof (currentState as any)?.updateHintIcon === 'function') {
         (currentState as any).updateHintIcon(charges);
      } else {
-        console.warn("updateExternalHintUI: El estado actual no tiene updateHintIcon().");
+        // Podría ser normal si el estado actual no maneja este icono
+        // console.warn("updateExternalHintUI: El estado actual no tiene updateHintIcon().");
      }
   }
-  // ---------------------------------------------
+  // --------------------------------------------------------------------------------------
 
-  // --- Getters ---
+  // --- Getters (Proporcionan acceso controlado a los sistemas) ---
   public getQuizSystem(): QuizSystem { return this.quizSystem; }
   public getPhysicsManager(): PhysicsManager { return this.physicsManager; }
   public getStateMachine(): StateMachine { return this.stateMachine; }
@@ -293,7 +314,8 @@ export class GameManager {
   public getShopManager(): ShopManager { return this.shopManager; }
   public getPlayerData(): PlayerData { return this.playerData; }
   public getContainerElement(): HTMLElement { return this.containerElement; }
+  /** Obtiene la instancia del estado actualmente activo. */
   public getCurrentState(): IState | null { return this.stateMachine.getCurrentState(); }
-  // ---------------------------------------------
+  // -----------------------------------------------------------
 
 } // Fin clase GameManager
