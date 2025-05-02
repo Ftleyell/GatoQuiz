@@ -1,46 +1,72 @@
 /* src/styles/ink.css */
+/* Estilos para el sistema de dibujo con tinta */
 
 #drawing-canvas {
     position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    z-index: 5; /* Por defecto, detrás de gatos y UI */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 15; /* Más alto que cat-container (10), más bajo que #app (20) */
     pointer-events: none; /* No interactuable por defecto */
     background-color: transparent;
   }
   
-  /* Cuando el pincel está activo */
   #drawing-canvas.active {
-    pointer-events: auto; /* Permite dibujar */
+    pointer-events: auto; /* Habilitar interacción al dibujar */
     cursor: crosshair;
-    z-index: 25; /* Encima de la UI del quiz pero debajo de controles/tienda */
+    /* z-index ya está en 15, no necesita cambiar */
   }
   
-  /* --- UI de la Barra de Tinta (dentro de #score-area o .top-ui-container) --- */
-  #ink-label {
-    font-size: 0.7rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #f472b6; /* Rosa */
-    margin-bottom: 0.1rem;
-    /* display: none; controlado por JS/PlayerData */
+  /* Estilos para la barra de tinta (pueden estar en quiz-elements.css o aquí) */
+  .ink-label-base {
+    font-size: 0.7rem; font-weight: 600; color: #ec4899; text-transform: uppercase;
+    letter-spacing: 0.05em; margin-bottom: 0.15rem; z-index: 22;
   }
-  
-  #ink-bar-container {
-    /* width y height definidos en el tema o JS si es necesario */
-    background-color: #374151; /* Fondo gris oscuro */
-    border-radius: 9999px; /* Completamente redondeado */
-    overflow: hidden;
-    border: 1px solid #4b5563; /* Borde sutil */
-    /* display: none; controlado por JS/PlayerData */
+  .ink-bar-container-base {
+    width: 150px; height: 15px; background-color: #374151; border-radius: 7.5px;
+    overflow: hidden; position: relative; z-index: 22; border: 1px solid #4b5563;
   }
-  
-  #ink-bar-fill {
+  .ink-bar-fill-base {
     height: 100%;
-    background-image: linear-gradient(to right, #a78bfa, #7c3aed); /* Gradiente morado */
-    border-radius: 9999px;
-    transition: width 0.3s ease-out;
-    width: 0%; /* Inicialmente vacía */
-    box-shadow: inset 0 0 2px rgba(255, 255, 255, 0.2); /* Brillo interior sutil */
+    background-image: linear-gradient(to right, #a78bfa, #7c3aed); border-radius: 7.5px;
+    transition: width 0.3s ease-out; box-shadow: inset 0 0 3px rgba(255, 255, 255, 0.3);
+    width: var(--ink-percentage, 0%);
   }
+  /* Ocultar por defecto */
+  #ink-label, #ink-bar-container {
+      display: none;
+  }
+  /* Mostrar si el área tiene la clase 'ink-visible' */
+  #score-area.ink-visible #ink-label,
+  #score-area.ink-visible #ink-bar-container {
+      display: block;
+  }
+  
+  /* --- NUEVO: Atenuar UI del Quiz cuando el pincel está activo --- */
+  /* Seleccionamos el canvas activo y luego los elementos del quiz dentro de #app */
+  #drawing-canvas.active + #app #question-box,
+  #drawing-canvas.active + #app #options {
+    opacity: 0.3; /* Opacidad reducida */
+    pointer-events: none; /* Deshabilitar interacción con elementos atenuados */
+    transition: opacity 0.3s ease-in-out; /* Transición suave */
+  }
+  
+  /* Asegurarse de que la opacidad vuelva a 1 cuando el pincel no esté activo */
+  #question-box,
+  #options {
+    opacity: 1;
+    pointer-events: auto; /* Habilitar interacción normalmente */
+    transition: opacity 0.3s ease-in-out;
+  }
+  /* -------------------------------------------------------------- */
+  
+  
+  /* Estilo para atenuar la UI principal al dibujar (OPCIONAL - Podría ser redundante ahora) */
+  /* Si usamos el método anterior, esta clase quizás ya no sea necesaria en el JS */
+  .game-container.ui-faded {
+    /* opacity: 0.3; */ /* Comentado o eliminado si el método anterior funciona bien */
+    /* pointer-events: none; */
+  }
+  
+  
