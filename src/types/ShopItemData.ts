@@ -4,6 +4,11 @@
 /**
  * Estructura de los datos brutos de un ítem de tienda, tal como se cargan desde JSON.
  */
+// --- 2. src/types/ShopItemData.ts ---
+
+/**
+ * Estructura de los datos brutos de un ítem de tienda, tal como se cargan desde JSON.
+ */
 export interface ShopItemJsonData {
   id: string;
   name: string;

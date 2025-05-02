@@ -2,6 +2,9 @@
 
 import { IState } from '../StateMachine';
 import { GameManager } from '../GameManager'; // Asegúrate que la ruta sea correcta
+// *** AÑADIDO: Importar CatEntity aunque no se use directamente aquí ***
+import { CatEntity } from '../entities/CatEntity';
+// *******************************************************************
 
 // Tipos (mantenidos para claridad, pueden moverse a un archivo types)
 interface QuestionOption { key: string; text: string; }
@@ -22,16 +25,9 @@ export class QuizGameplayState implements IState {
   private readonly BASE_POINTS_PER_CORRECT = 10;
   private readonly DIFFICULTY_BONUS: { [key: string]: number } = { "easy": 10, "medium": 30, "hard": 50 };
 
-  // Ya no se usan variables locales para plantillas de spawn
-  // private spawnableCatTemplates = [ { id: 'common_gray', weight: 75 }, { id: 'rare_blue', weight: 25 } ];
-  // private totalSpawnWeight: number = 0;
-
   constructor(gameManager: GameManager) {
     this.gameManager = gameManager;
-    // Ya no se necesita calcular el peso aquí
   }
-
-  // Ya no se necesita calculateTotalSpawnWeight()
 
   /**
    * Selecciona aleatoriamente un ID de plantilla de gato para spawnear,
@@ -63,7 +59,6 @@ export class QuizGameplayState implements IState {
     for (const template of weightedTemplates) {
         cumulativeWeight += template.weight;
         if (randomNum < cumulativeWeight) {
-            // console.log(`Template seleccionado: ${template.id} (Peso: ${template.weight}, Rnd: ${randomNum.toFixed(2)}/${totalWeight.toFixed(2)})`); // Log opcional
             return template.id; // Devolver el ID de la plantilla seleccionada
         }
     }
@@ -85,7 +80,6 @@ export class QuizGameplayState implements IState {
     this.gameManager.getPlayerData().reset(); // Resetear datos del jugador para nueva partida
     console.log("PlayerData reseteado para nueva partida.");
     this.consecutiveCorrectAnswers = 0; // Resetear racha
-    // Ya no se necesita calcular peso aquí
     this.clearUI(); // Limpiar UI anterior si existe
     this.displayNextQuestion(); // Mostrar la primera pregunta
   }
@@ -151,9 +145,8 @@ export class QuizGameplayState implements IState {
     try { this.gameManager.getAudioManager().playSound('correct'); }
     catch(e) { console.error("Error sonido 'correct':", e); }
 
-    // *** Spawnear Gato usando el método actualizado ***
+    // Spawnear Gato usando el método actualizado
     const selectedTemplateId = this.selectRandomCatTemplateId();
-    // console.log(`Intentando spawnear gato con template ID: ${selectedTemplateId}`); // Log opcional
     if (selectedTemplateId) {
         try {
             const catManager = this.gameManager.getCatManager();
@@ -166,7 +159,6 @@ export class QuizGameplayState implements IState {
             console.error(` -> ¡Error atrapado! al llamar a catManager.addCat:`, error);
         }
     }
-    // *************************************************
 
     this.scheduleNextQuestion(1500);
   }
@@ -232,11 +224,9 @@ export class QuizGameplayState implements IState {
    * Añade los elementos al DOM y configura los listeners de los botones.
    */
   private displayNextQuestion(): void {
-    // console.log("[UI DEBUG] --- displayNextQuestion START ---");
     const quizSystem = this.gameManager.getQuizSystem();
     try {
         this.currentQuestion = quizSystem.selectNextQuestion();
-        // console.log("[UI DEBUG] Pregunta seleccionada:", this.currentQuestion ? this.currentQuestion.id : 'Ninguna');
     } catch (error) {
         console.error("Error al seleccionar pregunta:", error);
         this.gameManager.getStateMachine().changeState('Results', { finalScore: this.gameManager.getPlayerData().score });
@@ -343,8 +333,6 @@ export class QuizGameplayState implements IState {
     this.updateComboUI();
     this.updateShieldIcon(this.gameManager.getPlayerData().hasShield);
     this.updateHintIcon(this.gameManager.getPlayerData().hintCharges);
-
-    // console.log("[UI DEBUG] --- displayNextQuestion END ---");
   }
 
   /**
@@ -392,7 +380,7 @@ export class QuizGameplayState implements IState {
   }
 
   /** Actualiza el elemento de la UI que muestra las vidas. */
-  public updateLivesUI(): void { // Hacer público para que GameManager pueda llamarlo si es necesario
+  public updateLivesUI(): void {
     const livesElement = document.getElementById('quiz-lives-count');
     if (livesElement) {
         livesElement.textContent = this.gameManager.getLives().toString();
