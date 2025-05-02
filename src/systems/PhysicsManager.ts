@@ -6,11 +6,16 @@ import { CatManager } from './CatManager'; // Asegúrate que la ruta sea correct
 // Constantes de Colisión
 const WALL_COLLISION_CATEGORY = 0x0001;
 const CAT_COLLISION_CATEGORY = 0x0002;
+const INK_COLLISION_CATEGORY = 0x0004; // Asegúrate que coincida con CatManager e InkManager
 const WALL_THICKNESS = 60;
+
+// *** CONSTANTE AÑADIDA DEL GDD ALPHA ***
+const MAX_CAT_SPEED = 70;
+// **************************************
 
 /**
  * PhysicsManager: Encapsula la configuración y el control del motor de física Matter.js,
- * incluyendo los límites del mundo dinámicos y la detección de colisiones.
+ * incluyendo los límites del mundo dinámicos, la detección de colisiones y el límite de velocidad.
  */
 export class PhysicsManager {
   private engine!: Matter.Engine;
@@ -21,25 +26,22 @@ export class PhysicsManager {
   private rightWall!: Matter.Body;
   private topWall!: Matter.Body;
   private resizeListener: () => void;
+  private catManager: CatManager;
+  private mouseConstraint?: Matter.MouseConstraint;
 
-  private catManager: CatManager; // Referencia a CatManager
-  private mouseConstraint?: Matter.MouseConstraint; // Referencia al constraint del mouse
+  // Referencias a los handlers de eventos para poder removerlos
+  private collisionHandler: (event: Matter.IEventCollision<Matter.Engine>) => void;
+  private speedLimitHandler: () => void;
 
-  /**
-   * Crea una instancia de PhysicsManager.
-   * @param catManager - Instancia del CatManager para comunicar colisiones.
-   */
   constructor(catManager: CatManager) {
     console.log('PhysicsManager Creado');
-    this.catManager = catManager; // Guardar instancia
+    this.catManager = catManager;
     this.resizeListener = this.handleResize.bind(this);
+    // Guardar referencia a los handlers BINDEADOS
+    this.collisionHandler = this.handleCollisions.bind(this);
+    this.speedLimitHandler = this.limitAllCatSpeeds.bind(this); // <-- Nuevo handler
   }
 
-  /**
-   * Inicializa el motor de física, crea el mundo, las paredes,
-   * el constraint del mouse y añade los listeners necesarios.
-   * @param containerElement - El elemento HTML sobre el cual operará el MouseConstraint.
-   */
   public init(containerElement: HTMLElement): void {
     console.log('PhysicsManager: init');
 
@@ -47,244 +49,156 @@ export class PhysicsManager {
     this.world = this.engine.world;
     this.runner = Matter.Runner.create();
 
-    // Configuración del motor
     this.engine.gravity.y = 0.8;
     this.engine.gravity.x = 0;
-    this.engine.enableSleeping = true; // Optimización importante
+    this.engine.enableSleeping = true;
 
     console.log('Matter.js Engine, World, Runner creados.');
 
-    this.createWalls(); // Crear límites del mundo
-    this.setupMouseConstraint(containerElement); // Configurar interacción del mouse
+    this.createWalls();
+    this.setupMouseConstraint(containerElement);
 
-    // Añadir listener para eventos de colisión
-    console.log("PhysicsManager: Añadiendo listener 'collisionStart'...");
-    Matter.Events.on(this.engine, 'collisionStart', (event) => this.handleCollisions(event));
+    // Añadir listeners de eventos usando los handlers guardados
+    console.log("PhysicsManager: Añadiendo listeners...");
+    Matter.Events.on(this.engine, 'collisionStart', this.collisionHandler);
+    // *** AÑADIR LISTENER PARA LÍMITE DE VELOCIDAD ***
+    Matter.Events.on(this.engine, 'beforeUpdate', this.speedLimitHandler);
+    // *********************************************
 
-    // Añadir listener para redimensionar ventana
     window.addEventListener('resize', this.resizeListener);
-    // console.log('PhysicsManager: Listener de resize añadido.'); // Log menos verboso
   }
 
-  /**
-   * Crea los cuerpos estáticos que definen los límites del mundo.
-   */
   private createWalls(): void {
       const width = window.innerWidth;
       const height = window.innerHeight;
-
-      // Crear cuerpos rectangulares estáticos
-      this.ground = Matter.Bodies.rectangle(
-        width / 2, height + WALL_THICKNESS / 2, // Posición (debajo)
-        width, WALL_THICKNESS, // Dimensiones
-        { isStatic: true, label: 'ground', collisionFilter: { category: WALL_COLLISION_CATEGORY } }
-      );
-      this.leftWall = Matter.Bodies.rectangle(
-        -WALL_THICKNESS / 2, height / 2, // Posición (izquierda)
-        WALL_THICKNESS, height,
-        { isStatic: true, label: 'leftWall', collisionFilter: { category: WALL_COLLISION_CATEGORY } }
-      );
-      this.rightWall = Matter.Bodies.rectangle(
-        width + WALL_THICKNESS / 2, height / 2, // Posición (derecha)
-        WALL_THICKNESS, height,
-        { isStatic: true, label: 'rightWall', collisionFilter: { category: WALL_COLLISION_CATEGORY } }
-      );
-      this.topWall = Matter.Bodies.rectangle(
-        width / 2, -WALL_THICKNESS / 2, // Posición (arriba)
-        width, WALL_THICKNESS,
-        { isStatic: true, label: 'topWall', collisionFilter: { category: WALL_COLLISION_CATEGORY } }
-      );
-
-      // Añadir las paredes al mundo
+      this.ground = Matter.Bodies.rectangle(width / 2, height + WALL_THICKNESS / 2, width, WALL_THICKNESS, { isStatic: true, label: 'ground', collisionFilter: { category: WALL_COLLISION_CATEGORY } });
+      this.leftWall = Matter.Bodies.rectangle(-WALL_THICKNESS / 2, height / 2, WALL_THICKNESS, height, { isStatic: true, label: 'leftWall', collisionFilter: { category: WALL_COLLISION_CATEGORY } });
+      this.rightWall = Matter.Bodies.rectangle(width + WALL_THICKNESS / 2, height / 2, WALL_THICKNESS, height, { isStatic: true, label: 'rightWall', collisionFilter: { category: WALL_COLLISION_CATEGORY } });
+      this.topWall = Matter.Bodies.rectangle(width / 2, -WALL_THICKNESS / 2, width, WALL_THICKNESS, { isStatic: true, label: 'topWall', collisionFilter: { category: WALL_COLLISION_CATEGORY } });
       Matter.World.add(this.world, [this.ground, this.leftWall, this.rightWall, this.topWall]);
-      // console.log('PhysicsManager: Paredes estáticas creadas.'); // Log menos verboso
   }
 
-  /**
-   * Configura el constraint del mouse para permitir arrastrar los gatos.
-   * @param mouseElement - El elemento HTML que capturará los eventos del mouse.
-   */
   private setupMouseConstraint(mouseElement: HTMLElement): void {
        const mouse = Matter.Mouse.create(mouseElement);
        this.mouseConstraint = Matter.MouseConstraint.create(this.engine, {
            mouse: mouse,
-           constraint: {
-               stiffness: 0.1, // Rigidez del "resorte" al arrastrar
-               render: { visible: false } // No mostrar el constraint visualmente
-           }
+           constraint: { stiffness: 0.1, render: { visible: false } }
        });
-       // Configurar para que el mouse solo interactúe con cuerpos de categoría CAT
        this.mouseConstraint.collisionFilter.mask = CAT_COLLISION_CATEGORY;
-
        Matter.World.add(this.world, this.mouseConstraint);
-       // console.log('PhysicsManager: MouseConstraint añadido.'); // Log menos verboso
-       this.updateMouseConstraintOffset(); // Calcular offset inicial
+       this.updateMouseConstraintOffset();
   }
 
-  /**
-   * Actualiza el offset del mouse para corregir coordenadas si el elemento base
-   * no está en la esquina superior izquierda de la ventana.
-   */
   private updateMouseConstraintOffset(): void {
       if (this.mouseConstraint && this.mouseConstraint.mouse.element) {
           const bounds = this.mouseConstraint.mouse.element.getBoundingClientRect();
-          // El offset debe ser negativo para compensar la posición del elemento
           Matter.Mouse.setOffset(this.mouseConstraint.mouse, { x: -bounds.left, y: -bounds.top });
       }
   }
 
-  /**
-   * Manejador para el evento 'collisionStart' de Matter.js.
-   * Detecta colisiones entre gatos y llama a CatManager si es una colisión
-   * iniciada por el jugador (arrastrando un gato sobre otro).
-   * @param event - El objeto del evento de colisión.
-   */
+  // handleCollisions (Sin cambios)
   private handleCollisions(event: Matter.IEventCollision<Matter.Engine>): void {
-      // LOG 1
-      // console.log("PhysicsManager: CollisionStart event detectado!");
       const pairs = event.pairs;
-
       for (let i = 0; i < pairs.length; i++) {
           const pair = pairs[i];
           const bodyA = pair.bodyA;
           const bodyB = pair.bodyB;
-
-          // Verificar si ambos cuerpos existen y tienen la etiqueta 'cat'
-          const labelA = bodyA?.label;
-          const labelB = bodyB?.label;
-          const isBodyACat = labelA === 'cat';
-          const isBodyBCat = labelB === 'cat';
+          const isBodyACat = bodyA?.label === 'cat';
+          const isBodyBCat = bodyB?.label === 'cat';
 
           if (isBodyACat && isBodyBCat) {
-              // LOG 2
-              // console.log(`  -> Cat-vs-Cat collision: Body ${bodyA.id} (label:${labelA}) vs Body ${bodyB.id} (label:${labelB})`);
-
-              // Verificar si exactamente UNO de los gatos está siendo arrastrado
               const isDraggingA = this.mouseConstraint?.body === bodyA;
               const isDraggingB = this.mouseConstraint?.body === bodyB;
-
-              // *** CONDICIÓN PRINCIPAL: Procesar solo si es un arrastre ***
-              if (isDraggingA !== isDraggingB) {
-                  // LOG 3
-                  console.log(`    --> Processing collision (Player Drag Eat Attempt!) DraggingA: ${isDraggingA}, DraggingB: ${isDraggingB}`);
-
-                  // Asegurar que los IDs existen antes de llamar a CatManager
+              if (isDraggingA !== isDraggingB) { // Solo procesar si uno está siendo arrastrado
                   if (typeof bodyA.id !== 'undefined' && typeof bodyB.id !== 'undefined') {
-                      // Identificar cuál es el ID del cuerpo que está siendo arrastrado
                       const draggerBodyId = isDraggingA ? bodyA.id : bodyB.id;
-                      // Llamar al método específico en CatManager
                       this.catManager.processPlayerInitiatedCollision(bodyA.id, bodyB.id, draggerBodyId);
-                  } else {
-                      console.error("    --> Error: Uno o ambos body IDs son undefined en la colisión gato-gato.");
-                  }
-              } else if (!isDraggingA && !isDraggingB) {
-                  // LOG 4 - Colisión automática ignorada (comportamiento deseado ahora)
-                   // console.log(`    --> Ignoring collision (Automatic collision, neither cat dragged).`);
-              } else {
-                  // LOG X - Ambos arrastrados (improbable)
-                   // console.log(`    --> Ignoring collision (Both cats somehow dragged?).`);
+                  } else { console.error("Error: IDs indefinidos en colisión gato-gato."); }
               }
-              // ********************************************************
           }
       }
   }
 
-  /**
-   * Manejador para el evento 'resize' de la ventana.
-   * Ajusta la posición y tamaño de las paredes del mundo físico.
-   */
+  // *** NUEVO MÉTODO PARA LIMITAR VELOCIDAD ***
+  private limitAllCatSpeeds(): void {
+      if (!this.world) return; // Asegurarse que el mundo existe
+
+      const bodies = Matter.Composite.allBodies(this.world);
+      for (let i = 0; i < bodies.length; i++) {
+          const body = bodies[i];
+          // Aplicar solo a cuerpos no estáticos y con etiqueta 'cat'
+          if (!body.isStatic && body.label === 'cat') {
+              const speed = Matter.Vector.magnitude(body.velocity);
+
+              if (speed > MAX_CAT_SPEED) {
+                  // Calcular velocidad normalizada (dirección)
+                  const normalizedVelocity = Matter.Vector.normalise(body.velocity);
+                  // Crear nuevo vector de velocidad con la magnitud máxima permitida
+                  const cappedVelocity = Matter.Vector.mult(normalizedVelocity, MAX_CAT_SPEED);
+                  // Establecer la nueva velocidad limitada
+                  Matter.Body.setVelocity(body, cappedVelocity);
+                   // Opcional: Limitar también velocidad angular si es necesario
+                   // if (Math.abs(body.angularVelocity) > MAX_ANGULAR_SPEED) {
+                   //    Matter.Body.setAngularVelocity(body, Math.sign(body.angularVelocity) * MAX_ANGULAR_SPEED);
+                   // }
+              }
+          }
+      }
+  }
+  // ****************************************
+
+  // handleResize (Sin cambios)
   private handleResize(): void {
     if (!this.ground || !this.leftWall || !this.rightWall || !this.topWall) return;
-
     const width = window.innerWidth;
     const height = window.innerHeight;
-    // console.log(`PhysicsManager: Redimensionando paredes a ${width}x${height}`); // Log menos verboso
-
     try {
-        // Actualizar Suelo
         Matter.Body.setPosition(this.ground, { x: width / 2, y: height + WALL_THICKNESS / 2 });
-        Matter.Body.setVertices(this.ground, Matter.Vertices.fromPath(
-            `L ${-width / 2} ${-WALL_THICKNESS / 2} L ${width / 2} ${-WALL_THICKNESS / 2} L ${width / 2} ${WALL_THICKNESS / 2} L ${-width / 2} ${WALL_THICKNESS / 2}`
-        ));
-        // Actualizar Pared Izquierda
+        Matter.Body.setVertices(this.ground, Matter.Vertices.fromPath(`L ${-width / 2} ${-WALL_THICKNESS / 2} L ${width / 2} ${-WALL_THICKNESS / 2} L ${width / 2} ${WALL_THICKNESS / 2} L ${-width / 2} ${WALL_THICKNESS / 2}`));
         Matter.Body.setPosition(this.leftWall, { x: -WALL_THICKNESS / 2, y: height / 2 });
-        Matter.Body.setVertices(this.leftWall, Matter.Vertices.fromPath(
-            `L ${-WALL_THICKNESS / 2} ${-height / 2} L ${WALL_THICKNESS / 2} ${-height / 2} L ${WALL_THICKNESS / 2} ${height / 2} L ${-WALL_THICKNESS / 2} ${height / 2}`
-        ));
-        // Actualizar Pared Derecha
+        Matter.Body.setVertices(this.leftWall, Matter.Vertices.fromPath(`L ${-WALL_THICKNESS / 2} ${-height / 2} L ${WALL_THICKNESS / 2} ${-height / 2} L ${WALL_THICKNESS / 2} ${height / 2} L ${-WALL_THICKNESS / 2} ${height / 2}`));
         Matter.Body.setPosition(this.rightWall, { x: width + WALL_THICKNESS / 2, y: height / 2 });
-        Matter.Body.setVertices(this.rightWall, Matter.Vertices.fromPath(
-            `L ${-WALL_THICKNESS / 2} ${-height / 2} L ${WALL_THICKNESS / 2} ${-height / 2} L ${WALL_THICKNESS / 2} ${height / 2} L ${-WALL_THICKNESS / 2} ${height / 2}`
-        ));
-        // Actualizar Techo
+        Matter.Body.setVertices(this.rightWall, Matter.Vertices.fromPath(`L ${-WALL_THICKNESS / 2} ${-height / 2} L ${WALL_THICKNESS / 2} ${-height / 2} L ${WALL_THICKNESS / 2} ${height / 2} L ${-WALL_THICKNESS / 2} ${height / 2}`));
         Matter.Body.setPosition(this.topWall, { x: width / 2, y: -WALL_THICKNESS / 2 });
-        Matter.Body.setVertices(this.topWall, Matter.Vertices.fromPath(
-            `L ${-width / 2} ${-WALL_THICKNESS / 2} L ${width / 2} ${-WALL_THICKNESS / 2} L ${width / 2} ${WALL_THICKNESS / 2} L ${-width / 2} ${WALL_THICKNESS / 2}`
-        ));
-        // console.log("PhysicsManager: Límites del mundo actualizados."); // Log menos verboso
-        this.updateMouseConstraintOffset(); // Actualizar offset del mouse
-    } catch (error) {
-        console.error("PhysicsManager: Error actualizando límites en resize:", error);
-    }
+        Matter.Body.setVertices(this.topWall, Matter.Vertices.fromPath(`L ${-width / 2} ${-WALL_THICKNESS / 2} L ${width / 2} ${-WALL_THICKNESS / 2} L ${width / 2} ${WALL_THICKNESS / 2} L ${-width / 2} ${WALL_THICKNESS / 2}`));
+        this.updateMouseConstraintOffset();
+    } catch (error) { console.error("PhysicsManager: Error actualizando límites en resize:", error); }
   }
 
-  /**
-   * Inicia el Runner de Matter.js para que la simulación física comience.
-   */
+  // start (Sin cambios)
   public start(): void {
-     if (!this.engine || !this.runner) {
-       console.error("PhysicsManager: init() debe ser llamado antes de start().");
-       return;
-     }
-     // console.log('PhysicsManager: Iniciando Runner...'); // Log menos verboso
+     if (!this.engine || !this.runner) { console.error("PhysicsManager: init() debe ser llamado antes de start()."); return; }
      Matter.Runner.run(this.runner, this.engine);
-     // console.log('PhysicsManager: Runner iniciado.'); // Log menos verboso
   }
 
-  /**
-   * Detiene el Runner de Matter.js.
-   */
+  // stop (Sin cambios)
   public stop(): void {
-     if (!this.runner) {
-       console.warn("PhysicsManager: Runner no inicializado, no se puede detener.");
-       return;
-     }
-     // console.log('PhysicsManager: Deteniendo Runner...'); // Log menos verboso
+     if (!this.runner) { console.warn("PhysicsManager: Runner no inicializado, no se puede detener."); return; }
      Matter.Runner.stop(this.runner);
-     // console.log('PhysicsManager: Runner detenido.'); // Log menos verboso
   }
 
-  /**
-   * Limpia recursos y listeners al detener el juego.
-   */
+  // MODIFICADO: Asegurar que se remuevan *ambos* listeners
   public shutdown(): void {
       console.log('PhysicsManager: shutdown');
-      this.stop(); // Detener el runner
+      this.stop();
 
-      // Remover listeners
+      // Remover listeners usando las referencias guardadas
       if (this.engine) {
-          // Remover el listener específico que añadimos
-          const boundHandler = this.handleCollisions.bind(this); // Necesitamos la misma referencia
-          Matter.Events.off(this.engine, 'collisionStart', boundHandler);
-          // O, si es el único listener de 'collisionStart': Matter.Events.off(this.engine, 'collisionStart');
-          console.log("PhysicsManager: Listener 'collisionStart' removido.");
+          Matter.Events.off(this.engine, 'collisionStart', this.collisionHandler);
+          Matter.Events.off(this.engine, 'beforeUpdate', this.speedLimitHandler); // <-- Remover nuevo listener
+          console.log("PhysicsManager: Listeners de engine removidos.");
+      } else {
+          console.warn("PhysicsManager shutdown: Engine no encontrado para remover listeners.");
       }
       window.removeEventListener('resize', this.resizeListener);
-      // console.log('PhysicsManager: Listener de resize removido.'); // Log menos verboso
 
-      // Opcional: Limpiar el mundo y el engine si es necesario
+      // Opcional: Limpiar mundo/engine
       // if (this.world) Matter.World.clear(this.world, false);
       // if (this.engine) Matter.Engine.clear(this.engine);
   }
 
-  // --- Getters ---
-  public getEngine(): Matter.Engine {
-    if (!this.engine) throw new Error("PhysicsManager no inicializado.");
-    return this.engine;
-  }
-  public getWorld(): Matter.World {
-    if (!this.world) throw new Error("PhysicsManager no inicializado.");
-    return this.world;
-  }
+  // Getters (Sin cambios)
+  public getEngine(): Matter.Engine { if (!this.engine) throw new Error("PhysicsManager no inicializado."); return this.engine; }
+  public getWorld(): Matter.World { if (!this.world) throw new Error("PhysicsManager no inicializado."); return this.world; }
 
 } // Fin PhysicsManager

@@ -1,67 +1,262 @@
 [
   {
     "id": 1,
-    "text": "¿Cuántas vidas se dice que tiene un gato?",
+    "text": "¿Cuál es el planeta más cercano al Sol?",
     "options": [
-      {"key": "A", "text": "Una"},
-      {"key": "B", "text": "Siete"},
-      {"key": "C", "text": "Nueve"}, 
-      {"key": "D", "text": "Infinitas"}
+      {"key": "A", "text": "Mercurio"},
+      {"key": "B", "text": "Venus"},
+      {"key": "C", "text": "Tierra"},
+      {"key": "D", "text": "Marte"}
     ],
-    "correctAnswerKey": "C",
+    "correctAnswerKey": "A",
     "difficulty": "easy",
-    "explanation": "Popularmente se dice que los gatos tienen 7 o 9 vidas debido a su agilidad y suerte."
+    "explanation": "Mercurio es el planeta más cercano al Sol, orbitando a una distancia promedio de 58 millones de kilómetros."
   },
   {
     "id": 2,
-    "text": "¿Cuál es el océano más grande del mundo?",
+    "text": "¿Qué gas es el más abundante en la atmósfera terrestre?",
     "options": [
-      {"key": "A", "text": "Atlántico"},
-      {"key": "B", "text": "Índico"},
-      {"key": "C", "text": "Ártico"}, 
-      {"key": "D", "text": "Pacífico"}
+      {"key": "A", "text": "Nitrógeno"},
+      {"key": "B", "text": "Oxígeno"},
+      {"key": "C", "text": "Dióxido de carbono"},
+      {"key": "D", "text": "Argón"}
     ],
-    "correctAnswerKey": "D",
-    "difficulty": "medium",
-    "explanation": "El océano Pacífico es el más grande, cubriendo más de 63 millones de millas cuadradas."
+    "correctAnswerKey": "A",
+    "difficulty": "easy",
+    "explanation": "El nitrógeno constituye aproximadamente el 78% de la atmósfera terrestre."
   },
   {
     "id": 3,
-    "text": "¿Qué planeta es conocido como el planeta rojo?",
+    "text": "¿Quién escribió 'Don Quijote de la Mancha'?",
     "options": [
-      {"key": "A", "text": "Marte"},
-      {"key": "B", "text": "Júpiter"},
-      {"key": "C", "text": "Saturno"}, 
-      {"key": "D", "text": "Mercurio"}
+      {"key": "A", "text": "Miguel de Cervantes"},
+      {"key": "B", "text": "William Shakespeare"},
+      {"key": "C", "text": "Gabriel García Márquez"},
+      {"key": "D", "text": "Jorge Luis Borges"}
     ],
     "correctAnswerKey": "A",
-    "difficulty": "hard",
-    "explanation": "'Marte' es conocido como el planeta rojo debido a su color característico."
+    "difficulty": "medium",
+    "explanation": "Miguel de Cervantes es el autor de la novela 'Don Quijote de la Mancha', publicada en 1605 y 1615."
   },
   {
     "id": 4,
-    "text": "¿Cuál es el continente más pequeño del mundo?",
+    "text": "¿Cuál es el río más largo del mundo?",
     "options": [
-      {"key": "A", "text": "Asia"},
-      {"key": "B", "text": "Oceanía"},
-      {"key": "C", "text": "Europa"}, 
-      {"key": "D", "text": "Antártida"}
+      {"key": "A", "text": "Nilo"},
+      {"key": "B", "text": "Amazonas"},
+      {"key": "C", "text": "Yangtsé"},
+      {"key": "D", "text": "Misisipi"}
     ],
-    "correctAnswerKey": "B",
-    "difficulty": "easy",
-    "explanation": "'Oceanía' es el continente más pequeño, abarcando Australia y varias islas."
+    "correctAnswerKey": "A",
+    "difficulty": "medium",
+    "explanation": "El río Nilo, con una longitud de aproximadamente 6,650 km, es considerado el más largo del mundo."
   },
   {
     "id": 5,
-    "text": "¿Qué gas es esencial para la respiración humana?",
+    "text": "¿Qué número es el resultado de 2 + 2?",
     "options": [
-      {"key": "A", "text": "Dióxido de carbono"},
-      {"key": "B", "text": "Oxígeno"},
-      {"key": "C", "text": "Nitrógeno"}, 
-      {"key": "D", "text": "Helio"}
+      {"key": "A", "text": "4"},
+      {"key": "B", "text": "3"},
+      {"key": "C", "text": "5"},
+      {"key": "D", "text": "6"}
     ],
-    "correctAnswerKey": "B",
+    "correctAnswerKey": "A",
+    "difficulty": "easy",
+    "explanation": "La suma de 2 + 2 da como resultado 4."
+  },
+  {
+    "id": 6,
+    "text": "¿En qué continente se encuentra Egipto?",
+    "options": [
+      {"key": "A", "text": "África"},
+      {"key": "B", "text": "Asia"},
+      {"key": "C", "text": "Europa"},
+      {"key": "D", "text": "Australia"}
+    ],
+    "correctAnswerKey": "A",
+    "difficulty": "easy",
+    "explanation": "Egipto está ubicado en el noreste de África."
+  },
+  {
+    "id": 7,
+    "text": "¿Qué instrumento mide la presión atmosférica?",
+    "options": [
+      {"key": "A", "text": "Barómetro"},
+      {"key": "B", "text": "Termómetro"},
+      {"key": "C", "text": "Higrómetro"},
+      {"key": "D", "text": "AnFómetro"}
+    ],
+    "correctAnswerKey": "A",
     "difficulty": "medium",
-    "explanation": "'Oxígeno' es el gas esencial que los humanos necesitamos para respirar."
+    "explanation": "El barómetro es el instrumento utilizado para medir la presión atmosférica."
+  },
+  {
+    "id": 8,
+    "text": "¿Cuál es el idioma oficial de Brasil?",
+    "options": [
+      {"key": "A", "text": "Portugués"},
+      {"key": "B", "text": "Español"},
+      {"key": "C", "text": "Inglés"},
+      {"key": "D", "text": "Francés"}
+    ],
+    "correctAnswerKey": "A",
+    "difficulty": "easy",
+    "explanation": "El idioma oficial de Brasil es el portugués, único país de habla portuguesa en América del Sur."
+  },
+  {
+    "id": 9,
+    "text": "¿Qué animal es conocido como el 'rey de la selva'?",
+    "options": [
+      {"key": "A", "text": "León"},
+      {"key": "B", "text": "Tigre"},
+      {"key": "C", "text": "Elefante"},
+      {"key": "D", "text": "Gorila"}
+    ],
+    "correctAnswerKey": "A",
+    "difficulty": "easy",
+    "explanation": "El león es conocido como el 'rey de la selva' debido a su fuerza y liderazgo en la sabana."
+  },
+  {
+    "id": 10,
+    "text": "¿Cuál es la fórmula del agua?",
+    "options": [
+      {"key": "A", "text": "H₂O"},
+      {"key": "B", "text": "CO₂"},
+      {"key": "C", "text": "O₂"},
+      {"key": "D", "text": "H₂SO₄"}
+    ],
+    "correctAnswerKey": "A",
+    "difficulty": "easy",
+    "explanation": "La fórmula del agua es H₂O, que representa dos átomos de hidrógeno y uno de oxígeno."
+  },
+  {
+    "id": 11,
+    "text": "¿Quién pintó la 'Mona Lisa'?",
+    "options": [
+      {"key": "A", "text": "Leonardo da Vinci"},
+      {"key": "B", "text": "Pablo Picasso"},
+      {"key": "C", "text": "Vincent van Gogh"},
+      {"key": "D", "text": "Claude Monet"}
+    ],
+    "correctAnswerKey": "A",
+    "difficulty": "medium",
+    "explanation": "La 'Mona Lisa' fue pintada por Leonardo da Vinci en el siglo XVI."
+  },
+  {
+    "id": 12,
+    "text": "¿Qué país tiene la bandera con una hoja de arce roja?",
+    "options": [
+      {"key": "A", "text": "Canadá"},
+      {"key": "B", "text": "Japón"},
+      {"key": "C", "text": "Noruega"},
+      {"key": "D", "text": "Austria"}
+    ],
+    "correctAnswerKey": "A",
+    "difficulty": "easy",
+    "explanation": "La bandera de Canadá tiene una hoja de arce roja en el centro, conocida como la 'Maple Leaf'."
+  },
+  {
+    "id": 13,
+    "text": "¿Cuál es el hueso más largo del cuerpo humano?",
+    "options": [
+      {"key": "A", "text": "Fémur"},
+      {"key": "B", "text": "Húmero"},
+      {"key": "C", "text": "Tibia"},
+      {"key": "D", "text": "Radio"}
+    ],
+    "correctAnswerKey": "A",
+    "difficulty": "medium",
+    "explanation": "El fémur, ubicado en el muslo, es el hueso más largo y fuerte del cuerpo humano."
+  },
+  {
+    "id": 14,
+    "text": "¿Qué océano baña las costas de California?",
+    "options": [
+      {"key": "A", "text": "Pacífico"},
+      {"key": "B", "text": "Atlántico"},
+      {"key": "C", "text": "Índico"},
+      {"key": "D", "text": "Ártico"}
+    ],
+    "correctAnswerKey": "A",
+    "difficulty": "easy",
+    "explanation": "California está bañada por el océano Pacífico en su costa oeste."
+  },
+  {
+    "id": 15,
+    "text": "¿Qué filósofo escribió 'El contrato social'?",
+    "options": [
+      {"key": "A", "text": "Jean-Jacques Rousseau"},
+      {"key": "B", "text": "John Locke"},
+      {"key": "C", "text": "Immanuel Kant"},
+      {"key": "D", "text": "Thomas Hobbes"}
+    ],
+    "correctAnswerKey": "A",
+    "difficulty": "hard",
+    "explanation": "Jean-Jacques Rousseau escribió 'El contrato social' en 1762, una obra clave sobre la teoría política."
+  },
+  {
+    "id": 16,
+    "text": "¿Cuál es el metal más ligero?",
+    "options": [
+      {"key": "A", "text": "Litio"},
+      {"key": "B", "text": "Aluminio"},
+      {"key": "C", "text": "Magnesio"},
+      {"key": "D", "text": "Titanio"}
+    ],
+    "correctAnswerKey": "A",
+    "difficulty": "hard",
+    "explanation": "El litio es el metal más ligero, con una densidad de 0.534 g/cm³."
+  },
+  {
+    "id": 17,
+    "text": "¿En qué año comenzó la Segunda Guerra Mundial?",
+    "options": [
+      {"key": "A", "text": "1939"},
+      {"key": "B", "text": "1914"},
+      {"key": "C", "text": "1945"},
+      {"key": "D", "text": "1929"}
+    ],
+    "correctAnswerKey": "A",
+    "difficulty": "medium",
+    "explanation": "La Segunda Guerra Mundial comenzó en 1939 con la invasión de Polonia por parte de Alemania."
+  },
+  {
+    "id": 18,
+    "text": "¿Qué instrumento toca un violinista?",
+    "options": [
+      {"key": "A", "text": "Violín"},
+      {"key": "B", "text": "Flauta"},
+      {"key": "C", "text": "Trompeta"},
+      {"key": "D", "text": "Batería"}
+    ],
+    "correctAnswerKey": "A",
+    "difficulty": "easy",
+    "explanation": "Un violinista es un músico que toca el violín, un instrumento de cuerda."
+  },
+  {
+    "id": 19,
+    "text": "¿Qué tipo de animal es una ballena?",
+    "options": [
+      {"key": "A", "text": "Mamífero"},
+      {"key": "B", "text": "Pez"},
+      {"key": "C", "text": "Reptil"},
+      {"key": "D", "text": "Anfibio"}
+    ],
+    "correctAnswerKey": "A",
+    "difficulty": "easy",
+    "explanation": "Las ballenas son mamíferos marinos, ya que respiran aire y amamantan a sus crías."
+  },
+  {
+    "id": 20,
+    "text": "¿Qué país es conocido como la 'Tierra del Sol Naciente'?",
+    "options": [
+      {"key": "A", "text": "Japón"},
+      {"key": "B", "text": "China"},
+      {"key": "C", "text": "Corea del Sur"},
+      {"key": "D", "text": "Tailandia"}
+    ],
+    "correctAnswerKey": "A",
+    "difficulty": "medium",
+    "explanation": "Japón es conocido como la 'Tierra del Sol Naciente' debido a su ubicación al este, donde el sol aparece primero."
   }
 ]

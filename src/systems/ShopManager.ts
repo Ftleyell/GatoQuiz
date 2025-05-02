@@ -1,14 +1,15 @@
 // src/systems/ShopManager.ts
 
-import { ShopItemJsonData } from '../types/ShopItemData'; // Usar la nueva interfaz JSON
+import { ShopItemJsonData } from '../types/ShopItemData';
 import { PlayerData } from '../game/PlayerData';
 import { GameManager } from '../game/GameManager';
+import { QuizGameplayState } from '../game/states/QuizGameplayState';
 
-// Constantes para IDs de elementos HTML (asegúrate que coincidan con tu index.html)
+// Constantes para IDs de elementos HTML
 const SHOP_POPUP_ID = 'shop-popup';
 const SHOP_CLOSE_BUTTON_ID = 'shop-close-button';
 const SHOP_PLAYER_SCORE_ID = 'shop-player-score';
-const SHOP_ITEMS_CONTAINER_ID = 'shop-items-container'; // ID del div que contendrá las secciones y los ítems
+const SHOP_ITEMS_CONTAINER_ID = 'shop-items-container';
 const SHOP_TOOLTIP_ID = 'shop-tooltip';
 const TOOLTIP_NAME_ID = 'tooltip-name';
 const TOOLTIP_LEVEL_ID = 'tooltip-level';
@@ -21,18 +22,15 @@ const TOOLTIP_STATUS_ID = 'tooltip-status';
  * la compra de ítems y la actualización del estado del jugador, basado en datos JSON.
  */
 export class ShopManager {
-  // Almacena los datos JSON cargados para cada ítem
   private items: Map<string, ShopItemJsonData> = new Map();
   private playerData: PlayerData;
   private gameManager: GameManager;
-  // Almacena referencias a los elementos HTML creados para cada ítem
   private itemElements: Map<string, HTMLElement> = new Map();
 
-  // Referencias a elementos principales de la UI de la tienda
   private shopPopupElement: HTMLElement | null = null;
   private shopCloseButtonElement: HTMLElement | null = null;
   private shopPlayerScoreElement: HTMLElement | null = null;
-  private shopItemsContainerElement: HTMLElement | null = null; // Contenedor de ítems
+  private shopItemsContainerElement: HTMLElement | null = null;
   private tooltipElement: HTMLElement | null = null;
   private tooltipNameElement: HTMLElement | null = null;
   private tooltipLevelElement: HTMLElement | null = null;
@@ -40,7 +38,6 @@ export class ShopManager {
   private tooltipCostElement: HTMLElement | null = null;
   private tooltipStatusElement: HTMLElement | null = null;
 
-  // Referencias a los listeners para poder removerlos después
   private closeButtonListener: (() => void) | null = null;
   private backdropClickListener: ((event: MouseEvent) => void) | null = null;
 
@@ -49,14 +46,13 @@ export class ShopManager {
     this.playerData = playerData;
     this.gameManager = gameManager;
 
-    // Obtener referencias a elementos HTML esenciales al construir
+    // Obtener referencias a elementos HTML esenciales
     this.shopPopupElement = document.getElementById(SHOP_POPUP_ID);
     this.shopCloseButtonElement = document.getElementById(SHOP_CLOSE_BUTTON_ID);
     this.shopPlayerScoreElement = document.getElementById(SHOP_PLAYER_SCORE_ID);
     this.shopItemsContainerElement = document.getElementById(SHOP_ITEMS_CONTAINER_ID);
     this.tooltipElement = document.getElementById(SHOP_TOOLTIP_ID);
 
-    // Obtener referencias a elementos dentro del tooltip
     if (this.tooltipElement) {
         this.tooltipNameElement = this.tooltipElement.querySelector(`#${TOOLTIP_NAME_ID}`);
         this.tooltipLevelElement = this.tooltipElement.querySelector(`#${TOOLTIP_LEVEL_ID}`);
@@ -65,11 +61,10 @@ export class ShopManager {
         this.tooltipStatusElement = this.tooltipElement.querySelector(`#${TOOLTIP_STATUS_ID}`);
     }
 
-    // Verificar si se encontraron los elementos esenciales
     if (!this.shopPopupElement || !this.shopCloseButtonElement || !this.shopItemsContainerElement || !this.tooltipElement) {
         console.error("ShopManager: No se encontraron elementos HTML esenciales para la tienda! Verifica los IDs en index.html.");
     }
-    console.log("ShopManager: Constructor finalizado (listeners se añadirán en init).");
+    console.log("ShopManager: Constructor finalizado.");
   }
 
   /**
@@ -79,14 +74,12 @@ export class ShopManager {
    */
   public init(itemJsonData: any[]): void {
     console.log("ShopManager: init - Procesando datos JSON de ítems...");
-    this.items.clear(); // Limpiar ítems anteriores
+    this.items.clear();
     if (!Array.isArray(itemJsonData)) {
         console.error("ShopManager: Datos de ítems de tienda inválidos (no es un array).");
         return;
     }
-    // Validar y almacenar cada definición de ítem
     itemJsonData.forEach(itemData => {
-        // TODO: Añadir validación más robusta de la estructura de itemData aquí si es necesario
         if (itemData?.id && typeof itemData.id === 'string') {
             this.items.set(itemData.id, itemData as ShopItemJsonData);
         } else {
@@ -94,11 +87,7 @@ export class ShopManager {
         }
     });
     console.log(`ShopManager: ${this.items.size} definiciones de ítems procesadas desde JSON.`);
-
-    // Crear los elementos HTML para mostrar los ítems en la tienda
     this.createShopItemElements();
-
-    // Añadir listeners para cerrar la tienda después de crear los elementos
     this.addCloseListeners();
     console.log("ShopManager: Listeners de cierre añadidos.");
   }
@@ -110,48 +99,40 @@ export class ShopManager {
         console.error("ShopManager: No se puede abrir la tienda, elemento popup no encontrado.");
         return;
     }
-    this.updateShopUI(); // Asegurar que la UI refleje el estado actual antes de mostrar
-    this.shopPopupElement.style.display = 'flex'; // Hacer visible el contenedor
-    void this.shopPopupElement.offsetHeight; // Forzar reflow para la transición CSS
-    this.shopPopupElement.classList.add('visible'); // Aplicar clase para la transición de opacidad
-    // Considerar pausar el juego aquí si es necesario
+    this.updateShopUI();
+    this.shopPopupElement.style.display = 'flex';
+    void this.shopPopupElement.offsetHeight;
+    this.shopPopupElement.classList.add('visible');
   }
 
   /** Cierra el popup de la tienda. */
   public closeShop(): void {
     console.log("ShopManager: Cerrando tienda...");
-    if (!this.shopPopupElement) return; // Salir si no hay popup
+    if (!this.shopPopupElement) return;
 
-    this.hideTooltip(); // Ocultar tooltip si está visible
-    this.shopPopupElement.classList.remove('visible'); // Iniciar transición de salida
+    this.hideTooltip();
+    this.shopPopupElement.classList.remove('visible');
 
-    // Esperar que termine la transición CSS antes de ocultar con display:none
-    const transitionDuration = 300; // Debe coincidir con la duración definida en style.css
+    const transitionDuration = 300; // Debe coincidir con CSS
     setTimeout(() => {
-        // Doble check por si se volvió a abrir rápidamente durante la transición
         if (!this.shopPopupElement?.classList.contains('visible')) {
             this.shopPopupElement.style.display = 'none';
         }
     }, transitionDuration);
-
-    // Considerar reanudar el juego si se pausó al abrir
   }
 
   /** Actualiza la UI de la tienda (puntuación y estado de los ítems). */
   public updateShopUI(): void {
-    if (!this.playerData) return; // Salir si no hay datos del jugador
+    if (!this.playerData) return;
 
-    // Actualizar el texto de la puntuación
     if (this.shopPlayerScoreElement) {
         this.shopPlayerScoreElement.textContent = `Puntos: ${this.playerData.score}`;
     }
 
-    // Actualizar el estado visual (clases CSS) de cada ítem
     this.itemElements.forEach((itemElement, itemId) => {
         const itemData = this.items.get(itemId);
-        if (!itemData) return; // Saltar si el ítem no existe en la definición
+        if (!itemData) return;
 
-        // Calcular estados basados en los datos JSON y PlayerData
         const cost = this.calculateItemCost(itemData);
         const isAffordable = this.playerData.score >= cost;
         const isPurchased = this.checkItemIsPurchased(itemData);
@@ -159,20 +140,17 @@ export class ShopManager {
         const level = this.getItemLevel(itemData);
         const isMaxLevel = itemData.isLeveled && typeof itemData.maxLevel === 'number' && level >= itemData.maxLevel;
 
-        // Aplicar/Quitar clases CSS según el estado
-        itemElement.classList.remove('disabled', 'purchased', 'max-level'); // Limpiar clases previas
+        itemElement.classList.remove('disabled', 'purchased', 'max-level');
         if (isMaxLevel) {
-            itemElement.classList.add('max-level', 'disabled'); // Max nivel tiene precedencia
+            itemElement.classList.add('max-level', 'disabled');
         } else if (isPurchased && !itemData.isLeveled) {
-            itemElement.classList.add('purchased', 'disabled'); // Ítem no mejorable ya adquirido/activo
+            itemElement.classList.add('purchased', 'disabled');
         } else if (!canPurchase || !isAffordable) {
-            itemElement.classList.add('disabled'); // No cumple condición o no alcanza el costo
+            itemElement.classList.add('disabled');
         }
     });
 
-     // Actualizar tooltip si hay un ítem actualmente hovereado
-     // (útil si la tienda se actualiza mientras está abierta y el mouse sobre un ítem)
-     const hoveredItem = this.shopItemsContainerElement?.querySelector('.shop-item:hover'); // Buscar dentro del contenedor
+     const hoveredItem = this.shopItemsContainerElement?.querySelector('.shop-item:hover');
      if (hoveredItem && this.tooltipElement?.classList.contains('visible')) {
          this.showTooltipForItem((hoveredItem as HTMLElement).dataset.itemId || '');
      }
@@ -181,79 +159,70 @@ export class ShopManager {
   /** Manejador de clic para un ítem de la tienda. */
   private handleItemClick(event: MouseEvent): void {
     const itemElement = event.currentTarget as HTMLElement;
-    const itemId = itemElement?.dataset.itemId; // Obtener ID del ítem desde data-attribute
+    const itemId = itemElement?.dataset.itemId;
 
-    // Validar que el ítem existe y no está deshabilitado
     if (!itemId || !this.items.has(itemId)) {
         console.error("Click en ítem inválido o sin ID.");
         return;
     }
     if (itemElement.classList.contains('disabled')) {
         console.log(`Intento de compra de ítem deshabilitado: ${itemId}`);
-        this.showTooltipForItem(itemId); // Mostrar tooltip para indicar la razón
+        this.showTooltipForItem(itemId); // Mostrar razón en tooltip
         return;
     }
 
     console.log(`Intentando comprar ítem: ${itemId}`);
-
-    // Ejecutar la acción de compra correspondiente al ID del ítem
     const purchaseSuccessful = this.executePurchaseAction(itemId);
 
-    // Dar feedback y actualizar UI
     if (purchaseSuccessful) {
         console.log(`Compra exitosa de ${itemId}`);
-        this.gameManager.getAudioManager().playSound('purchase'); // Reproducir sonido
-        this.updateShopUI(); // Actualizar estado visual de todos los ítems
-        this.showTooltipForItem(itemId); // Actualizar tooltip del ítem comprado
+        this.gameManager.getAudioManager().playSound('purchase');
+        // UI y tooltip se actualizan dentro de executePurchaseAction si es exitoso
     } else {
         console.log(`Compra fallida de ${itemId}`);
-        // Mostrar tooltip actualizado (probablemente indicará puntos insuficientes o condición no cumplida)
-        this.showTooltipForItem(itemId);
+        // Mostrar tooltip actualizado indicando el fallo (ya se hace en executePurchaseAction si falla pre-check)
+        // Si falla la acción en sí, ya se mostró tooltip antes de revertir costo.
     }
   }
 
-   /** Muestra el tooltip para un ítem específico al pasar el mouse. */
+  /** Muestra el tooltip para un ítem específico al pasar el mouse. */
   private handleItemMouseOver(event: MouseEvent): void {
     const itemElement = event.currentTarget as HTMLElement;
     const itemId = itemElement?.dataset.itemId;
     if (itemId) {
-        this.showTooltipForItem(itemId); // Mostrar tooltip para este ítem
+        this.showTooltipForItem(itemId);
     }
   }
 
-   /** Oculta el tooltip. */
+  /** Oculta el tooltip. */
   private hideTooltip(): void {
       if (this.tooltipElement) {
-          this.tooltipElement.classList.remove('visible'); // Quitar clase para ocultar
+          this.tooltipElement.classList.remove('visible');
       }
   }
 
-   /** Muestra el tooltip con la información actualizada para un ítem específico. */
+  /** Muestra el tooltip con la información actualizada para un ítem específico. */
   private showTooltipForItem(itemId: string): void {
     const itemData = this.items.get(itemId);
-    // Validar que todos los elementos y datos necesarios existan
     if (!itemData || !this.tooltipElement || !this.playerData ||
         !this.tooltipNameElement || !this.tooltipEffectElement ||
         !this.tooltipLevelElement || !this.tooltipCostElement ||
         !this.tooltipStatusElement) {
-        this.hideTooltip(); // Ocultar si falta algo esencial
+        this.hideTooltip();
         return;
     }
 
-    // Calcular valores dinámicos basados en el estado actual
     const cost = this.calculateItemCost(itemData);
     const isAffordable = this.playerData.score >= cost;
     const isPurchased = this.checkItemIsPurchased(itemData);
     const canPurchase = this.checkItemCanPurchase(itemData);
     const level = this.getItemLevel(itemData);
     const isMaxLevel = itemData.isLeveled && typeof itemData.maxLevel === 'number' && level >= itemData.maxLevel;
-    const effectText = this.formatEffectText(itemData); // Obtener texto de efecto formateado
+    const effectText = this.formatEffectText(itemData); // Usar helper
 
-    // Actualizar el contenido de los elementos del tooltip
     this.tooltipNameElement.textContent = itemData.name;
     this.tooltipEffectElement.textContent = effectText;
 
-    // Mostrar/Ocultar y actualizar el nivel si aplica
     if (itemData.isLeveled && level >= 0) {
         this.tooltipLevelElement.textContent = `Nivel: ${level}`;
         this.tooltipLevelElement.classList.remove('hidden');
@@ -261,22 +230,14 @@ export class ShopManager {
         this.tooltipLevelElement.classList.add('hidden');
     }
 
-    // Actualizar el texto del costo (o indicar nivel máximo)
     this.tooltipCostElement.textContent = isMaxLevel ? "Nivel Máximo" : `Costo: ${cost}`;
 
-    // Determinar y mostrar el estado del ítem (si no se puede comprar)
     let statusText = '';
-    if (isMaxLevel) {
-        statusText = "Nivel Máximo Alcanzado";
-    } else if (isPurchased && !itemData.isLeveled) {
-        statusText = "Ya comprado / Activo";
-    } else if (!canPurchase && !isMaxLevel) { // Evitar "No disponible" si ya está a max nivel
-        statusText = "No disponible";
-    } else if (!isAffordable) {
-        statusText = "Puntos insuficientes";
-    }
+    if (isMaxLevel) { statusText = "Nivel Máximo Alcanzado"; }
+    else if (isPurchased && !itemData.isLeveled) { statusText = "Ya comprado / Activo"; }
+    else if (!canPurchase && !isMaxLevel) { statusText = "No disponible"; }
+    else if (!isAffordable) { statusText = "Puntos insuficientes"; }
 
-    // Mostrar u ocultar el elemento de estado
     if (statusText) {
         this.tooltipStatusElement.textContent = statusText;
         this.tooltipStatusElement.classList.remove('hidden');
@@ -284,115 +245,91 @@ export class ShopManager {
         this.tooltipStatusElement.classList.add('hidden');
     }
 
-    // Hacer visible el tooltip completo
     this.tooltipElement.classList.add('visible');
   }
 
-
-  /** Crea los elementos HTML para cada ítem de la tienda basado en this.items. */
+  /** Crea los elementos HTML para cada ítem de la tienda. */
   private createShopItemElements(): void {
      if (!this.shopItemsContainerElement) {
-         console.error("ShopManager: No se encontró el contenedor #shop-items-container. No se pueden crear ítems.");
+         console.error("ShopManager: Contenedor #shop-items-container no encontrado.");
          return;
      }
-     this.shopItemsContainerElement.innerHTML = ''; // Limpiar contenedor existente
-     this.itemElements.clear(); // Limpiar mapa de referencias a elementos
-     console.log(`Creando elementos HTML para ${this.items.size} ítems...`);
+     this.shopItemsContainerElement.innerHTML = '';
+     this.itemElements.clear();
+     // console.log(`Creando elementos HTML para ${this.items.size} ítems...`); // Log opcional
 
-     // Agrupar ítems por categoría para renderizar en secciones
      const itemsByCategory: { [key: string]: ShopItemJsonData[] } = {};
      this.items.forEach(item => {
-         const category = item.category || 'general'; // Categoría por defecto si no se especifica
-         if (!itemsByCategory[category]) {
-             itemsByCategory[category] = [];
-         }
+         const category = item.category || 'general';
+         if (!itemsByCategory[category]) itemsByCategory[category] = [];
          itemsByCategory[category].push(item);
      });
 
-     // Iterar sobre las categorías y crear las secciones correspondientes
-     // Definir un orden deseado para las categorías
      const categoryOrder = ['consumable', 'unlockable', 'upgradeable', 'general'];
 
      categoryOrder.forEach(category => {
         if (itemsByCategory[category]) {
-            // Crear título de la sección
             const sectionTitle = document.createElement('h3');
-            sectionTitle.className = 'shop-section-title'; // Clase CSS para estilo
-            sectionTitle.textContent = this.formatCategoryTitle(category); // Nombre legible
-            this.shopItemsContainerElement!.appendChild(sectionTitle); // '!' porque ya verificamos arriba
+            sectionTitle.className = 'shop-section-title';
+            sectionTitle.textContent = this.formatCategoryTitle(category);
+            this.shopItemsContainerElement!.appendChild(sectionTitle);
 
-            // Crear contenedor para los ítems de esta categoría
             const categoryItemsContainer = document.createElement('div');
-            categoryItemsContainer.className = 'shop-section-items'; // Clase CSS para layout (flex, grid, etc.)
+            categoryItemsContainer.className = 'shop-section-items';
             this.shopItemsContainerElement!.appendChild(categoryItemsContainer);
 
-            // Ordenar ítems dentro de la categoría (opcional, ej. por ID o nombre)
-            itemsByCategory[category].sort((a, b) => a.name.localeCompare(b.name)); // Ordenar por nombre
+            itemsByCategory[category].sort((a, b) => a.name.localeCompare(b.name));
 
-            // Crear elemento HTML para cada ítem en la categoría
             itemsByCategory[category].forEach(itemData => {
                 const itemElement = document.createElement('div');
-                itemElement.className = 'shop-item'; // Clase base del ítem
-                itemElement.dataset.itemId = itemData.id; // Guardar ID para identificarlo
+                itemElement.className = 'shop-item';
+                itemElement.dataset.itemId = itemData.id;
 
                 const iconElement = document.createElement('span');
-                iconElement.className = 'shop-item-icon'; // Clase para el icono
-                iconElement.textContent = itemData.icon || '❓'; // Usar icono del JSON o fallback
+                iconElement.className = 'shop-item-icon';
+                iconElement.textContent = itemData.icon || '❓';
                 itemElement.appendChild(iconElement);
 
-                // Añadir listeners para interacción (click y hover)
                 itemElement.addEventListener('click', (e) => this.handleItemClick(e));
                 itemElement.addEventListener('mouseover', (e) => this.handleItemMouseOver(e));
                 itemElement.addEventListener('mouseout', () => this.hideTooltip());
 
-                categoryItemsContainer.appendChild(itemElement); // Añadir a la sección
-                this.itemElements.set(itemData.id, itemElement); // Guardar referencia al elemento creado
+                categoryItemsContainer.appendChild(itemElement);
+                this.itemElements.set(itemData.id, itemElement);
             });
          }
      });
 
-
-     console.log("Elementos HTML de ítems creados.");
-     this.updateShopUI(); // Aplicar estado inicial (disabled/purchased/etc.)
+     // console.log("Elementos HTML de ítems creados."); // Log opcional
+     this.updateShopUI();
   }
 
-   /** Formatea el nombre de la categoría para mostrarlo en la UI. */
+  /** Formatea el nombre de la categoría para mostrarlo en la UI. */
   private formatCategoryTitle(categoryKey: string): string {
-      // Mapeo simple, puede expandirse o usar internacionalización
       if (categoryKey === 'consumable') return 'Consumibles';
       if (categoryKey === 'unlockable') return 'Desbloqueables';
       if (categoryKey === 'upgradeable') return 'Mejorables';
-      return 'General'; // Fallback para categorías no definidas
+      return 'General';
   }
 
-  /** Añade los listeners para cerrar la tienda (botón y click fuera). */
+  /** Añade los listeners para cerrar la tienda. */
   private addCloseListeners(): void {
-      // Listener para el botón de cierre (X)
       if (this.shopCloseButtonElement) {
-          // Crear la función listener una vez y guardarla para poder removerla después
           this.closeButtonListener = () => this.closeShop();
           this.shopCloseButtonElement.addEventListener('click', this.closeButtonListener);
-      } else {
-          console.warn("ShopManager: Botón de cierre (#shop-close-button) no encontrado, no se añadió listener.");
-      }
+      } else { console.warn("ShopManager: Botón de cierre no encontrado."); }
 
-      // Listener para hacer clic fuera del contenido de la tienda (en el overlay/backdrop)
       if (this.shopPopupElement) {
-          // Crear la función listener una vez
           this.backdropClickListener = (event: MouseEvent) => {
-              // Cerrar solo si el clic fue directamente en el overlay (el popup en sí)
-              if (event.target === this.shopPopupElement) {
-                  this.closeShop();
-              }
+              if (event.target === this.shopPopupElement) { this.closeShop(); }
           };
           this.shopPopupElement.addEventListener('click', this.backdropClickListener);
       }
   }
 
-  /** Limpia los listeners al destruir el ShopManager (ej. al cerrar la aplicación). */
+  /** Limpia los listeners al destruir el ShopManager. */
   public destroy(): void {
-       console.log("ShopManager: Destruyendo y limpiando listeners...");
-       // Remover listeners usando las referencias guardadas para evitar fugas de memoria
+       console.log("ShopManager: Destruyendo...");
        if (this.closeButtonListener && this.shopCloseButtonElement) {
            this.shopCloseButtonElement.removeEventListener('click', this.closeButtonListener);
            this.closeButtonListener = null;
@@ -401,129 +338,96 @@ export class ShopManager {
            this.shopPopupElement.removeEventListener('click', this.backdropClickListener);
            this.backdropClickListener = null;
        }
-       // Limpiar listeners de los ítems individuales (importante si se recrea la tienda)
        this.itemElements.forEach(itemElement => {
-            // La forma más segura de limpiar listeners añadidos dinámicamente es
-            // clonar el nodo y reemplazarlo, o guardar referencias a cada listener.
-            // Por simplicidad aquí, asumimos que al destruir el ShopManager,
-            // la UI completa se elimina del DOM, lo que también limpia listeners.
-            // Si la UI persiste, se necesitaría un manejo más explícito.
+            const clone = itemElement.cloneNode(true);
+            itemElement.parentNode?.replaceChild(clone, itemElement);
        });
-       this.itemElements.clear(); // Limpiar mapa de referencias a elementos
+       this.itemElements.clear();
        console.log("ShopManager: Listeners limpiados.");
   }
 
   // --- Funciones Helper para Interpretar Datos JSON ---
 
-  /** Calcula el costo de un ítem basado en sus parámetros JSON y PlayerData. */
+  /** Calcula el costo de un ítem. */
   private calculateItemCost(itemData: ShopItemJsonData): number {
       const costParams = itemData.cost;
-      let cost = costParams.base; // Costo base siempre se aplica
+      let cost = costParams.base;
 
       if (itemData.isLeveled) {
-          // Calcular nivel actual del ítem desde PlayerData
           const levelRef = itemData.levelRef;
           const currentLevel = levelRef ? (this.playerData as any)[levelRef] ?? 0 : 0;
-
-          // Aplicar fórmula según el tipo de costo definido en JSON
           if (costParams.type === 'exponential' && typeof costParams.multiplier === 'number') {
               cost = costParams.base * Math.pow(costParams.multiplier, currentLevel);
-          } else { // Asumir 'linear' por defecto o si el tipo falta/es inválido
+          } else {
               cost = costParams.base + (costParams.perLevel ?? 0) * currentLevel;
           }
       } else if (costParams.levelRef && typeof costParams.perLevel === 'number') {
-           // Costo basado en otro valor de PlayerData (ej: costo de vida basado en vidas actuales)
            const linkedLevel = (this.playerData as any)[costParams.levelRef] ?? 0;
            cost = costParams.base + costParams.perLevel * linkedLevel;
       }
-      // Añadir más lógicas de costo aquí si son necesarias
-
-      return Math.round(cost); // Redondear costo final a entero
+      return Math.round(cost);
   }
 
-  /** Formatea el texto de efecto reemplazando placeholders con valores actuales de PlayerData. */
+  /** Formatea el texto de efecto reemplazando placeholders. */
+  // MODIFICADO: Incluye caso para maxCatSize
   private formatEffectText(itemData: ShopItemJsonData): string {
-      let text = itemData.effectTemplate; // Empezar con la plantilla del JSON
+       let text = itemData.effectTemplate;
+       text = text.replace('{lives}', this.playerData.lives.toString());
 
-      // Reemplazar placeholders comunes directamente
-      text = text.replace('{lives}', this.playerData.lives.toString());
-
-      // Reemplazar placeholders basados en estado booleano (activo/desbloqueado)
-      if (text.includes('{isActive}')) {
-          // Usar isPurchasedCheck para determinar si está activo (ej. escudo)
-          const valueRef = itemData.isPurchasedCheck?.valueRef;
-          const isActive = valueRef ? !!(this.playerData as any)[valueRef] : false;
-          text = text.replace('{isActive}', isActive ? '(Activo)' : '');
-      }
+       if (text.includes('{isActive}')) {
+           const valueRef = itemData.isPurchasedCheck?.valueRef;
+           const isActive = valueRef ? !!(this.playerData as any)[valueRef] : false;
+           text = text.replace('{isActive}', isActive ? '(Activo)' : '');
+       }
        if (text.includes('{isUnlocked}')) {
-          // Usar isPurchasedCheck para determinar si está desbloqueado (ej. dibujo)
-          const valueRef = itemData.isPurchasedCheck?.valueRef;
-          const isUnlocked = valueRef ? !!(this.playerData as any)[valueRef] : false;
-          text = text.replace('{isUnlocked}', isUnlocked ? '(Desbloqueado)' : '');
-      }
-      // Reemplazar placeholder para cargas (ej. pistas)
-      if (text.includes('{charges}')) {
-           const valueRef = itemData.isPurchasedCheck?.valueRef; // Asume que isPurchased checkea las cargas > 0
-           const charges = valueRef ? (this.playerData as any)[valueRef] ?? 0 : 0;
-           text = text.replace('{charges}', charges > 0 ? `(${charges} restantes)` : '');
-      }
+           const valueRef = itemData.isPurchasedCheck?.valueRef;
+           const isUnlocked = valueRef ? !!(this.playerData as any)[valueRef] : false;
+           text = text.replace('{isUnlocked}', isUnlocked ? '(Desbloqueado)' : '');
+       }
+       if (text.includes('{charges}')) {
+            const valueRef = itemData.isPurchasedCheck?.valueRef;
+            const charges = valueRef ? (this.playerData as any)[valueRef] ?? 0 : 0;
+            text = text.replace('{charges}', charges > 0 ? `(Cargas: ${charges})` : '');
+       }
+       if (text.includes('{currentValue}')) {
+           let currentValue: string | number = '?';
+           if (itemData.id === 'comboMultiplier') { currentValue = this.playerData.getCurrentComboMultiplier().toFixed(1); }
+           else if (itemData.id === 'inkCostReduction') { currentValue = this.playerData.getCurrentInkCostPerPixel().toFixed(2); }
+           else if (itemData.id === 'extraCat') { currentValue = this.playerData.getCatsPerCorrectAnswer(); }
+           else if (itemData.id === 'maxCats') { currentValue = this.playerData.getMaxCatsAllowed(); }
+           // *** NUEVO CASO ***
+           else if (itemData.id === 'maxCatSize') { currentValue = this.playerData.getCurrentMaxSizeLimit(); }
+           // *****************
+           text = text.replace('{currentValue}', currentValue.toString());
+       }
+       return text;
+   }
 
-      // Reemplazar placeholder genérico {currentValue} para ítems mejorables
-      if (text.includes('{currentValue}')) {
-          let currentValue: string | number = '?'; // Valor por defecto
-          // Determinar qué valor mostrar basado en el ID del ítem
-          if (itemData.id === 'comboMultiplier') {
-              currentValue = this.playerData.getCurrentComboMultiplier().toFixed(1);
-          } else if (itemData.id === 'inkCostReduction') {
-              currentValue = this.playerData.getCurrentInkCostPerPixel().toFixed(2);
-          }
-          // Añadir más casos aquí para otros ítems que usen {currentValue}
-          // Ejemplo:
-          // else if (itemData.id === 'maxCats') {
-          //    currentValue = this.playerData.getMaxCatsAllowed();
-          // }
-          text = text.replace('{currentValue}', currentValue.toString());
-      }
-
-      return text; // Devolver texto formateado
-  }
-
-  /** Verifica si un ítem cumple la condición 'isPurchasedCheck' del JSON. */
+   /** Verifica si un ítem cumple la condición 'isPurchasedCheck'. */
    private checkItemIsPurchased(itemData: ShopItemJsonData): boolean {
-       if (!itemData.isPurchasedCheck) return false; // Si no hay check, no se considera "comprado"
-
+       if (!itemData.isPurchasedCheck) return false;
        const check = itemData.isPurchasedCheck;
-       const valueRef = check.valueRef; // Clave en PlayerData (ej: 'hasShield')
-       const currentValue = (this.playerData as any)[valueRef]; // Valor actual de esa clave
-
-       if (typeof currentValue === 'undefined') return false; // La propiedad no existe en PlayerData
-
-       // Evaluar la condición definida en el JSON
+       const valueRef = check.valueRef;
+       const currentValue = (this.playerData as any)[valueRef];
+       if (typeof currentValue === 'undefined') return false;
        switch (check.condition) {
            case 'isTrue': return currentValue === true;
            case 'isFalse': return currentValue === false;
            case 'greaterThan': return typeof currentValue === 'number' && typeof check.limit === 'number' && currentValue > check.limit;
-           // Añadir más condiciones si es necesario
-           default:
-               console.warn(`Condición isPurchasedCheck desconocida: ${check.condition} para ítem ${itemData.id}`);
-               return false;
+           default: return false;
        }
    }
 
-  /** Verifica si un ítem cumple la condición 'purchaseCheck' del JSON (además del costo). */
+  /** Verifica si un ítem cumple la condición 'purchaseCheck'. */
    private checkItemCanPurchase(itemData: ShopItemJsonData): boolean {
-       if (!itemData.purchaseCheck) return true; // Si no hay check, se asume que sí se puede
-
+       if (!itemData.purchaseCheck) return true;
        const check = itemData.purchaseCheck;
-       const valueRef = check.valueRef; // Clave en PlayerData (ej: 'lives', 'isDrawingUnlocked')
-       const currentValue = (this.playerData as any)[valueRef]; // Valor actual
-
+       const valueRef = check.valueRef;
+       const currentValue = (this.playerData as any)[valueRef];
        if (typeof currentValue === 'undefined') {
-            console.warn(`Purchase check failed for ${itemData.id}: valueRef '${valueRef}' not found in PlayerData.`);
-            return false; // No se puede verificar
+            console.warn(`Purchase check failed for ${itemData.id}: valueRef '${valueRef}' not found.`);
+            return false;
        }
-
-       // Evaluar la condición
        switch (check.condition) {
            case 'lessThan': return typeof currentValue === 'number' && typeof check.limit === 'number' && currentValue < check.limit;
            case 'lessThanOrEqual': return typeof currentValue === 'number' && typeof check.limit === 'number' && currentValue <= check.limit;
@@ -531,35 +435,30 @@ export class ShopManager {
            case 'isTrue': return currentValue === true;
            case 'greaterThan': return typeof currentValue === 'number' && typeof check.limit === 'number' && currentValue > check.limit;
            case 'greaterThanOrEqual': return typeof currentValue === 'number' && typeof check.limit === 'number' && currentValue >= check.limit;
-           // Añadir más condiciones si es necesario
-           default:
-                console.warn(`Condición purchaseCheck desconocida: ${check.condition} para ítem ${itemData.id}`);
-                return false;
+           default: return false;
        }
    }
 
-   /** Obtiene el nivel actual de un ítem mejorable desde PlayerData. */
+   /** Obtiene el nivel actual de un ítem mejorable. */
    private getItemLevel(itemData: ShopItemJsonData): number {
-       if (!itemData.isLeveled || !itemData.levelRef) return -1; // No aplicable o mal configurado
-       // Acceder dinámicamente a la propiedad de PlayerData (ej: playerData['comboMultiplierLevel'])
-       return (this.playerData as any)[itemData.levelRef] ?? 0; // Devolver 0 si no existe la propiedad
+       if (!itemData.isLeveled || !itemData.levelRef) return -1;
+       return (this.playerData as any)[itemData.levelRef] ?? 0;
+   }
+
+   /** Calcula el costo de un ítem por su ID. */
+   private calculateItemCostById(itemId: string): number {
+       const itemData = this.items.get(itemId);
+       if (!itemData) return -1;
+       return this.calculateItemCost(itemData);
    }
 
   // --- Ejecutor de Acciones de Compra ---
 
-  /**
-   * Ejecuta la acción de compra basada en el ID del ítem, verificando costo y condiciones.
-   * @param itemId - El ID del ítem a comprar (ej: 'shield', 'life').
-   * @returns true si la compra fue exitosa, false en caso contrario.
-   */
+  // MODIFICADO: Incluye el nuevo case para 'purchaseMaxCatSize'
   private executePurchaseAction(itemId: string): boolean {
       const itemData = this.items.get(itemId);
-      if (!itemData) {
-          console.error(`No se encontró itemData para itemId: ${itemId}`);
-          return false; // No se puede proceder
-      }
+      if (!itemData) { console.error(`No itemData for ${itemId}`); return false; }
 
-      // Verificar todas las condiciones antes de restar puntos
       const cost = this.calculateItemCost(itemData);
       const canAfford = this.playerData.score >= cost;
       const passesCheck = this.checkItemCanPurchase(itemData);
@@ -567,116 +466,144 @@ export class ShopManager {
       const isMaxLevel = itemData.isLeveled && typeof itemData.maxLevel === 'number' && level >= itemData.maxLevel;
 
       if (!canAfford || !passesCheck || isMaxLevel) {
-            console.log(`executePurchaseAction ${itemId}: Falló chequeo pre-compra (Afford: ${canAfford}, Check: ${passesCheck}, MaxLevel: ${isMaxLevel})`);
-            return false; // No cumple requisitos
+          console.log(`executePurchaseAction ${itemId}: Pre-check failed (Afford:${canAfford}, Check:${passesCheck}, MaxLevel:${isMaxLevel})`);
+          this.showTooltipForItem(itemId);
+          return false;
       }
 
       let success = false;
-      // Restar puntos *antes* de intentar la acción
-      this.playerData.score -= cost;
-
-      // Usar actionId del JSON para determinar qué método llamar
+      this.playerData.score -= cost; // Cobrar antes
       const actionId = itemData.actionId;
 
       try {
-        // Llamar al método de acción correspondiente
-        switch (actionId) {
-            case 'purchaseLife': success = this.purchaseLifeAction(); break;
-            case 'purchaseShield': success = this.purchaseShieldAction(); break;
-            case 'purchaseHint': success = this.purchaseHintAction(); break;
-            case 'purchaseUnlockDrawing': success = this.purchaseUnlockDrawingAction(); break;
-            case 'purchaseComboMultiplier': success = this.purchaseComboMultiplierAction(); break;
-            case 'purchaseInkCostReduction': success = this.purchaseInkCostReductionAction(); break;
-            // Añadir casos para 'purchaseExtraCatSpawn', 'purchaseMaxCatsIncrease' si se implementan
-            default:
-                console.error(`Acción de compra desconocida: ${actionId} para ítem ${itemId}`);
-                success = false; // Marcar como fallida si la acción no existe
-        }
+          switch (actionId) {
+              case 'purchaseLife': success = this.purchaseLifeAction(); break;
+              case 'purchaseShield': success = this.purchaseShieldAction(); break;
+              case 'purchaseHint': success = this.purchaseHintAction(); break;
+              case 'purchaseUnlockDrawing': success = this.purchaseUnlockDrawingAction(); break;
+              case 'purchaseComboMultiplier': success = this.purchaseComboMultiplierAction(); break;
+              case 'purchaseInkCostReduction': success = this.purchaseInkCostReductionAction(); break;
+              case 'purchaseExtraCatSpawn': success = this.purchaseExtraCatSpawnAction(); break;
+              case 'purchaseMaxCatsIncrease': success = this.purchaseMaxCatsIncreaseAction(); break;
+              // *** NUEVO CASE ***
+              case 'purchaseMaxCatSize': success = this.purchaseMaxCatSizeAction(); break;
+              // *****************
+              default:
+                  console.error(`Unknown purchase action: ${actionId} for item ${itemId}`);
+                  success = false;
+          }
       } catch (error) {
-          console.error(`Error ejecutando acción ${actionId} para ${itemId}:`, error);
-          success = false; // Marcar como fallida si hay un error en la acción
+           console.error(`Error executing action ${actionId} for ${itemId}:`, error);
+           success = false;
       }
 
+      if (!success) {
+           console.warn(`Action ${actionId} for ${itemId} failed, reverting cost.`);
+           this.playerData.score += cost; // Devolver puntos
+      } else {
+           this.gameManager.getAudioManager().playSound('purchase');
+           this.updateShopUI(); // Actualizar UI solo si fue exitoso
+           this.showTooltipForItem(itemId); // Actualizar tooltip
+      }
 
-       // Si la acción falló (ya sea por no existir o por error interno), revertir el costo
-       if (!success) {
-            console.warn(`Acción ${actionId} para ${itemId} falló, revirtiendo costo.`);
-            this.playerData.score += cost; // Devolver puntos
-       }
-
-      return success; // Indicar si la compra (incluyendo la acción) fue exitosa
+      return success;
   }
 
-   /** Calcula el costo de un ítem por su ID. Devuelve -1 si no se encuentra. */
-   private calculateItemCostById(itemId: string): number {
-       const itemData = this.items.get(itemId);
-       if (!itemData) {
-           console.error(`Item ${itemId} no encontrado para calcular costo.`);
-           return -1; // Indicar error
-       }
-       return this.calculateItemCost(itemData); // Reutilizar helper
-   }
-
-  // --- Acciones de Compra Reales (Modifican PlayerData o llaman a GameManager) ---
-  // Estas funciones ahora solo aplican el efecto, asumiendo que el costo y las condiciones ya se verificaron.
+  // --- Acciones de Compra Reales ---
 
   private purchaseLifeAction(): boolean {
-    console.log("ShopManager: Ejecutando compra Vida...");
-    this.gameManager.incrementLives(); // Llama a GameManager para manejar lógica y UI
-    return true; // Asumir éxito
+    console.log("ShopManager: Executing purchaseLifeAction...");
+    this.gameManager.incrementLives();
+    return true;
   }
 
   private purchaseShieldAction(): boolean {
-    console.log("ShopManager: Ejecutando compra Escudo...");
-    this.playerData.hasShield = true; // Actualizar estado en PlayerData
-    this.gameManager.updateExternalShieldUI(true); // Notificar a GameManager para actualizar UI
+    console.log("ShopManager: Executing purchaseShieldAction...");
+    this.playerData.hasShield = true;
+    this.gameManager.updateExternalShieldUI(true);
     return true;
   }
 
   private purchaseHintAction(): boolean {
-      console.log("ShopManager: Ejecutando compra Pista...");
-      const HINT_CHARGES_PER_PURCHASE = 3; // Podría definirse en el JSON si se necesita
-      this.playerData.hintCharges += HINT_CHARGES_PER_PURCHASE; // Añadir cargas
-      this.gameManager.updateExternalHintUI(this.playerData.hintCharges); // Notificar UI
-      return true;
+    console.log("ShopManager: Executing purchaseHintAction...");
+    const HINT_CHARGES_PER_PURCHASE = 3;
+    this.playerData.hintCharges += HINT_CHARGES_PER_PURCHASE;
+    this.gameManager.updateExternalHintUI(this.playerData.hintCharges);
+    // Apply hint immediately if in game
+    try {
+        const currentState = this.gameManager.getStateMachine().getCurrentState();
+        if (currentState instanceof QuizGameplayState) {
+             const currentQuestion = currentState.currentQuestion;
+             if (currentQuestion) {
+                 this.gameManager.getUIManager().applyHintVisuals(currentQuestion.correctAnswerKey);
+                 (currentState as any).hintAppliedToQuestionId = currentQuestion.id;
+             }
+        }
+    } catch (error) { console.error("Error applying hint immediately:", error); }
+    return true;
   }
 
   private purchaseUnlockDrawingAction(): boolean {
-    console.log("ShopManager: Ejecutando desbloqueo Dibujo...");
-    this.playerData.isDrawingUnlocked = true; // Actualizar estado
-    this.gameManager.enableDrawingFeature(); // Llamar a GameManager para activar UI/funcionalidad
+    console.log("ShopManager: Executing purchaseUnlockDrawingAction...");
+    if (this.playerData.isDrawingUnlocked) { return false; } // Evitar comprar de nuevo
+    this.playerData.isDrawingUnlocked = true;
+    this.gameManager.enableDrawingFeature();
+    console.log(" -> Drawing feature unlocked.");
     return true;
   }
 
   private purchaseComboMultiplierAction(): boolean {
-    console.log("ShopManager: Ejecutando compra Mejora Multiplicador Combo...");
-    // Obtener la clave de PlayerData donde se guarda el nivel desde el JSON
-    const levelRef = this.items.get('comboMultiplier')?.levelRef;
-    if (levelRef && typeof (this.playerData as any)[levelRef] === 'number') {
-        (this.playerData as any)[levelRef]++; // Incrementar el nivel correspondiente
-        // El valor del multiplicador se calcula dinámicamente en PlayerData.getCurrentComboMultiplier()
+     console.log("ShopManager: Executing purchaseComboMultiplierAction...");
+     const levelRef = this.items.get('comboMultiplier')?.levelRef;
+     if (levelRef && typeof (this.playerData as any)[levelRef] === 'number') {
+        (this.playerData as any)[levelRef]++;
         return true;
-    } else {
-        console.error("Error al comprar Combo Multiplier: levelRef no definido o inválido en JSON/PlayerData.");
-        return false; // Indicar fallo
-    }
+     } else { console.error("Error buying Combo Multiplier: invalid levelRef."); return false; }
   }
 
   private purchaseInkCostReductionAction(): boolean {
-     console.log("ShopManager: Ejecutando compra Mejora Reducción Costo Tinta...");
-     // Obtener la clave del nivel desde el JSON
+     console.log("ShopManager: Executing purchaseInkCostReductionAction...");
      const levelRef = this.items.get('inkCostReduction')?.levelRef;
      if (levelRef && typeof (this.playerData as any)[levelRef] === 'number') {
-        (this.playerData as any)[levelRef]++; // Incrementar el nivel
-        // El costo de tinta se calculará dinámicamente en PlayerData.getCurrentInkCostPerPixel()
-        // Podrías notificar a un futuro InkManager aquí si fuera necesario
+        (this.playerData as any)[levelRef]++;
         return true;
-     } else {
-         console.error("Error al comprar Ink Cost Reduction: levelRef no definido o inválido en JSON/PlayerData.");
-         return false;
-     }
+     } else { console.error("Error buying Ink Cost Reduction: invalid levelRef."); return false; }
   }
 
-  // Añadir aquí purchaseExtraCatSpawnAction y purchaseMaxCatsIncreaseAction si implementas esos ítems
+  private purchaseExtraCatSpawnAction(): boolean {
+     console.log("ShopManager: Executing purchaseExtraCatSpawnAction...");
+     const levelRef = this.items.get('extraCat')?.levelRef;
+     if (levelRef && typeof (this.playerData as any)[levelRef] === 'number') {
+        (this.playerData as any)[levelRef]++;
+        console.log(` -> Extra Cat Level: ${(this.playerData as any)[levelRef]}, Cats per Correct: ${this.playerData.getCatsPerCorrectAnswer()}`);
+        return true;
+     } else { console.error("Error buying Extra Cat Spawn: invalid levelRef."); return false; }
+  }
+
+  private purchaseMaxCatsIncreaseAction(): boolean {
+     console.log("ShopManager: Executing purchaseMaxCatsIncreaseAction...");
+     const levelRef = this.items.get('maxCats')?.levelRef;
+     if (levelRef && typeof (this.playerData as any)[levelRef] === 'number') {
+        (this.playerData as any)[levelRef]++;
+        console.log(` -> Max Cats Level: ${(this.playerData as any)[levelRef]}, Max Allowed: ${this.playerData.getMaxCatsAllowed()}`);
+        return true;
+     } else { console.error("Error buying Max Cats Increase: invalid levelRef."); return false; }
+  }
+
+  // *** NUEVA ACCIÓN ***
+  private purchaseMaxCatSizeAction(): boolean {
+      console.log("ShopManager: Executing purchaseMaxCatSizeAction...");
+      const levelRef = this.items.get('maxCatSize')?.levelRef; // Obtener levelRef del JSON
+      if (levelRef && typeof (this.playerData as any)[levelRef] === 'number') {
+          (this.playerData as any)[levelRef]++; // Incrementar el nivel en PlayerData
+          console.log(` -> Max Cat Size Level: ${(this.playerData as any)[levelRef]}, Current Limit: ${this.playerData.getCurrentMaxSizeLimit()}px`);
+          // La lógica de comer en CatManager usará el nuevo límite calculado
+          return true; // Indicar éxito
+      } else {
+          console.error("Error buying Max Cat Size: levelRef not defined or invalid in shop_items.json or PlayerData.");
+          return false; // Indicar fallo
+      }
+  }
+  // ******************
 
 } // Fin clase ShopManager

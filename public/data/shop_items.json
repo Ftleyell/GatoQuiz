@@ -24,12 +24,12 @@
   },
   {
     "id": "hint",
-    "name": "Pista (3 Usos)",
+    "name": "Pista",
     "icon": "💡",
     "category": "consumable",
     "isLeveled": false,
     "cost": { "base": 60 },
-    "effectTemplate": "Elimina 1 opción incorrecta por 3 preguntas {charges}.",
+    "effectTemplate": "Elimina 1 opción incorrecta. {charges}",
     "purchaseCheck": { "condition": "lessThanOrEqual", "valueRef": "hintCharges", "limit": 0 },
     "isPurchasedCheck": { "condition": "greaterThan", "valueRef": "hintCharges", "limit": 0 },
     "actionId": "purchaseHint"
@@ -43,7 +43,7 @@
     "cost": { "base": 0 },
     "effectTemplate": "Permite usar el pincel {isUnlocked}.",
     "purchaseCheck": { "condition": "isFalse", "valueRef": "isDrawingUnlocked" },
-     "isPurchasedCheck": { "condition": "isTrue", "valueRef": "isDrawingUnlocked"},
+    "isPurchasedCheck": { "condition": "isTrue", "valueRef": "isDrawingUnlocked"},
     "actionId": "purchaseUnlockDrawing"
   },
   {
@@ -68,7 +68,52 @@
     "levelRef": "inkCostReductionLevel",
     "cost": { "base": 80, "multiplier": 1.8, "type": "exponential"},
     "effectTemplate": "Costo de tinta: {currentValue}/px",
-     "purchaseCheck": { "condition": "isTrue", "valueRef": "isDrawingUnlocked" },
+    "purchaseCheck": { "condition": "isTrue", "valueRef": "isDrawingUnlocked" },
     "actionId": "purchaseInkCostReduction"
+  },
+  {
+    "id": "extraCat",
+    "name": "Gato Extra por Acierto",
+    "icon": "🐈",
+    "category": "upgradeable",
+    "isLeveled": true,
+    "levelRef": "extraCatSpawnLevel",
+    "cost": {
+        "base": 100,
+        "multiplier": 2,
+        "type": "exponential"
+    },
+    "effectTemplate": "Gatos por acierto: {currentValue}",
+    "actionId": "purchaseExtraCatSpawn"
+  },
+  {
+    "id": "maxCats",
+    "name": "Aumentar Límite de Gatos",
+    "icon": "📈",
+    "category": "upgradeable",
+    "isLeveled": true,
+    "levelRef": "maxCatsLevel",
+    "cost": {
+        "base": 150,
+        "multiplier": 1.8,
+        "type": "exponential"
+    },
+    "effectTemplate": "Límite actual: {currentValue} gatos",
+    "actionId": "purchaseMaxCatsIncrease"
+  },
+  {
+    "id": "maxCatSize",
+    "name": "Aumentar Tamaño Máximo Gato",
+    "icon": "📏",
+    "category": "upgradeable",
+    "isLeveled": true,
+    "levelRef": "maxCatSizeLevel",
+    "cost": {
+        "base": 200,
+        "multiplier": 1.9,
+        "type": "exponential"
+    },
+    "effectTemplate": "Tamaño máximo actual: {currentValue}px",
+    "actionId": "purchaseMaxCatSize"
   }
 ]
