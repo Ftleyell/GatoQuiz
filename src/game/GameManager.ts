@@ -356,4 +356,42 @@ export class GameManager {
       return this.stateMachine.getCurrentState();
   }
   // ---------------------------------------------------
+  private previousBodyStateClass: string | null = null;
+
+/**
+ * Actualiza la clase CSS en el elemento <body> para reflejar el estado actual del juego.
+ * Elimina la clase anterior y añade la nueva.
+ * @param stateName - Un nombre descriptivo para el estado actual (ej: 'mainmenu', 'gameplay').
+ */
+public setBodyStateClass(stateName: string | null): void {
+    const body = document.body;
+
+    // Eliminar clase anterior si existe
+    if (this.previousBodyStateClass) {
+        body.classList.remove(`state-${this.previousBodyStateClass}`);
+    }
+
+    // Añadir nueva clase si se proporciona un nombre
+    if (stateName) {
+        const newStateClass = `state-${stateName}`;
+        body.classList.add(newStateClass);
+        this.previousBodyStateClass = stateName; // Guardar para la próxima vez
+    } else {
+        this.previousBodyStateClass = null;
+    }
+}
+
+// Asegúrate también de llamar a setBodyStateClass(null) en shutdown() para limpiar
+public shutdown(): void {
+    console.log('GameManager: shutdown');
+    this.stop();
+    this.physicsManager.shutdown();
+    if (this.stateMachine.getCurrentStateName() && this.stateMachine.getCurrentStateName() !== '__shutdown__') {
+        try { this.stateMachine.changeState('__shutdown__'); }
+        catch (e) { console.warn("Error en exit() durante shutdown:", e) }
+    }
+    this.catManager.removeAllCats();
+    this.containerElement.innerHTML = '';
+    this.setBodyStateClass(null); // <-- AÑADIR ESTO PARA LIMPIAR CLASE AL CERRAR
+  }
 } // Fin clase GameManager

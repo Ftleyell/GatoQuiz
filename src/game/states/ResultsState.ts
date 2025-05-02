@@ -12,6 +12,7 @@ export class ResultsState implements IState {
 
   enter(params?: any): void {
     console.log('ResultsState: enter', params);
+    this.gameManager.setBodyStateClass('results'); // <-- AÑADIR ESTA LÍNEA
     // Aquí mostrarías la pantalla de resultados:
     // 1. Obtener puntuación final, estadísticas (del GameManager o QuizSystem)
     // 2. Mostrar la información en la UI

@@ -13,7 +13,7 @@ export class MainMenuState implements IState {
 
   enter(params?: any): void {
     console.log('MainMenuState: enter', params);
-
+    this.gameManager.setBodyStateClass('mainmenu'); // <-- AÑADIR ESTA LÍNEA
     const container = this.gameManager.getContainerElement();
     container.innerHTML = ''; // Limpiar contenedor
 

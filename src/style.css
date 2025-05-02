@@ -370,3 +370,27 @@ body {
 .cat:active {
     cursor: grabbing; /* Cursor al arrastrar */
 }
+/* --- Visibilidad de Controles por Estado --- */
+
+/* Ocultar controles por defecto o en estados no deseados */
+body:not(.state-quizgameplay) #right-controls {
+  display: none;
+}
+
+/* Mostrar controles específicamente en el estado de gameplay */
+/* (Asegúrate que el display sea correcto para tu layout, flex es común) */
+body.state-quizgameplay #right-controls {
+  display: flex; /* O 'block' si #right-controls no es flex */
+}
+
+/* Puedes añadir reglas más específicas si, por ejemplo,
+   quieres ocultar solo ciertos botones dentro de #right-controls
+   en lugar de todo el contenedor. Ejemplo:
+*/
+/* body:not(.state-quizgameplay) #shop-button {
+    display: none;
+   }
+   body.state-quizgameplay #shop-button {
+       display: flex; // O block/inline-flex
+   }
+*/

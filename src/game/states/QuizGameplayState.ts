@@ -44,7 +44,8 @@ export class QuizGameplayState implements IState {
    */
   enter(params?: any): void {
     console.log('QuizGameplayState: enter', params);
-
+    this.gameManager.setBodyStateClass('quizgameplay'); // <-- AÑADIR ESTA LÍNEA
+    
     // *** CORRECCIÓN: Resetear PlayerData al iniciar nueva partida ***
     this.gameManager.getPlayerData().reset();
     console.log("PlayerData reseteado para nueva partida.");

@@ -12,6 +12,7 @@ export class LoadingState implements IState {
 
   enter(params?: any): void {
     console.log('LoadingState: enter', params);
+    this.gameManager.setBodyStateClass('loading'); // <-- AÑADIR ESTA LÍNEA
     // Aquí podrías mostrar un indicador de carga en la UI
     // this.gameManager.getContainerElement().innerHTML = '<h1>Cargando...</h1>';
     // Idealmente, la carga de assets se haría aquí y se transicionaría
