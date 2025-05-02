@@ -66,6 +66,14 @@
   border-radius: 3px;     /* <<<< Radio más pequeño para coincidir */
   transition: width 0.3s ease-out;
 }
+
+/* --- NUEVO: Estilo para el botón de comida cuando está activo --- */
+#cat-food-button.active {
+  background-color: rgba(249, 115, 22, 0.8); /* Naranja (similar a legendario) */
+  border-color: #fb923c; /* Naranja más claro */
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.5); /* Sombra naranja */
+}
+/* ------------------------------------------------------------- */
   
   /* Bolita de Comida (Visual) */
   .food-pellet {

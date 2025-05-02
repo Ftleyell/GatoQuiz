@@ -138,3 +138,36 @@ body.state-quizgameplay #right-controls {
 }
 /* Ocultar elementos específicos en ciertos estados si es necesario */
 /* body:not(.state-quizgameplay) .game-container { display: none; } */ /* Ejemplo */
+/* --- Animaciones Fade In/Out --- */
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Clases para aplicar a los contenedores de estado */
+/* Ajusta la duración (0.5s) según prefieras */
+.state-fade-out {
+  animation: fadeOut 0.5s ease-out forwards;
+  pointer-events: none; /* Deshabilitar interacción durante el fade */
+}
+
+.state-fade-in {
+  /* Empieza invisible para que la animación funcione */
+  opacity: 0;
+  animation: fadeIn 0.5s ease-in forwards;
+   /* Retraso opcional para permitir que el fade-out termine */
+  /* animation-delay: 0.1s; */
+}
+
+/* Asegurar que #app tenga position relative si sus hijos usan absolute */
+#app {
+  position: relative;
+  /* Añadir transición de opacidad como fallback o para suavizar */
+  /* transition: opacity 0.5s ease-in-out; */
+}
+

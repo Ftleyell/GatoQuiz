@@ -6,6 +6,7 @@ import './styles/cat.css';
 import './styles/ink.css';
 import './styles/shop.css';
 import './styles/cat_food.css';
+import './styles/mainmenu.css';
 
 // Importar GameManager
 import { GameManager } from './game/GameManager';

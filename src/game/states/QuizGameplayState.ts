@@ -10,13 +10,12 @@ interface Question {
   text: string;
   options: QuestionOption[];
   correctAnswerKey: string;
-  difficulty: string;
+  difficulty: string | number;
   explanation?: string;
 }
 
-// Constantes para el crecimiento de gatos existentes
-const SIZE_INCREMENT_PER_CORRECT = 1; // Píxeles a crecer por acierto
-const MAX_CORRECT_ANSWER_GROWTH = 4;  // Máximo número de veces que un gato puede crecer así
+const SIZE_INCREMENT_PER_CORRECT = 1;
+const MAX_CORRECT_ANSWER_GROWTH = 4;
 
 export class QuizGameplayState implements IState {
   private gameManager: GameManager;
@@ -27,8 +26,19 @@ export class QuizGameplayState implements IState {
   private hintAppliedToQuestionId: number | string | null = null;
   private isWaitingForExplanationConfirm: boolean = false;
 
-  private readonly BASE_POINTS_PER_CORRECT = 10;
-  private readonly DIFFICULTY_BONUS: { [key: string]: number } = { "easy": 10, "medium": 30, "hard": 50 };
+  private readonly BASE_POINTS_PER_CORRECT = 15; // <-- Valor ajustado
+  private readonly DIFFICULTY_BONUS: { [key: string]: number } = {
+      "easy": 10,
+      "1": 10,
+      "2": 20,
+      "medium": 30,
+      "3": 30,
+      "hard": 45,
+      "4": 45,
+      "5": 65
+  }; // <-- Valores ajustados
+
+  private readonly FADE_DURATION = 500;
 
   constructor(gameManager: GameManager) {
     this.gameManager = gameManager;
@@ -43,36 +53,52 @@ export class QuizGameplayState implements IState {
   private selectRandomCatTemplateId(): string {
     const catManager = this.gameManager.getCatManager();
     const weightedTemplates = catManager.getSpawnableTemplatesWeighted();
-    if (weightedTemplates.length === 0) { return 'common_gray'; }
+    if (weightedTemplates.length === 0) { return 'common_cat'; }
     const totalWeight = weightedTemplates.reduce((sum, t) => sum + t.weight, 0);
-    if (totalWeight <= 0) { return weightedTemplates[0]?.id ?? 'common_gray'; }
+    if (totalWeight <= 0) { return weightedTemplates[0]?.id ?? 'common_cat'; }
     const randomNum = Math.random() * totalWeight;
     let cumulativeWeight = 0;
     for (const template of weightedTemplates) {
         cumulativeWeight += template.weight;
         if (randomNum < cumulativeWeight) { return template.id; }
     }
-    return weightedTemplates[weightedTemplates.length - 1]?.id ?? 'common_gray';
+    return weightedTemplates[weightedTemplates.length - 1]?.id ?? 'common_cat';
   }
 
   enter(params?: any): void {
     console.log('QuizGameplayState: enter', params);
+    const containerElement = this.gameManager.getContainerElement();
+
+    containerElement.innerHTML = '';
+    containerElement.classList.remove('state-fade-in', 'state-fade-out');
+    containerElement.style.opacity = '0';
+
     this.gameManager.setBodyStateClass('quizgameplay');
     this.gameManager.getPlayerData().reset();
     console.log("PlayerData reseteado para nueva partida.");
     this.consecutiveCorrectAnswers = 0;
     this.hintAppliedToQuestionId = null;
     this.isWaitingForExplanationConfirm = false;
+
     this.displayNextQuestion();
+
+    requestAnimationFrame(() => {
+        containerElement.classList.add('state-fade-in');
+        containerElement.style.opacity = '';
+    });
   }
 
   exit(): void {
     console.log('QuizGameplayState: exit');
-    this.uiManager.clearQuizInterface(this.gameManager.getContainerElement());
+    const containerElement = this.gameManager.getContainerElement();
+
+    this.uiManager.clearQuizInterface(containerElement);
+
     if (this.nextQuestionTimeoutId) {
         clearTimeout(this.nextQuestionTimeoutId);
         this.nextQuestionTimeoutId = null;
     }
+
     this.uiManager.updateComboVisuals(0);
     document.body.style.backgroundColor = '#111827';
     const root = document.documentElement;
@@ -80,24 +106,26 @@ export class QuizGameplayState implements IState {
     root.style.setProperty('--flare-intensity', '0');
     root.style.setProperty('--difficulty-glow-color', 'transparent');
     root.style.setProperty('--difficulty-glow-blur', '0px');
+
     this.isWaitingForExplanationConfirm = false;
     this.hintAppliedToQuestionId = null;
+    this.currentQuestion = null;
+
   }
 
   update(deltaTime: number): void { /* No action needed per frame */ }
 
-  private calculateScore(difficulty: string, streakBefore: number): { totalPoints: number, basePoints: number, difficultyBonus: number, comboBonus: number } {
+  private calculateScore(difficulty: string | number, streakBefore: number): { totalPoints: number, basePoints: number, difficultyBonus: number, comboBonus: number } {
     const currentStreak = streakBefore + 1;
     const basePoints = this.BASE_POINTS_PER_CORRECT * currentStreak;
-    const difficultyBonus = this.DIFFICULTY_BONUS[difficulty] ?? this.DIFFICULTY_BONUS["easy"];
+    const difficultyBonus = this.DIFFICULTY_BONUS[difficulty] ?? this.DIFFICULTY_BONUS[1] ?? 0;
     const actualComboMultiplier = this.gameManager.getPlayerData().getCurrentComboMultiplier();
     const comboBonus = Math.max(0, (basePoints + difficultyBonus) * (actualComboMultiplier - 1));
     const totalPoints = Math.round(basePoints + difficultyBonus + comboBonus);
     return { totalPoints, basePoints, difficultyBonus, comboBonus: Math.round(comboBonus) };
   }
 
-  // MODIFICADO: Llama a growExistingCats
-  private handleCorrectAnswer(difficulty: string): void {
+  private handleCorrectAnswer(difficulty: string | number): void {
     const scoreBreakdown = this.calculateScore(difficulty, this.consecutiveCorrectAnswers);
     this.consecutiveCorrectAnswers++;
     this.gameManager.getPlayerData().score += scoreBreakdown.totalPoints;
@@ -105,6 +133,7 @@ export class QuizGameplayState implements IState {
 
     this.uiManager.updateScoreDisplay(this.gameManager.getPlayerData().score);
     this.uiManager.updateComboVisuals(this.consecutiveCorrectAnswers);
+    this.uiManager.updateInkBar();
 
     let feedbackMessage = `¡Correcto! +${scoreBreakdown.totalPoints} Pts`;
     let details = `(Base: ${scoreBreakdown.basePoints}, Dif: +${scoreBreakdown.difficultyBonus}`;
@@ -117,20 +146,16 @@ export class QuizGameplayState implements IState {
     try { this.gameManager.getAudioManager().playSound('correct'); }
     catch(e) { console.error("Error sonido 'correct':", e); }
 
-    // *** LLAMADA PARA HACER CRECER GATOS EXISTENTES ***
     try {
         this.gameManager.getCatManager().growExistingCats(SIZE_INCREMENT_PER_CORRECT, MAX_CORRECT_ANSWER_GROWTH);
     } catch (error) {
         console.error("Error llamando a catManager.growExistingCats:", error);
     }
-    // ***************************************************
 
-    // Spawnear nuevos gatos según PlayerData
     const catsToSpawn = this.gameManager.getPlayerData().getCatsPerCorrectAnswer();
     const selectedTemplateId = this.selectRandomCatTemplateId();
 
     if (selectedTemplateId) {
-        // console.log(`Spawning ${catsToSpawn} cat(s) of type ${selectedTemplateId}...`); // Log opcional
         for (let i = 0; i < catsToSpawn; i++) {
              try {
                  this.gameManager.getCatManager().addCat(selectedTemplateId);
@@ -143,11 +168,10 @@ export class QuizGameplayState implements IState {
     this.proceedToNextStep();
   }
 
-  // handleIncorrectAnswer (Sin cambios respecto a la versión anterior)
   private handleIncorrectAnswer(): void {
     const playerData = this.gameManager.getPlayerData();
     let gameOver = false;
-    const hintWasActiveForThisQuestion = playerData.hintCharges > 0 && this.hintAppliedToQuestionId === this.currentQuestion?.id;
+    const hintWasActiveForThisQuestion = this.hintAppliedToQuestionId === this.currentQuestion?.id;
     let shieldSaved = false;
 
     if (playerData.hasShield) {
@@ -156,20 +180,22 @@ export class QuizGameplayState implements IState {
         this.uiManager.updateFeedback('¡Escudo Roto!', 'shield');
         this.uiManager.updateShieldIcon(false);
         this.gameManager.getAudioManager().playSound('shield_break');
-        this.gameManager.decrementLives();
-         if (this.gameManager.getLives() <= 0) { gameOver = true; }
     } else {
         this.consecutiveCorrectAnswers = 0;
         this.gameManager.decrementLives();
         this.uiManager.updateComboVisuals(this.consecutiveCorrectAnswers);
         this.uiManager.updateFeedback('Incorrecto.', 'incorrect');
         this.gameManager.getAudioManager().playSound('incorrect');
+
         if (playerData.hintCharges > 0) {
              console.log("Incorrect answer (no shield), resetting hint charges.");
              playerData.hintCharges = 0;
              this.uiManager.updateHintIcon(0);
         }
-        if (this.gameManager.getLives() <= 0) { gameOver = true; }
+
+        if (this.gameManager.getLives() <= 0) {
+            gameOver = true;
+        }
     }
 
     this.hintAppliedToQuestionId = null;
@@ -187,21 +213,19 @@ export class QuizGameplayState implements IState {
     }
   }
 
-  // proceedToNextStep (Sin cambios)
   private proceedToNextStep(): void {
       const explanation = this.currentQuestion?.explanation;
-      if (explanation) {
+      if (explanation && !this.isWaitingForExplanationConfirm) {
           this.isWaitingForExplanationConfirm = true;
           this.uiManager.showExplanation(explanation, () => {
               this.isWaitingForExplanationConfirm = false;
               this.scheduleNextQuestion(500);
           });
-      } else {
+      } else if (!this.isWaitingForExplanationConfirm) {
           this.scheduleNextQuestion(1500);
       }
   }
 
-  // scheduleNextQuestion (Sin cambios)
   private scheduleNextQuestion(delay: number): void {
     if (this.nextQuestionTimeoutId) clearTimeout(this.nextQuestionTimeoutId);
     if (this.gameManager.getStateMachine().getCurrentStateName() === 'QuizGameplay') {
@@ -214,35 +238,55 @@ export class QuizGameplayState implements IState {
     }
   }
 
-  // displayNextQuestion (Sin cambios respecto a la versión anterior)
   private displayNextQuestion(): void {
     const quizSystem = this.gameManager.getQuizSystem();
-    try { this.currentQuestion = quizSystem.selectNextQuestion(); }
-    catch (error) { /* ... */ return; }
-    if (!this.currentQuestion) { /* ... */ return; }
+    try {
+        this.currentQuestion = quizSystem.selectNextQuestion();
+    } catch (error) {
+        console.error("Error seleccionando la siguiente pregunta:", error);
+        this.uiManager.updateFeedback("Error al cargar la siguiente pregunta.", 'info');
+        return;
+    }
+
+    if (!this.currentQuestion) {
+        console.log("No quedan más preguntas disponibles.");
+        this.uiManager.updateFeedback("¡Has completado todas las preguntas!", 'correct');
+        return;
+    }
 
     this.hintAppliedToQuestionId = null;
+
     const appContainer = this.gameManager.getContainerElement();
-    if (!appContainer) { /* ... */ return; }
+    if (!appContainer) {
+        console.error("QuizGameplayState: Contenedor #app no encontrado.");
+        return;
+    }
 
     try {
         this.uiManager.buildQuizInterface(
-            this.currentQuestion, appContainer, this.handleOptionClick.bind(this), this.consecutiveCorrectAnswers
+            this.currentQuestion,
+            appContainer,
+            this.handleOptionClick.bind(this),
+            this.consecutiveCorrectAnswers
         );
+
         if (this.gameManager.getPlayerData().hintCharges > 0 && this.currentQuestion) {
              this.uiManager.applyHintVisuals(this.currentQuestion.correctAnswerKey);
              this.hintAppliedToQuestionId = this.currentQuestion.id;
-             // console.log(`Hint applied visually to question ID: ${this.hintAppliedToQuestionId}`); // Log opcional
         }
-    } catch (error) { /* ... */ }
+
+    } catch (error) {
+        console.error("Error construyendo la interfaz del quiz:", error);
+        this.uiManager.updateFeedback("Error al mostrar la pregunta.", 'info');
+    }
   }
 
-  // handleOptionClick (Sin cambios respecto a la versión anterior)
   public handleOptionClick(selectedKey: string): void {
     if (this.isWaitingForExplanationConfirm) return;
     if (!this.currentQuestion || this.nextQuestionTimeoutId !== null) return;
 
     this.uiManager.disableOptions();
+
     const quizSystem = this.gameManager.getQuizSystem();
     const isCorrect = quizSystem.validateAnswer(this.currentQuestion.id, selectedKey);
     const playerData = this.gameManager.getPlayerData();
@@ -250,33 +294,37 @@ export class QuizGameplayState implements IState {
     if (this.hintAppliedToQuestionId === this.currentQuestion.id) {
         if (playerData.hintCharges > 0) {
             playerData.hintCharges--;
-            // console.log(`Hint charge consumed. Remaining: ${playerData.hintCharges}`); // Log opcional
             this.uiManager.updateHintIcon(playerData.hintCharges);
         }
          this.hintAppliedToQuestionId = null;
     }
 
-    if (isCorrect === true) { this.handleCorrectAnswer(this.currentQuestion.difficulty); }
-    else if (isCorrect === false) { this.handleIncorrectAnswer(); }
-    else {
-        this.uiManager.updateFeedback("Error al validar.", 'info');
+    if (isCorrect === true) {
+        this.handleCorrectAnswer(this.currentQuestion.difficulty);
+    } else if (isCorrect === false) {
+        this.handleIncorrectAnswer();
+    } else {
+        this.uiManager.updateFeedback("Error al validar la respuesta.", 'info');
         this.hintAppliedToQuestionId = null;
         this.proceedToNextStep();
     }
   }
 
-  // rebuildInterface (Sin cambios)
   public rebuildInterface(): void {
-      // console.log("QuizGameplayState: Rebuilding interface..."); // Log opcional
       const appContainer = this.gameManager.getContainerElement();
       if (this.currentQuestion && appContainer) {
           this.uiManager.buildQuizInterface(
-              this.currentQuestion, appContainer, this.handleOptionClick.bind(this), this.consecutiveCorrectAnswers
+              this.currentQuestion,
+              appContainer,
+              this.handleOptionClick.bind(this),
+              this.consecutiveCorrectAnswers
           );
           if (this.hintAppliedToQuestionId === this.currentQuestion.id) {
                this.uiManager.applyHintVisuals(this.currentQuestion.correctAnswerKey);
           }
-      } else { /* ... */ }
+      } else {
+          console.warn("QuizGameplayState: No se puede reconstruir, falta pregunta actual o contenedor.");
+      }
   }
 
-} // Fin clase QuizGameplayState
+}

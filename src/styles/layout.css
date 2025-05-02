@@ -19,7 +19,7 @@
 }
 
 .quiz-content-container {
-  width: 60%;        /* Establece el ancho al 60% del padre (.game-container) */
+  width: 60%;         /*Establece el ancho al 60% del padre (.game-container) */
   max-width: 100%;     /* Asegura que no exceda el 100% si el padre es muy pequeño */
   margin-left: auto;   /* Centra el contenedor si el padre no usa flex */
   margin-right: auto;  /* Centra el contenedor si el padre no usa flex */

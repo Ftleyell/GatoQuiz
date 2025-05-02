@@ -5,7 +5,7 @@
     "icon": "❤️",
     "category": "consumable",
     "isLeveled": false,
-    "cost": { "base": 50, "perLevel": 25, "levelRef": "lives" },
+    "cost": { "base": 30, "perLevel": 15, "levelRef": "lives" },
     "effectTemplate": "Recupera una vida. Tienes {lives}.",
     "purchaseCheck": { "condition": "lessThan", "valueRef": "lives", "limit": 5 },
     "actionId": "purchaseLife"
@@ -16,7 +16,7 @@
     "icon": "🛡️",
     "category": "consumable",
     "isLeveled": false,
-    "cost": { "base": 75 },
+    "cost": { "base": 50 },
     "effectTemplate": "Absorbe el siguiente error {isActive}.",
     "purchaseCheck": { "condition": "isFalse", "valueRef": "hasShield" },
     "isPurchasedCheck": { "condition": "isTrue", "valueRef": "hasShield"},
@@ -28,7 +28,7 @@
     "icon": "💡",
     "category": "consumable",
     "isLeveled": false,
-    "cost": { "base": 60 },
+    "cost": { "base": 40 },
     "effectTemplate": "Elimina 1 opción incorrecta. {charges}",
     "purchaseCheck": { "condition": "lessThanOrEqual", "valueRef": "hintCharges", "limit": 0 },
     "isPurchasedCheck": { "condition": "greaterThan", "valueRef": "hintCharges", "limit": 0 },
@@ -40,7 +40,7 @@
     "icon": "🖌️",
     "category": "unlockable",
     "isLeveled": false,
-    "cost": { "base": 0 },
+    "cost": { "base": 100 },
     "effectTemplate": "Permite usar el pincel {isUnlocked}.",
     "purchaseCheck": { "condition": "isFalse", "valueRef": "isDrawingUnlocked" },
     "isPurchasedCheck": { "condition": "isTrue", "valueRef": "isDrawingUnlocked"},
@@ -64,7 +64,7 @@
     "icon": "➕🍲",
     "category": "consumable",
     "isLeveled": false,
-    "cost": { "base": 40 },
+    "cost": { "base": 25 },
     "effectTemplate": "Rellena la barra de comida ({currentValue}/25).",
     "purchaseCheck": { "condition": "isTrue", "valueRef": "isCatFoodUnlocked" },
     "actionId": "purchaseRefillCatFood"
@@ -77,7 +77,7 @@
     "isLeveled": true,
     "maxLevel": 5,
     "levelRef": "comboMultiplierLevel",
-    "cost": { "base": 100, "multiplier": 2, "type": "exponential"},
+    "cost": { "base": 150, "multiplier": 1.7, "type": "exponential"},
     "effectTemplate": "Multiplicador actual: x{currentValue}.",
     "actionId": "purchaseComboMultiplier"
   },
@@ -89,7 +89,7 @@
     "isLeveled": true,
     "maxLevel": 5,
     "levelRef": "inkCostReductionLevel",
-    "cost": { "base": 80, "multiplier": 1.8, "type": "exponential"},
+    "cost": { "base": 100, "multiplier": 1.6, "type": "exponential"},
     "effectTemplate": "Costo de tinta: {currentValue}/px",
     "purchaseCheck": { "condition": "isTrue", "valueRef": "isDrawingUnlocked" },
     "actionId": "purchaseInkCostReduction"
@@ -102,8 +102,8 @@
     "isLeveled": true,
     "levelRef": "extraCatSpawnLevel",
     "cost": {
-        "base": 100,
-        "multiplier": 2,
+        "base": 120,
+        "multiplier": 1.8,
         "type": "exponential"
     },
     "effectTemplate": "Gatos por acierto: {currentValue}",
@@ -117,7 +117,7 @@
     "isLeveled": true,
     "levelRef": "maxCatsLevel",
     "cost": {
-        "base": 150,
+        "base": 200,
         "multiplier": 1.8,
         "type": "exponential"
     },
@@ -132,7 +132,7 @@
     "isLeveled": true,
     "levelRef": "maxCatSizeLevel",
     "cost": {
-        "base": 200,
+        "base": 250,
         "multiplier": 1.9,
         "type": "exponential"
     },

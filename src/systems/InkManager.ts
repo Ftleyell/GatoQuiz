@@ -23,7 +23,7 @@ type DrawnPath = { points: Point[]; bodies: Matter.Body[] };
  */
 export class InkManager {
     private gameManager: GameManager;
-    private physicsManager!: PhysicsManager; // Se asigna en init
+    private physicsManager!: PhysicsManager; // Se asigna en setPhysicsManager
     private playerData!: PlayerData;      // Se asigna en constructor
 
     // Elementos del DOM
@@ -32,7 +32,7 @@ export class InkManager {
     private gameContainer: HTMLElement | null = null; // Contenedor principal del quiz para efecto fade
 
     // Estado del Pincel/Dibujo
-    private isBrushActive: boolean = false;
+    public isBrushActive: boolean = false; // Hacer público para que GameManager pueda leerlo
     private isDrawing: boolean = false;
     private currentPath: Point[] = [];
     private lastPoint: Point | null = null;
@@ -41,7 +41,7 @@ export class InkManager {
     // Estado de Inicialización y Listeners
     private isInitialized: boolean = false;
     private listeners: { element: HTMLElement | Window; type: string; handler: (e: any) => void }[] = [];
-    private toggleBrushListener: (() => void) | null = null;
+    // private toggleBrushListener: (() => void) | null = null; // Ya no se usa directamente
     private clearInkListener: (() => void) | null = null;
 
     constructor(gameManager: GameManager) {
@@ -57,33 +57,39 @@ export class InkManager {
         }
     }
 
+    /** Inyecta el PhysicsManager después de su creación. */
+    public setPhysicsManager(physicsManager: PhysicsManager): void {
+        this.physicsManager = physicsManager;
+    }
+
+
     /**
      * Inicializa el InkManager. Debe llamarse cuando la función de dibujo se desbloquea.
      */
     public init(): void {
         if (this.isInitialized) {
-            console.log("InkManager: Ya inicializado, actualizando UI.");
+            // console.log("InkManager: Ya inicializado, actualizando UI."); // Menos verboso
             this.updateInkUI(); // Asegurar UI actualizada
             return;
         }
         console.log("InkManager: init (llamado al desbloquear dibujo)");
         try {
             // Obtener referencias críticas
-            this.physicsManager = this.gameManager.getPhysicsManager();
+            if (!this.physicsManager) {
+                this.physicsManager = this.gameManager.getPhysicsManager();
+                if (!this.physicsManager) throw new Error("PhysicsManager no ha sido asignado y no se pudo obtener de GameManager.");
+            }
             this.playerData = this.gameManager.getPlayerData(); // Reafirmar referencia
 
             // Volver a buscar elementos DOM cruciales
             if (!this.drawingCanvas) {
                 this.drawingCanvas = document.getElementById('drawing-canvas') as HTMLCanvasElement | null;
             }
-            // Obtener el contenedor del juego (puede ser #app o .game-container)
             this.gameContainer = this.gameManager.getContainerElement()?.querySelector('.game-container')
                                 ?? this.gameManager.getContainerElement();
 
-            if (!this.physicsManager) throw new Error("PhysicsManager no encontrado.");
             if (!this.playerData) throw new Error("PlayerData no encontrado.");
             if (!this.drawingCanvas) throw new Error("#drawing-canvas no encontrado.");
-            // gameContainer es útil pero no estrictamente crítico para la funcionalidad básica
 
             this.setupDrawingCanvas(); // Configura tamaño y contexto
             this.initUIAndListeners(); // Añade listeners a botones y canvas
@@ -102,22 +108,22 @@ export class InkManager {
      * Configura los listeners para botones y canvas, limpiando los anteriores.
      */
     private initUIAndListeners(): void {
-        console.log("InkManager: Configurando listeners...");
+        // console.log("InkManager: Configurando listeners..."); // Menos verboso
         this.removeListeners(); // Limpiar existentes
 
         const toggleBrushButton = document.getElementById('toggle-brush-button') as HTMLButtonElement | null;
         const clearInkButton = document.getElementById('clear-ink-button') as HTMLButtonElement | null;
 
         if (toggleBrushButton) {
-            this.toggleBrushListener = this.toggleBrush.bind(this);
-            this.addListener(toggleBrushButton, 'click', this.toggleBrushListener);
-            console.log(" -> Listener añadido a toggleBrushButton");
+            const brushButtonHandler = () => this.gameManager.activateBrush();
+            this.addListener(toggleBrushButton, 'click', brushButtonHandler);
+            // console.log(" -> Listener añadido a toggleBrushButton (llama a GameManager)"); // Menos verboso
         } else console.warn("InkManager: toggleBrushButton no encontrado.");
 
         if (clearInkButton) {
             this.clearInkListener = this.clearInkLines.bind(this);
             this.addListener(clearInkButton, 'click', this.clearInkListener);
-            console.log(" -> Listener añadido a clearInkButton");
+            // console.log(" -> Listener añadido a clearInkButton"); // Menos verboso
         } else console.warn("InkManager: clearInkButton no encontrado.");
 
         if (this.drawingCanvas) {
@@ -132,14 +138,14 @@ export class InkManager {
             this.addListener(this.drawingCanvas, 'touchmove', drawHandler, { passive: false });
             this.addListener(this.drawingCanvas, 'touchend', stopHandler);
             this.addListener(this.drawingCanvas, 'touchcancel', stopHandler);
-            console.log(" -> Listeners de dibujo (mouse/touch) añadidos al canvas.");
+            // console.log(" -> Listeners de dibujo (mouse/touch) añadidos al canvas."); // Menos verboso
         } else {
             console.error("InkManager: No se pudieron añadir listeners de dibujo (canvas no encontrado).");
         }
 
         // Listener de resize
         this.addListener(window, 'resize', this.handleResize.bind(this));
-        console.log(" -> Listener de resize añadido.");
+        // console.log(" -> Listener de resize añadido."); // Menos verboso
     }
 
     /** Añade un listener y lo registra para limpieza. */
@@ -150,13 +156,10 @@ export class InkManager {
 
     /** Remueve todos los listeners registrados. */
     private removeListeners(): void {
-        // console.log(`InkManager: Removiendo ${this.listeners.length} listeners...`);
         this.listeners.forEach(({ element, type, handler }) => {
             try { element.removeEventListener(type, handler); } catch (e) {}
         });
         this.listeners = [];
-        // Resetear referencias explícitas si es necesario
-        this.toggleBrushListener = null;
         this.clearInkListener = null;
     }
 
@@ -167,7 +170,7 @@ export class InkManager {
         if (this.drawingCtx) {
             this.resizeCanvas(); // Establecer tamaño inicial
             this.applyContextStyles();
-            console.log("InkManager: Canvas de dibujo configurado.");
+            // console.log("InkManager: Canvas de dibujo configurado."); // Menos verboso
             this.clearCanvas();
             this.redrawPaths(); // Redibujar trazos existentes
         } else {
@@ -230,8 +233,7 @@ export class InkManager {
      */
     public updateInkUI(): void {
         if (!this.isInitialized) {
-            // console.warn("InkManager: updateInkUI llamado antes de inicializar completamente.");
-            return; // No actualizar si no está listo
+            return;
         }
         if (!this.playerData) {
             console.error("InkManager: PlayerData no disponible en updateInkUI.");
@@ -239,117 +241,125 @@ export class InkManager {
         }
 
         const isUnlocked = this.playerData.isDrawingUnlocked;
-        const visibilityClass = 'hidden';
-
-        // Buscar elementos (se hace aquí para robustez, por si el DOM cambia)
-        const inkLabel = document.getElementById('ink-label');
-        const inkBarContainer = document.getElementById('ink-bar-container');
-        const inkBarFill = document.getElementById('ink-bar-fill');
         const toggleBrushButton = document.getElementById('toggle-brush-button') as HTMLButtonElement | null;
         const clearInkButton = document.getElementById('clear-ink-button') as HTMLButtonElement | null;
 
-        // 1. Visibilidad de Barra y Etiqueta
-        if (inkLabel) inkLabel.classList.toggle(visibilityClass, !isUnlocked);
-        if (inkBarContainer) inkBarContainer.classList.toggle(visibilityClass, !isUnlocked);
-         // Actualizar clase 'ink-visible' en #score-area
+        // Actualizar clase 'ink-visible' en el contenedor padre
         const scoreArea = document.getElementById('score-area');
         if (scoreArea) scoreArea.classList.toggle('ink-visible', isUnlocked);
 
-        // 2. Actualizar Relleno de Barra
-        if (inkBarFill) {
-            const maxInk = this.playerData.getMaxInk();
-            const currentInk = this.playerData.currentInk;
-            const percentage = maxInk > 0 ? Math.max(0, Math.min(100, (currentInk / maxInk) * 100)) : 0;
-            (inkBarFill as HTMLElement).style.width = `${percentage}%`;
-        }
+        // Actualizar barra de tinta (llamada a UIManager)
+        this.gameManager.getUIManager().updateInkBar(); // UIManager se encarga de la lógica visual arcoíris
 
-        // 3. Habilitar/Deshabilitar Botones
+        // Habilitar/Deshabilitar Botones
         const canUseBrush = isUnlocked && this.playerData.currentInk > 0;
-        const canClear = isUnlocked && this.drawnPaths.length > 0;
+        // *** CAMBIO: El botón clear ahora se habilita si se ha gastado tinta ***
+        const canClear = isUnlocked && this.playerData.inkSpentSinceLastClear > 0;
 
         if (toggleBrushButton) {
             toggleBrushButton.disabled = !isUnlocked || (!canUseBrush && !this.isBrushActive);
-            toggleBrushButton.classList.toggle('active', this.isBrushActive); // Sincroniza clase visual
+            toggleBrushButton.classList.toggle('active', this.isBrushActive);
         }
         if (clearInkButton) {
-            clearInkButton.disabled = !isUnlocked || !canClear;
+            clearInkButton.disabled = !canClear; // Habilitar si se ha gastado tinta
         }
 
-        // 4. Desactivar Pincel si se Queda Sin Tinta
+        // Desactivar Pincel si se Queda Sin Tinta
         if (isUnlocked && this.playerData.currentInk <= 0 && this.isBrushActive) {
-            console.log("InkManager: Sin tinta con pincel activo. Desactivando.");
-            this.toggleBrush(); // Desactiva y actualiza visuales
+            // console.log("InkManager: Sin tinta con pincel activo. Forzando desactivación."); // Menos verboso
+            this.toggleBrush(false);
         }
 
-        // 5. Actualizar Clases del Canvas y Contenedor Principal (Fade UI)
-        this.updateBrushVisuals(); // Llama a la función que maneja esto
+        // Actualizar Clases del Canvas y Contenedor Principal (Fade UI)
+        this.updateBrushVisuals();
     }
 
-    /** Activa/desactiva el modo pincel. */
-    public toggleBrush(): void {
-        if (!this.isInitialized) return; // Salir si no está inicializado
+    /**
+     * Activa/desactiva el modo pincel.
+     * @param forceState - (Opcional) Booleano para forzar el estado (true=activo, false=inactivo). Si no se provee, alterna.
+     */
+    public toggleBrush(forceState?: boolean): void {
+        if (!this.isInitialized) {
+             // console.log("[InkManager.toggleBrush] Aborted: Not initialized."); // Menos verboso
+             return;
+        }
 
-        // Si no está desbloqueado, forzar a desactivado y salir
-        if (!this.playerData.isDrawingUnlocked) {
+        const newState = (forceState !== undefined) ? forceState : !this.isBrushActive;
+        const oldState = this.isBrushActive;
+        // console.log(`[InkManager.toggleBrush] Called. Current state: ${oldState}, Forced state: ${forceState}, New target state: ${newState}`); // Menos verboso
+
+        // Si se intenta activar pero no está desbloqueado o no hay tinta, no hacer nada
+        if (newState === true && (!this.playerData.isDrawingUnlocked || this.playerData.currentInk <= 0)) {
+            // console.log(`[InkManager.toggleBrush] Cannot activate. Unlocked: ${this.playerData.isDrawingUnlocked}, Ink: ${this.playerData.currentInk}`); // Menos verboso
             if (this.isBrushActive) {
-                this.isBrushActive = false;
-                this.updateBrushVisuals();
+                 this.isBrushActive = false;
+                 this.updateBrushVisuals();
+                 // console.log(`[InkManager.toggleBrush] Forced visual deactivation due to activation constraints.`); // Menos verboso
             }
             return;
         }
 
-        // No permitir activar si no hay tinta (pero sí permitir desactivar)
-        if (this.playerData.currentInk <= 0 && !this.isBrushActive) {
-            console.log("InkManager: No se puede activar el pincel, sin tinta.");
+        if (newState === this.isBrushActive) {
+            // console.log(`[InkManager.toggleBrush] State already ${newState}. No change needed.`); // Menos verboso
             return;
         }
 
-        this.isBrushActive = !this.isBrushActive;
-        console.log("InkManager: Pincel activo:", this.isBrushActive);
+        this.isBrushActive = newState;
+        // console.log(`[InkManager.toggleBrush] State CHANGED from ${oldState} to ${this.isBrushActive}`); // Menos verboso
 
-        // Si se está desactivando mientras se dibujaba, finalizar trazo
         if (!this.isBrushActive && this.isDrawing) {
-            this.stopDrawing(null); // Pasar null ya que no hay evento
+            // console.log(`[InkManager.toggleBrush] Deactivating while drawing, stopping draw.`); // Menos verboso
+            this.stopDrawing(null);
         }
 
-        this.updateBrushVisuals(); // Actualizar clases CSS relacionadas
-        // No es necesario llamar a updateInkUI aquí mismo, ya que updateBrushVisuals
-        // maneja la parte visual inmediata, y el estado enabled/disabled se
-        // reevaluará en la próxima llamada a updateInkUI (ej. por gasto de tinta).
+        this.updateBrushVisuals();
+        this.updateInkUI(); // Re-evaluar estado de botones
+        // console.log(`[InkManager.toggleBrush] Finished. Brush active: ${this.isBrushActive}`); // Menos verboso
     }
+
 
     /** Actualiza clases CSS para reflejar estado del pincel (active/fade). */
     private updateBrushVisuals(): void {
         if (this.drawingCanvas) this.drawingCanvas.classList.toggle('active', this.isBrushActive);
-        const toggleBrushButton = document.getElementById('toggle-brush-button'); // Buscarlo
+        const toggleBrushButton = document.getElementById('toggle-brush-button');
         if (toggleBrushButton) toggleBrushButton.classList.toggle('active', this.isBrushActive);
-        // Usar el gameContainer o un fallback (#app)
         const containerToFade = this.gameContainer ?? document.getElementById('app');
         if (containerToFade) containerToFade.classList.toggle('ui-faded', this.isBrushActive);
     }
 
-    /** Borra líneas de tinta visual y física, rellena tinta. */
+    /** Borra líneas de tinta visual y física, recupera la tinta gastada. */
     public clearInkLines(): void {
-        if (!this.isInitialized || !this.playerData.isDrawingUnlocked || this.drawnPaths.length === 0) return;
-        console.log(`InkManager: Borrando ${this.drawnPaths.length} trazos...`);
+        // *** INICIO MODIFICACIÓN: Lógica de recuperación ***
+        if (!this.isInitialized || !this.playerData.isDrawingUnlocked || this.playerData.inkSpentSinceLastClear <= 0) {
+            console.log("[InkManager.clearInkLines] No ink spent or drawing not unlocked.");
+            return; // Salir si no hay tinta gastada o no está desbloqueado
+        }
+        console.log(`InkManager: Clearing ${this.drawnPaths.length} strokes and recovering ink...`);
+        // *** FIN MODIFICACIÓN ***
 
         const allBodiesToRemove: Matter.Body[] = this.drawnPaths.flatMap(p => p.bodies);
 
         if (this.physicsManager && allBodiesToRemove.length > 0) {
-            console.log(`  Removiendo ${allBodiesToRemove.length} cuerpos físicos...`);
+            // console.log(`  Removiendo ${allBodiesToRemove.length} cuerpos físicos...`); // Menos verboso
             try {
                 const world = this.physicsManager.getWorld();
                 const bodiesInWorld = allBodiesToRemove.filter(body => Matter.Composite.get(world, body.id, 'body'));
                 if (bodiesInWorld.length > 0) {
                     Matter.World.remove(world, bodiesInWorld);
-                    console.log(`   -> ${bodiesInWorld.length} cuerpos removidos.`);
+                    // console.log(`   -> ${bodiesInWorld.length} cuerpos removidos.`); // Menos verboso
+                } else {
+                    // console.log("   -> No se encontraron cuerpos de tinta en el mundo para remover."); // Menos verboso
                 }
             } catch(error) { console.error("InkManager: Error removiendo cuerpos de tinta:", error); }
         }
 
         this.drawnPaths = []; // Limpiar array de trazos
         this.clearCanvas();   // Limpiar dibujo visual
-        this.playerData.refillInk(); // Rellenar tinta
+
+        // *** INICIO MODIFICACIÓN: Recuperar tinta gastada ***
+        this.playerData.recoverSpentInk(); // Llama al método en PlayerData
+        // *** FIN MODIFICACIÓN ***
+
         this.updateInkUI();   // Actualizar barra y botones
         this.gameManager.getAudioManager().playSound('clear_ink');
     }
@@ -395,22 +405,24 @@ export class InkManager {
         if (distSq >= MIN_PATH_DISTANCE_SQ) {
             const dist = Math.sqrt(distSq);
             const inkCost = dist * this.playerData.getCurrentInkCostPerPixel();
-            if (this.playerData.spendInk(inkCost)) {
+            if (this.playerData.spendInk(inkCost)) { // spendInk ahora actualiza inkSpentSinceLastClear
                 this.currentPath.push(pos);
                 if (this.drawingCtx) {
                     this.drawingCtx.lineTo(pos.x, pos.y);
                     this.drawingCtx.stroke();
-                    this.drawingCtx.beginPath(); // Inicia nuevo segmento visual
+                    this.drawingCtx.beginPath();
                     this.drawingCtx.moveTo(pos.x, pos.y);
                 }
                 this.lastPoint = pos;
                 this.updateInkUI(); // Actualiza barra
-            } else { this.stopDrawing(event); }
+            } else {
+                this.stopDrawing(event);
+            }
         }
     }
 
     private stopDrawing(event: MouseEvent | TouchEvent | null): void {
-        if (!this.isDrawing) return; // Evitar doble llamada
+        if (!this.isDrawing) return;
         event?.preventDefault();
         this.isDrawing = false;
         this.gameManager.getAudioManager().playSound('draw_end');
@@ -425,7 +437,8 @@ export class InkManager {
                 } catch (error) { console.error("InkManager: Error añadiendo cuerpos al mundo:", error); }
             } else if (!this.physicsManager) { console.error("InkManager: PhysicsManager no disponible al finalizar trazo."); }
         }
-        this.currentPath = []; this.lastPoint = null;
+        this.currentPath = [];
+        this.lastPoint = null;
     }
 
     /** Obtiene coordenadas relativas al canvas. */
@@ -433,15 +446,27 @@ export class InkManager {
         if (!this.drawingCanvas) return { x: 0, y: 0 };
         const rect = this.drawingCanvas.getBoundingClientRect();
         let clientX = 0, clientY = 0;
-        if (event instanceof MouseEvent) { clientX = event.clientX; clientY = event.clientY; }
-        else if (event.touches && event.touches[0]) { clientX = event.touches[0].clientX; clientY = event.touches[0].clientY; }
-        else if ((event as TouchEvent).changedTouches && (event as TouchEvent).changedTouches[0]) { clientX = (event as TouchEvent).changedTouches[0].clientX; clientY = (event as TouchEvent).changedTouches[0].clientY; }
-        return { x: clientX - rect.left, y: clientY - rect.top };
+        if (event instanceof MouseEvent) {
+            clientX = event.clientX;
+            clientY = event.clientY;
+        } else if (event.touches && event.touches[0]) {
+            clientX = event.touches[0].clientX;
+            clientY = event.touches[0].clientY;
+        } else if ((event as TouchEvent).changedTouches && (event as TouchEvent).changedTouches[0]) {
+            clientX = (event as TouchEvent).changedTouches[0].clientX;
+            clientY = (event as TouchEvent).changedTouches[0].clientY;
+        }
+        return {
+            x: clientX - rect.left,
+            y: clientY - rect.top
+        };
     }
 
     /** Calcula distancia al cuadrado. */
     private distanceSq(p1: Point, p2: Point): number {
-        const dx = p1.x - p2.x; const dy = p1.y - p2.y; return dx * dx + dy * dy;
+        const dx = p1.x - p2.x;
+        const dy = p1.y - p2.y;
+        return dx * dx + dy * dy;
     }
 
     /** Crea cuerpos físicos para los segmentos del trazo. */
@@ -450,19 +475,35 @@ export class InkManager {
         if (points.length < 2 || !this.physicsManager) return bodies;
 
         for (let i = 1; i < points.length; i++) {
-            const startPoint = points[i - 1]; const endPoint = points[i];
-            const dx = endPoint.x - startPoint.x; const dy = endPoint.y - startPoint.y;
+            const startPoint = points[i - 1];
+            const endPoint = points[i];
+            const dx = endPoint.x - startPoint.x;
+            const dy = endPoint.y - startPoint.y;
             const distSq = dx * dx + dy * dy;
-            if (distSq < 1) continue; // Ignorar segmentos muy pequeños
-            const dist = Math.sqrt(distSq); const angle = Math.atan2(dy, dx);
-            const midX = startPoint.x + dx / 2; const midY = startPoint.y + dy / 2;
+
+            if (distSq < 1) continue;
+
+            const dist = Math.sqrt(distSq);
+            const angle = Math.atan2(dy, dx);
+            const midX = startPoint.x + dx / 2;
+            const midY = startPoint.y + dy / 2;
 
             try {
-                const segmentBody = Matter.Bodies.rectangle( midX, midY, dist, INK_LINE_THICKNESS,
-                    { isStatic: true, angle: angle, label: 'inkLine', friction: 0.5, restitution: 0.1,
-                      collisionFilter: { category: INK_COLLISION_CATEGORY, mask: INK_COLLISION_MASK },
-                      render: { visible: false } // El cuerpo físico no se renderiza
-                    });
+                const segmentBody = Matter.Bodies.rectangle(
+                    midX, midY, dist, INK_LINE_THICKNESS,
+                    {
+                        isStatic: true,
+                        angle: angle,
+                        label: 'inkLine',
+                        friction: 0.5,
+                        restitution: 0.1,
+                        collisionFilter: {
+                            category: INK_COLLISION_CATEGORY,
+                            mask: INK_COLLISION_MASK
+                        },
+                        render: { visible: false }
+                    }
+                );
                 if (segmentBody) bodies.push(segmentBody);
             } catch (error) { console.error("InkManager: Error creando cuerpo de tinta:", error); }
         }

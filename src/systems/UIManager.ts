@@ -20,6 +20,19 @@ const COMBO_FONT_INCREMENT_REM = 0.5;
 const COMBO_HUE_INCREMENT = 35;
 // --- FIN CONSTANTES ---
 
+// --- NUEVO: Constantes para Barra Arcoíris ---
+const RAINBOW_INK_COLORS = [
+    '#a78bfa', // Violeta (Base)
+    '#7c3aed', // Indigo
+    '#2563eb', // Azul
+    '#34d399', // Verde
+    '#facc15', // Amarillo
+    '#f97316', // Naranja
+    '#ef4444'  // Rojo
+];
+const DEFAULT_INK_BAR_BG_COLOR = '#374151'; // Color base del contenedor (usado si fullBars = 0)
+// ---------------------------------------
+
 // Mapeo de dificultad (Ajustado según GDD ALPHA DEV)
 const DIFFICULTY_LEVELS_CONFIG: { [key: number | string]: { name: string; class: string; glowColor?: string; glowBlur?: string; pulse?: boolean } } = {
     1: { name: "COMÚN", class: "difficulty-1" },
@@ -50,7 +63,7 @@ type UIElementsMap = {
     inkArea: HTMLElement | null;
     inkLabel: HTMLElement | null;
     inkBarContainer: HTMLElement | null;
-    inkBarFill: HTMLElement | null;
+    // No necesitamos referencia directa al segmento de tinta aquí
     comboDisplay: HTMLElement | null;
     questionBox: HTMLElement | null;
     questionBoxContent: HTMLElement | null;
@@ -66,7 +79,7 @@ type UIElementsMap = {
     catFoodUiContainer: HTMLElement | null;
     catFoodButton: HTMLElement | null;
     catFoodBarContainer: HTMLElement | null;
-    catFoodBarFill: HTMLElement | null;
+    catFoodBarFill: HTMLElement | null; // Mantenemos este para comida
 }
 
 export class UIManager {
@@ -90,11 +103,12 @@ export class UIManager {
              containerElement.innerHTML = `<p class="text-red-500">Error: No hay pregunta para mostrar.</p>`;
              return;
          }
-        console.log(`UIManager: Construyendo interfaz para pregunta ID ${question.id} (estilo GDD Alpha)`);
+        // console.log(`UIManager: Construyendo interfaz para pregunta ID ${question.id} (estilo GDD Alpha)`); // Menos verboso
         this.clearQuizInterface(containerElement);
         this.optionClickCallback = onOptionClick;
 
         const elementsMap: Partial<UIElementsMap> = { optionButtons: [] };
+        const playerData = this.gameManager.getPlayerData(); // Obtener playerData una vez
 
         try {
             // Contenedor Principal del Juego
@@ -112,22 +126,20 @@ export class UIManager {
             // --- Área Superior ---
             const scoreArea = document.createElement('div');
             scoreArea.id = 'score-area'; // ID GDD Alpha
-            // Clases base GDD Alpha (Tailwind-like)
             scoreArea.className = 'top-ui-container flex flex-col items-center w-full mb-4 gap-1';
             contentContainer.appendChild(scoreArea);
             elementsMap.topUIContainer = scoreArea;
 
             const statusWrapper = document.createElement('div');
             statusWrapper.id = 'status-wrapper'; // ID GDD Alpha
-            // ** AJUSTE CORREGIDO: Clases para centrar como en GDD Alpha **
-            statusWrapper.className = 'status-row flex justify-center items-center w-auto gap-6 mb-1'; // justify-center y gap-6 (o similar)
+            statusWrapper.className = 'status-row flex justify-center items-center w-auto gap-6 mb-1';
             scoreArea.appendChild(statusWrapper);
             elementsMap.statusRow = statusWrapper;
-            
+
             // Vidas
             const livesContainer = document.createElement('div');
             livesContainer.id = 'lives-container';
-            livesContainer.className = 'quiz-lives flex items-center gap-1.5 text-lg'; // Clases base
+            livesContainer.className = 'quiz-lives flex items-center gap-1.5 text-lg';
             const heartIcon = document.createElement('span'); heartIcon.className = 'life-emoji'; heartIcon.textContent = '❤️';
             const livesCountSpan = document.createElement('span'); livesCountSpan.id = 'lives-count'; livesCountSpan.textContent = '0';
             const shieldIcon = document.createElement('span'); shieldIcon.id = 'shield-icon'; shieldIcon.textContent = '🛡️'; shieldIcon.style.display = 'none';
@@ -142,7 +154,7 @@ export class UIManager {
             // Score
             const scoreDisplayWrapper = document.createElement('div');
             scoreDisplayWrapper.id = 'score-display-wrapper';
-            scoreDisplayWrapper.className = 'quiz-score relative flex items-center'; // Clases base
+            scoreDisplayWrapper.className = 'quiz-score relative flex items-center';
             const scoreEmoji = document.createElement('span'); scoreEmoji.className = 'score-emoji'; scoreEmoji.textContent = '⭐';
             const scoreSpan = document.createElement('span'); scoreSpan.id = 'score'; scoreSpan.textContent = '0';
             const scorePulse = document.createElement('div'); scorePulse.id = 'score-pulse';
@@ -155,35 +167,47 @@ export class UIManager {
             // --- Área de Tinta ---
             const inkAreaContainer = document.createElement('div');
             inkAreaContainer.id = 'ink-area';
-            inkAreaContainer.className = 'ink-area flex flex-col items-center mt-1'; // Clases base
+            inkAreaContainer.className = 'ink-area flex flex-col items-center mt-1';
             scoreArea.appendChild(inkAreaContainer);
             elementsMap.inkArea = inkAreaContainer;
 
             const inkLabel = document.createElement('div'); inkLabel.id = 'ink-label';
-            inkLabel.className = 'ink-label-base'; // Clase base CSS
+            inkLabel.className = 'ink-label-base';
             inkLabel.textContent = "Tinta";
-            inkLabel.classList.add('hidden'); // ** Oculto inicialmente **
+            if (!playerData.isDrawingUnlocked) { // Usar variable local
+                inkLabel.classList.add('hidden');
+            }
             inkAreaContainer.appendChild(inkLabel);
             elementsMap.inkLabel = inkLabel;
 
             const inkBarContainer = document.createElement('div'); inkBarContainer.id = 'ink-bar-container';
-            inkBarContainer.className = 'ink-bar-container-base'; // Clase base CSS
-            inkBarContainer.classList.add('hidden'); // ** Oculto inicialmente **
+            inkBarContainer.className = 'ink-bar-container-base relative';
+            if (!playerData.isDrawingUnlocked) { // Usar variable local
+                inkBarContainer.classList.add('hidden');
+            }
+
+            // *** INICIO MODIFICACIÓN: Establecer fondo inicial ***
+            const currentInk = playerData.currentInk;
+            const barCapacity = playerData.INK_BAR_CAPACITY;
+            const fullBars = Math.floor(currentInk / barCapacity);
+            let initialBackgroundColor = DEFAULT_INK_BAR_BG_COLOR;
+            if (fullBars > 0) {
+                const previousColorIndex = (fullBars - 1) % RAINBOW_INK_COLORS.length;
+                initialBackgroundColor = RAINBOW_INK_COLORS[previousColorIndex];
+            }
+            inkBarContainer.style.backgroundColor = initialBackgroundColor;
+            // *** FIN MODIFICACIÓN ***
+
             inkAreaContainer.appendChild(inkBarContainer);
             elementsMap.inkBarContainer = inkBarContainer;
 
-            const inkBarFill = document.createElement('div'); inkBarFill.id = 'ink-bar-fill';
-            inkBarFill.className = 'ink-bar-fill-base'; // Clase base CSS
-            inkBarFill.style.width = '0%';
-            inkBarContainer.appendChild(inkBarFill);
-            elementsMap.inkBarFill = inkBarFill;
 
             // --- Contador de Combo ---
             const comboCounter = document.createElement('span');
             comboCounter.id = 'combo-counter';
             comboCounter.className = 'combo-counter-base'; // Clase base CSS
             comboCounter.style.display = 'none';
-            document.body.appendChild(comboCounter);
+            document.body.appendChild(comboCounter); // Attach to body to be fixed positioned
             elementsMap.comboDisplay = comboCounter;
 
             // --- Caja de Pregunta ---
@@ -194,7 +218,6 @@ export class UIManager {
             elementsMap.questionBox = questionBox;
 
             const qBoxContent = document.createElement('div');
-            // ** AJUSTE: Asegurar que el contenido interno también use flex para centrar **
             qBoxContent.className = 'card__content flex flex-col items-center gap-2'; // Clases para centrar contenido
             questionBox.appendChild(qBoxContent);
             elementsMap.questionBoxContent = qBoxContent;
@@ -214,10 +237,10 @@ export class UIManager {
             qBoxContent.appendChild(qText);
             elementsMap.questionText = qText;
 
-            // Backdrop para efecto glow
+            // Backdrop para efecto glow (if needed by theme)
             const qBoxBackdrop = document.createElement('div');
-            qBoxBackdrop.className = 'card__backdrop';
-            questionBox.insertBefore(qBoxBackdrop, qBoxContent);
+            qBoxBackdrop.className = 'card__backdrop'; // Example class, adjust based on theme
+            questionBox.insertBefore(qBoxBackdrop, qBoxContent); // Insert before content
             elementsMap.questionBoxBackdrop = qBoxBackdrop;
 
             // --- Contenedor de Opciones ---
@@ -257,7 +280,7 @@ export class UIManager {
             elementsMap.catFoodUiContainer = document.getElementById('cat-food-ui-container');
             elementsMap.catFoodButton = document.getElementById('cat-food-button');
             elementsMap.catFoodBarContainer = document.getElementById('cat-food-bar-container');
-            elementsMap.catFoodBarFill = document.getElementById('cat-food-bar-fill');
+            elementsMap.catFoodBarFill = document.getElementById('cat-food-bar-fill'); // Referencia para comida se mantiene
 
         } catch (error) {
             console.error("UIManager: Error fatal creando elementos de la interfaz:", error);
@@ -268,24 +291,22 @@ export class UIManager {
 
         // --- Actualizaciones Iniciales de Estado ---
         this.currentUIElements = elementsMap as UIElementsMap;
-        this.updateScoreDisplay(this.gameManager.getPlayerData().score);
-        this.updateLivesDisplay(this.gameManager.getLives());
-        this.updateShieldIcon(this.gameManager.getPlayerData().hasShield);
-        this.updateHintIcon(this.gameManager.getPlayerData().hintCharges);
-        this.updateInkBar(); // Actualiza % de llenado
-        // ** LLAMADA CLAVE: Actualiza visibilidad inicial de tinta y tamaño de #score-area **
-        this.updateInkVisibility(this.gameManager.getPlayerData().isDrawingUnlocked);
-        this.updateDifficultyLabel(question.difficulty);
-        this.updateComboVisuals(currentCombo);
-        this.updateCatFoodBar(this.gameManager.getPlayerData().currentCatFood, this.gameManager.getPlayerData().getMaxCatFood());
-        this.toggleCatFoodUIVisibility(this.gameManager.getPlayerData().isCatFoodUnlocked);
+        this.updateScoreDisplay(playerData.score); // Usar variable local
+        this.updateLivesDisplay(this.gameManager.getLives()); // OK
+        this.updateShieldIcon(playerData.hasShield); // Usar variable local
+        this.updateHintIcon(playerData.hintCharges); // Usar variable local
+        this.updateInkBar(); // Actualiza la barra arcoíris inicial (ya con fondo correcto)
+        this.updateInkVisibility(playerData.isDrawingUnlocked); // Usar variable local
+        this.updateDifficultyLabel(question.difficulty); // OK
+        this.updateComboVisuals(currentCombo); // OK
+        this.updateCatFoodBar(playerData.currentCatFood, playerData.getMaxCatFood()); // Usar variable local
+        this.toggleCatFoodUIVisibility(playerData.isCatFoodUnlocked); // Usar variable local
     }
 
     /**
      * Limpia la interfaz del quiz, removiendo elementos y listeners.
      */
     public clearQuizInterface(containerElement: HTMLElement): void {
-        // Remover listeners de los botones de opción
         this.optionListeners.forEach((listener, button) => {
             if (button && button.isConnected) {
                  button.removeEventListener('click', listener);
@@ -293,19 +314,14 @@ export class UIManager {
         });
         this.optionListeners.clear();
 
-        // Remover el contador de combo del body si existe
         const comboCounter = document.getElementById('combo-counter');
         if (comboCounter && comboCounter.parentNode) {
             comboCounter.parentNode.removeChild(comboCounter);
         }
 
         this.removeExplanationListener();
-
-        // Limpiar referencias internas
         this.currentUIElements = {};
         this.optionClickCallback = null;
-
-        // Limpiar el contenedor principal de la app
         containerElement.innerHTML = '';
     }
 
@@ -315,9 +331,7 @@ export class UIManager {
     private applyClasses(element: HTMLElement | null, classes: string | undefined): void {
         if (!element || !classes) return;
         classes.split(' ').forEach(cls => {
-            if (cls) {
-                 element.classList.add(cls);
-            }
+            if (cls) element.classList.add(cls);
         });
     }
 
@@ -372,7 +386,7 @@ export class UIManager {
                 if (overlay) overlay.removeEventListener('transitionend', hideElements);
             };
             overlay.addEventListener('transitionend', hideElements);
-            setTimeout(() => { if (overlay.classList.contains('visible')) { hideElements(); } }, transitionDuration + 50);
+            setTimeout(() => { if (overlay?.classList.contains('visible')) { hideElements(); } }, transitionDuration + 50);
         }
      }
     private removeExplanationListener(): void {
@@ -420,37 +434,67 @@ export class UIManager {
         const feedbackAreaElement = this.currentUIElements?.feedbackArea;
         if (feedbackAreaElement) {
             feedbackAreaElement.textContent = message;
-            // Aplicar clases base y de color (Alineado con GDD Alpha)
-            feedbackAreaElement.className = 'feedback-area-base mt-4 h-8 text-center font-bold'; // Clases base
-            const colorClass = type === 'correct' ? 'text-green-400' : // GDD Alpha usa verde
-                               type === 'incorrect' ? 'text-red-400' :   // GDD Alpha usa rojo
-                               type === 'shield' ? 'text-blue-400' :    // GDD Alpha usa azul
-                               'text-gray-400'; // 'info' o default
+            feedbackAreaElement.className = 'feedback-area-base mt-4 h-8 text-center font-bold';
+            const colorClass = type === 'correct' ? 'text-green-400' :
+                               type === 'incorrect' ? 'text-red-400' :
+                               type === 'shield' ? 'text-blue-400' :
+                               'text-gray-400';
              feedbackAreaElement.classList.add(...colorClass.split(' '));
         }
     }
 
-    /** Actualiza el porcentaje de llenado de la barra de tinta. */
+    /** Actualiza la visualización de la barra de tinta con fondo del color anterior. */
     public updateInkBar(): void {
-        const fillElement = this.currentUIElements?.inkBarFill as HTMLElement | null;
-        if (fillElement) {
-            const playerData = this.gameManager.getPlayerData();
-            const maxInk = playerData.getMaxInk();
-            const currentInk = playerData.currentInk;
-            const percentage = maxInk > 0 ? Math.max(0, Math.min(100, (currentInk / maxInk) * 100)) : 0;
-            fillElement.style.width = `${percentage}%`;
+        const inkBarContainer = this.currentUIElements?.inkBarContainer ?? document.getElementById('ink-bar-container');
+        if (!inkBarContainer) return;
+
+        const playerData = this.gameManager.getPlayerData();
+        const currentInk = playerData.currentInk;
+        const barCapacity = playerData.INK_BAR_CAPACITY;
+
+        // Limpiar barras anteriores
+        inkBarContainer.innerHTML = '';
+
+        // Calcular barras completas y porcentaje actual
+        const fullBars = Math.floor(currentInk / barCapacity);
+        const currentBarInk = currentInk % barCapacity;
+        const currentBarPercentage = (currentInk === 0 && fullBars === 0) ? 0 :
+                                     (currentBarInk === 0 && fullBars > 0) ? 100 :
+                                     (currentBarInk / barCapacity) * 100;
+
+        // Determinar color de fondo (barra anterior llena)
+        let backgroundColor = DEFAULT_INK_BAR_BG_COLOR;
+        if (fullBars > 0) {
+            const previousColorIndex = (fullBars - 1) % RAINBOW_INK_COLORS.length;
+            backgroundColor = RAINBOW_INK_COLORS[previousColorIndex];
         }
-        // ** AJUSTE: No llamar a updateInkVisibility aquí para evitar bucles **
-        // La visibilidad se actualiza en buildQuizInterface y cuando se llama explícitamente
+        // Aplicar color de fondo al contenedor principal
+        inkBarContainer.style.backgroundColor = backgroundColor;
+
+        // Determinar color de la barra actual
+        const currentColorIndex = fullBars % RAINBOW_INK_COLORS.length;
+        const currentBarColor = RAINBOW_INK_COLORS[currentColorIndex];
+
+        // Crear y añadir UN SOLO segmento visual para la barra actual
+        if (currentBarPercentage >= 0) { // Crear incluso si es 0%
+            const currentBarSegment = document.createElement('div');
+            currentBarSegment.className = 'ink-bar-segment';
+
+            currentBarSegment.style.backgroundColor = currentBarColor;
+            currentBarSegment.style.width = `${currentBarPercentage}%`;
+            currentBarSegment.style.transition = 'width 0.3s ease-out, background-color 0.3s ease-out';
+
+            inkBarContainer.appendChild(currentBarSegment);
+        }
     }
 
-    /** ** NUEVO: Controla la visibilidad de la UI de tinta y ajusta el contenedor padre ** */
-    public updateInkVisibility(isUnlocked: boolean): void {
-        const scoreArea = this.currentUIElements?.topUIContainer;
-        const inkLabel = this.currentUIElements?.inkLabel;
-        const inkBarContainer = this.currentUIElements?.inkBarContainer;
 
-        // Actualizar visibilidad de la etiqueta y la barra
+    /** Controla la visibilidad de la UI de tinta y ajusta el contenedor padre */
+    public updateInkVisibility(isUnlocked: boolean): void {
+        const scoreArea = this.currentUIElements?.topUIContainer ?? document.getElementById('score-area');
+        const inkLabel = this.currentUIElements?.inkLabel ?? document.getElementById('ink-label');
+        const inkBarContainer = this.currentUIElements?.inkBarContainer ?? document.getElementById('ink-bar-container');
+
         if (inkLabel) {
             inkLabel.classList.toggle('hidden', !isUnlocked);
         }
@@ -458,10 +502,8 @@ export class UIManager {
             inkBarContainer.classList.toggle('hidden', !isUnlocked);
         }
 
-        // Actualizar clase en el contenedor padre para el ajuste de tamaño CSS
         if (scoreArea) {
             scoreArea.classList.toggle('ink-visible', isUnlocked);
-            console.log(`UIManager: Clase 'ink-visible' en #score-area: ${isUnlocked}`); // Log para verificar
         }
     }
 
@@ -475,7 +517,8 @@ export class UIManager {
                   || DIFFICULTY_LEVELS_CONFIG[difficultyValue]
                   || DIFFICULTY_LEVELS_CONFIG[1];
 
-        labelElement.textContent = `Pregunta: ${config.name}`; // Texto GDD Alpha
+        labelElement.textContent = `Pregunta: ${config.name}`;
+
         Object.values(DIFFICULTY_LEVELS_CONFIG).forEach(c => {
             if (c.class) labelElement.classList.remove(c.class);
         });
@@ -497,15 +540,12 @@ export class UIManager {
 
         if (!root) { console.error("[updateComboVisuals] Error: document.documentElement no encontrado."); return; }
 
-        // Intensidad del Flare del Score
         const flareIntensity = combo < FLARE_START_STREAK ? 0 : Math.min((combo - FLARE_START_STREAK + 1) / (FLARE_MAX_STREAK - FLARE_START_STREAK + 1), 1);
         root.style.setProperty('--flare-intensity', flareIntensity.toFixed(3));
 
-        // Intensidad del Glow de Elementos
         const glowIntensity = combo < ELEMENT_GLOW_START_STREAK ? 0 : Math.min((combo - ELEMENT_GLOW_START_STREAK + 1) / (ELEMENT_GLOW_MAX_STREAK - ELEMENT_GLOW_START_STREAK + 1), 1);
         root.style.setProperty('--element-glow-intensity', glowIntensity.toFixed(3));
 
-        // Contador de Combo
         if (comboDisplay) {
             if (combo > 0) {
                 const sizeIncrease = Math.min(Math.max(0, combo - 1), 10);
@@ -529,7 +569,6 @@ export class UIManager {
             }
         }
 
-        // Cambio de Color de Fondo del Body
         const bgStreakRatio = Math.min(Math.max(0, combo - BG_COLOR_START_STREAK) / (BG_COLOR_MAX_STREAK - BG_COLOR_START_STREAK), 1);
         const bgIntensity = bgStreakRatio * bgStreakRatio;
         const baseHue = 220;
@@ -538,7 +577,6 @@ export class UIManager {
         const lightness = 10 + bgIntensity * 15;
         document.body.style.backgroundColor = `hsl(${targetHue.toFixed(0)}, ${saturation.toFixed(0)}%, ${lightness.toFixed(0)}%)`;
 
-        // Clase Pulsante y Estilo del Score
         if (scoreText) {
             const shouldPulse = flareIntensity > 0.3;
             scoreText.classList.toggle('score-pulsing', shouldPulse);
@@ -572,9 +610,9 @@ export class UIManager {
 
     /** Marca visualmente las opciones incorrectas cuando se usa una pista. */
     public applyHintVisuals(correctKey: string): void {
-        console.log(`UIManager: Aplicando visuales de pista, respuesta correcta es ${correctKey}`);
+        // console.log(`UIManager: Aplicando visuales de pista, respuesta correcta es ${correctKey}`); // Menos verboso
         let incorrectOptionsDisabled = 0;
-        const optionsToDisable = 1; // GDD Alpha indica deshabilitar 1 incorrecta
+        const optionsToDisable = 1;
 
         const buttons = this.currentUIElements?.optionButtons;
         if (!buttons || buttons.length <= 1) return;
@@ -583,9 +621,10 @@ export class UIManager {
 
         shuffledButtons.forEach(btn => {
             if (incorrectOptionsDisabled >= optionsToDisable) return;
-            if (btn && btn.dataset.key !== correctKey) {
-                 btn.classList.add('option-hint-disabled'); // Solo aplica clase visual
-                 console.log(` -> Hint visual aplicado a opción incorrecta: ${btn.dataset.key}`);
+
+            if (btn && btn.dataset.key !== correctKey && !btn.classList.contains('option-hint-disabled')) {
+                 btn.classList.add('option-hint-disabled');
+                 // console.log(` -> Hint visual aplicado a opción incorrecta: ${btn.dataset.key}`); // Menos verboso
                  incorrectOptionsDisabled++;
             }
         });
@@ -613,12 +652,10 @@ export class UIManager {
     public updateCatFoodBar(currentAmount: number, maxAmount: number): void {
         const fillElement = this.currentUIElements?.catFoodBarFill as HTMLElement | null
                            ?? document.getElementById('cat-food-bar-fill');
-    
+
         if (fillElement) {
             const percentage = maxAmount > 0 ? Math.max(0, Math.min(100, (currentAmount / maxAmount) * 100)) : 0;
-            // *** ¡CAMBIO AQUÍ! ***
-            fillElement.style.width = `${percentage}%`; // Actualizamos width, no height
-            // *** FIN CAMBIO ***
+            fillElement.style.width = `${percentage}%`;
             if (!this.currentUIElements.catFoodBarFill) {
                 this.currentUIElements.catFoodBarFill = fillElement;
             }
@@ -627,7 +664,7 @@ export class UIManager {
 
     // --- Reconstrucción de Interfaz (sin cambios) ---
      public rebuildInterface(): void {
-        console.log("UIManager: Reconstruyendo interfaz...");
+        // console.log("UIManager: Reconstruyendo interfaz..."); // Menos verboso
         const currentState = this.gameManager.getCurrentState();
 
         if (currentState instanceof QuizGameplayState && currentState.currentQuestion) {
@@ -642,14 +679,14 @@ export class UIManager {
 
                 const hintApplied = (currentState as any).hintAppliedToQuestionId === currentState.currentQuestion.id;
                 if (hintApplied && this.gameManager.getPlayerData().hintCharges > 0) {
-                     console.log(" -> Reaplicando visuales de pista después de reconstruir.");
+                     // console.log(" -> Reaplicando visuales de pista después de reconstruir."); // Menos verboso
                      this.applyHintVisuals(currentState.currentQuestion.correctAnswerKey);
                 }
             } else {
                  console.error("UIManager: Contenedor #app no encontrado al intentar reconstruir.");
             }
         } else {
-            console.warn("UIManager: No se puede reconstruir la interfaz (estado incorrecto o sin pregunta actual).");
+            // console.warn("UIManager: No se puede reconstruir la interfaz (estado incorrecto o sin pregunta actual)."); // Menos verboso
         }
     }
 

@@ -13,7 +13,7 @@ import { InkManager } from '../systems/InkManager';
 import { UIManager } from '../systems/UIManager';
 import { ThemeManager } from '../systems/ThemeManager';
 import { Theme } from '../types/Theme';
-import { CatFoodManager } from '../systems/CatFoodManager'; // Importar CatFoodManager
+import { CatFoodManager } from '../systems/CatFoodManager';
 
 // Importaciones de Estados
 import { LoadingState } from './states/LoadingState';
@@ -33,7 +33,7 @@ export class GameManager {
   private inkManager: InkManager;
   private uiManager: UIManager;
   private themeManager: ThemeManager;
-  private catFoodManager: CatFoodManager; // Instancia de CatFoodManager
+  private catFoodManager: CatFoodManager;
   private lastTimestamp: number = 0;
   private isRunning: boolean = false;
   private gameLoopRequestId?: number;
@@ -46,17 +46,16 @@ export class GameManager {
     this.audioManager = new AudioManager();
     this.quizSystem = new QuizSystem();
     this.playerData = new PlayerData();
-    this.catManager = new CatManager(this.audioManager, this); // Pasar 'this'
+    this.catManager = new CatManager(this.audioManager, this);
     this.themeManager = new ThemeManager('body');
     this.uiManager = new UIManager(this);
     this.shopManager = new ShopManager(this.playerData, this);
     this.inkManager = new InkManager(this);
-    this.catFoodManager = new CatFoodManager(this); // Instanciar CatFoodManager ANTES de PhysicsManager
-    // *** ¡CAMBIO AQUÍ! Pasar CatManager Y CatFoodManager a PhysicsManager ***
+    this.catFoodManager = new CatFoodManager(this);
     this.physicsManager = new PhysicsManager(this.catManager, this.catFoodManager);
-    // **********************************************************************
     this.stateMachine = new StateMachine();
-    this.catManager.setPhysicsManager(this.physicsManager); // Inyectar PhysicsManager en CatManager
+    this.catManager.setPhysicsManager(this.physicsManager);
+    this.inkManager.setPhysicsManager(this.physicsManager);
     this.setupStates();
   }
 
@@ -64,7 +63,7 @@ export class GameManager {
     console.log('GameManager: init');
     this.playerData.reset();
     this.physicsManager.init(this.getWorldContainer());
-    this.catFoodManager.init(); // Inicializar CatFoodManager
+    this.catFoodManager.init();
     this.addKeyboardListener();
     await this.preload();
     console.log("GameManager init completado.");
@@ -125,6 +124,8 @@ export class GameManager {
   private addKeyboardListener(): void {
       if (this.keydownListener) return;
       this.keydownListener = (event: KeyboardEvent) => {
+          if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+
           if (event.key.toLowerCase() === 'p') {
               console.log("Tecla 'P' presionada - Ciclando tema...");
               this.themeManager.cycleTheme();
@@ -133,15 +134,18 @@ export class GameManager {
                   currentState.rebuildInterface();
               }
           }
-          // Ejemplo: Tecla F para activar/desactivar comida
-          // else if (event.key.toLowerCase() === 'f') {
-          //    if (this.playerData.isCatFoodUnlocked) {
-          //        this.catFoodManager.toggleActive();
-          //    }
-          // }
+          else if (event.key.toLowerCase() === 'b') {
+                if (this.playerData.isDrawingUnlocked) {
+                    this.activateBrush();
+                }
+          } else if (event.key.toLowerCase() === 'f') {
+                if (this.playerData.isCatFoodUnlocked) {
+                    this.activateCatFood();
+                }
+          }
       };
       window.addEventListener('keydown', this.keydownListener);
-      console.log("GameManager: Listener de teclado añadido (Tecla 'P').");
+      console.log("GameManager: Listener de teclado añadido (P, B, F).");
   }
 
   private removeKeyboardListener(): void {
@@ -164,8 +168,7 @@ export class GameManager {
   public update(deltaTime: number): void {
     this.stateMachine.update(deltaTime);
     this.catManager.updateCats(deltaTime);
-    this.catFoodManager.update(deltaTime); // Actualizar CatFoodManager
-    // PhysicsManager se actualiza internamente
+    this.catFoodManager.update(deltaTime);
   }
 
   public start(): void {
@@ -202,7 +205,7 @@ export class GameManager {
     this.catManager.removeAllCats();
     this.inkManager.destroy();
     this.shopManager.destroy();
-    this.catFoodManager.destroy(); // Destruir CatFoodManager
+    this.catFoodManager.destroy();
     this.containerElement.innerHTML = '';
     this.setBodyStateClass(null);
   }
@@ -238,62 +241,85 @@ export class GameManager {
   public incrementLives(): void { this.playerData.lives++; this.updateExternalLivesUI(); }
   public openShop(): void { this.shopManager.openShop(); }
   public closeShop(): void { this.shopManager.closeShop(); }
-// En GameManager.ts
-public enableDrawingFeature(): boolean { // Cambiado para devolver boolean
-  let success = false;
-  try {
-      console.log("[enableDrawingFeature] STARTING");
-      const rightControls = document.getElementById('right-controls');
-       console.log(`[enableDrawingFeature] Found #right-controls: ${!!rightControls}`);
-      if (rightControls) {
-          rightControls.classList.add('drawing-unlocked');
-          console.log(`[enableDrawingFeature] Added 'drawing-unlocked' to #right-controls. Current classes: ${rightControls.className}`);
-      } else {
-          console.warn("[enableDrawingFeature] #right-controls NOT FOUND. Consider this a failure.");
-          // Lanzar error si es crítico que exista #right-controls
-          // throw new Error("#right-controls not found during enableDrawingFeature");
-      }
 
-      if (this.inkManager && typeof this.inkManager.init === 'function') {
-          console.log("[enableDrawingFeature] Calling inkManager.init()...");
-          this.inkManager.init();
-          console.log("[enableDrawingFeature] Calling inkManager.updateInkUI()...");
-          this.inkManager.updateInkUI();
-          success = true; // Se considera éxito si init y update no lanzan error
-      } else {
-          console.error("[enableDrawingFeature] InkManager missing or no init method!");
-          // Lanzar error o marcar como fallo
-          throw new Error("InkManager not ready during enableDrawingFeature");
-      }
-       console.log("[enableDrawingFeature] FINISHED - Success:", success);
-       return success; // Devolver el estado
+  public enableDrawingFeature(): boolean {
+    let success = false;
+    try {
+        console.log("[enableDrawingFeature] STARTING");
+        const rightControls = document.getElementById('right-controls');
+        if (rightControls) {
+            rightControls.classList.add('drawing-unlocked');
+        } else {
+            console.warn("[enableDrawingFeature] #right-controls NOT FOUND. Consider this a failure.");
+        }
 
-  } catch (error) {
-      console.error("!!!!!!!!!!!!!!!!! CRITICAL ERROR in enableDrawingFeature !!!!!!!!!!!!!!!!!!", error);
-      return false; // Indicar que la activación falló
+        if (this.inkManager && typeof this.inkManager.init === 'function') {
+            console.log("[enableDrawingFeature] Calling inkManager.init()...");
+            this.inkManager.init();
+            console.log("[enableDrawingFeature] Calling uiManager.updateInkVisibility(true)...");
+            this.uiManager.updateInkVisibility(true);
+            success = true;
+        } else {
+            console.error("[enableDrawingFeature] InkManager missing or no init method!");
+            throw new Error("InkManager not ready during enableDrawingFeature");
+        }
+         console.log("[enableDrawingFeature] FINISHED - Success:", success);
+         return success;
+
+    } catch (error) {
+        console.error("!!!!!!!!!!!!!!!!! CRITICAL ERROR in enableDrawingFeature !!!!!!!!!!!!!!!!!!", error);
+        return false;
+    }
   }
-}
   public updateInkUI(): void { this.inkManager.updateInkUI(); }
   public updateExternalLivesUI(): void { if (this.uiManager) { this.uiManager.updateLivesDisplay(this.playerData.lives); } }
   public updateExternalShieldUI(isActive: boolean): void { if (this.uiManager) { this.uiManager.updateShieldIcon(isActive); } }
   public updateExternalHintUI(charges: number): void { if (this.uiManager) { this.uiManager.updateHintIcon(charges); } }
 
+  // --- Método NUEVO para actualizar UI de Score ---
+  public updateExternalScoreUI(): void {
+      if (this.uiManager) {
+          this.uiManager.updateScoreDisplay(this.playerData.score);
+      }
+  }
+  // ---------------------------------------------
+
   // --- Métodos para Comida ---
   public enableCatFoodFeature(): void {
       console.log("GameManager: Habilitando función de Comida para Gatos...");
       try {
-          this.uiManager.showCatFoodUI(); // Llama a UIManager
-          this.catFoodManager.enable(); // Llama a CatFoodManager
+          this.uiManager.showCatFoodUI();
+          this.catFoodManager.enable();
           this.updateCatFoodUI();
       } catch (error) { console.error("GameManager: Error habilitando CatFoodFeature:", error); }
   }
 
   public updateCatFoodUI(): void {
       try {
-          this.uiManager.updateCatFoodBar(this.playerData.currentCatFood, this.playerData.getMaxCatFood()); // Llama a UIManager
+          this.uiManager.updateCatFoodBar(this.playerData.currentCatFood, this.playerData.getMaxCatFood());
       } catch (error) { console.error("GameManager: Error actualizando CatFoodUI:", error); }
   }
   // -------------------------
+
+  // --- MÉTODOS PARA ACTIVACIÓN EXCLUSIVA (CON LOGS) ---
+  public activateBrush(): void {
+      if (!this.playerData.isDrawingUnlocked) return;
+      const foodIsCurrentlyActive = this.catFoodManager.isActive;
+      if (foodIsCurrentlyActive) {
+          this.catFoodManager.toggleActive(false);
+      }
+      this.inkManager.toggleBrush();
+  }
+
+  public activateCatFood(): void {
+      if (!this.playerData.isCatFoodUnlocked) return;
+      const brushIsCurrentlyActive = this.inkManager.isBrushActive;
+      if (brushIsCurrentlyActive) {
+          this.inkManager.toggleBrush(false);
+      }
+      this.catFoodManager.toggleActive();
+  }
+  // --- FIN MÉTODOS CON LOGS ---
 
   // --- Getters ---
   public getQuizSystem(): QuizSystem { return this.quizSystem; }
@@ -310,4 +336,4 @@ public enableDrawingFeature(): boolean { // Cambiado para devolver boolean
   public getContainerElement(): HTMLElement { return this.containerElement; }
   public getCurrentState(): IState | null { return this.stateMachine.getCurrentState(); }
 
-} // Fin clase GameManager
+}

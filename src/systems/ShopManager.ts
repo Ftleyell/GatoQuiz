@@ -205,7 +205,7 @@ export class ShopManager {
     const canPurchase = this.checkItemCanPurchase(itemData);
     const level = this.getItemLevel(itemData);
     const isMaxLevel = itemData.isLeveled && typeof itemData.maxLevel === 'number' && level >= itemData.maxLevel;
-    const effectText = this.formatEffectText(itemData); // Usar helper
+    const effectText = this.formatEffectText(itemData);
 
     this.tooltipNameElement.textContent = itemData.name;
     this.tooltipEffectElement.textContent = effectText;
@@ -344,7 +344,6 @@ export class ShopManager {
       return Math.round(cost);
   }
 
-  // MODIFICADO: Incluye caso para refillCatFood
   private formatEffectText(itemData: ShopItemJsonData): string {
        let text = itemData.effectTemplate;
        text = text.replace('{lives}', this.playerData.lives.toString());
@@ -371,9 +370,7 @@ export class ShopManager {
            else if (itemData.id === 'extraCat') { currentValue = this.playerData.getCatsPerCorrectAnswer(); }
            else if (itemData.id === 'maxCats') { currentValue = this.playerData.getMaxCatsAllowed(); }
            else if (itemData.id === 'maxCatSize') { currentValue = this.playerData.getCurrentMaxSizeLimit(); }
-           // *** NUEVO CASO PARA RELLENAR COMIDA ***
            else if (itemData.id === 'refillCatFood') { currentValue = this.playerData.currentCatFood; }
-           // ************************************
            text = text.replace('{currentValue}', currentValue.toString());
        }
        return text;
@@ -441,15 +438,14 @@ private executePurchaseAction(itemId: string): boolean {
 
     if (!canAfford || !passesCheck || isMaxLevel) {
         console.log(`ShopManager executePurchaseAction(${itemId}): Pre-check fallido (Afford:${canAfford}, Check:${passesCheck}, MaxLevel:${isMaxLevel})`);
-        this.showTooltipForItem(itemId); // Muestra el tooltip indicando por qué falló
-        // Reproducir sonido de error opcionalmente
-        // this.gameManager.getAudioManager().playSound('error_purchase'); // Necesitarías crear este sonido
+        this.showTooltipForItem(itemId);
         return false;
     }
 
     // --- Cobrar ANTES de intentar la acción ---
     this.playerData.score -= cost;
     console.log(`ShopManager: Puntos deducidos (${cost}). Puntos restantes: ${this.playerData.score}`);
+    this.gameManager.updateExternalScoreUI(); // <--- LLAMADA AÑADIDA AQUÍ
 
     let success = false;
     const actionId = itemData.actionId;
@@ -480,15 +476,15 @@ private executePurchaseAction(itemId: string): boolean {
     // --- Revertir costo si la acción falló ---
     if (!success) {
          console.warn(`ShopManager: La acción ${actionId} para ${itemId} falló. Revirtiendo costo.`);
-         this.playerData.score += cost; // Devolver puntos
-         // Actualizar UI para mostrar el error o estado anterior
+         this.playerData.score += cost;
+         this.gameManager.updateExternalScoreUI(); // <--- ACTUALIZAR TAMBIÉN AL REVERTIR
          this.updateShopUI();
-         this.showTooltipForItem(itemId); // Actualizar tooltip para reflejar el fallo
+         this.showTooltipForItem(itemId);
     } else {
          console.log(`ShopManager: Acción ${actionId} para ${itemId} completada exitosamente.`);
-         this.gameManager.getAudioManager().playSound('purchase'); // Sonido de éxito
-         this.updateShopUI(); // Actualizar botones de la tienda
-         this.showTooltipForItem(itemId); // Actualizar tooltip para mostrar nuevo estado/costo
+         this.gameManager.getAudioManager().playSound('purchase');
+         this.updateShopUI();
+         this.showTooltipForItem(itemId);
     }
 
     // Actualizar siempre la puntuación visible en la tienda
@@ -504,72 +500,69 @@ private executePurchaseAction(itemId: string): boolean {
 
 /** Acción para comprar una vida. */
 private purchaseLifeAction(): boolean {
-    // El purchaseCheck ya valida que no esté en el máximo
     this.playerData.lives++;
-    this.gameManager.updateExternalLivesUI(); // Notifica al GameManager para actualizar la UI de vidas
+    this.gameManager.updateExternalLivesUI();
     console.log(` -> Vida comprada. Vidas actuales: ${this.playerData.lives}`);
     return true;
 }
 
 /** Acción para comprar un escudo. */
 private purchaseShieldAction(): boolean {
-    // El purchaseCheck ya valida que no tenga uno activo
     this.playerData.hasShield = true;
-    this.gameManager.updateExternalShieldUI(true); // Notifica para mostrar el icono
+    this.gameManager.updateExternalShieldUI(true);
     console.log(` -> Escudo comprado. Estado: ${this.playerData.hasShield}`);
     return true;
 }
 
 /** Acción para comprar una pista. */
 private purchaseHintAction(): boolean {
-    // El purchaseCheck ya valida que no tenga una
-    this.playerData.hintCharges++; // Asumiendo que solo se puede tener una carga a la vez según JSON
-    this.gameManager.updateExternalHintUI(this.playerData.hintCharges); // Notifica para mostrar el icono
+    this.playerData.hintCharges++;
+    this.gameManager.updateExternalHintUI(this.playerData.hintCharges);
     console.log(` -> Pista comprada. Cargas: ${this.playerData.hintCharges}`);
     return true;
 }
 
-/** Acción para desbloquear la función de dibujo. (Usando la versión mejorada) */
+/** Acción para desbloquear la función de dibujo. */
 private purchaseUnlockDrawingAction(): boolean {
     console.log("ShopManager: Executing purchaseUnlockDrawingAction...");
     if (this.playerData.isDrawingUnlocked) {
          console.log(" -> Drawing ya desbloqueado. Acción abortada.");
-         return false; // Ya estaba desbloqueado
+         return false;
     }
-    // Intentar activar la característica PRIMERO
+
+    this.playerData.isDrawingUnlocked = true;
+    console.log(`[ShopManager] Bandera isDrawingUnlocked establecida a: ${this.playerData.isDrawingUnlocked}`);
+
     let activationSuccessful = false;
     try {
-         activationSuccessful = this.gameManager.enableDrawingFeature(); // Llamar y guardar resultado
+         activationSuccessful = this.gameManager.enableDrawingFeature();
          console.log(` -> gameManager.enableDrawingFeature() returned: ${activationSuccessful}`);
     } catch (e) {
          console.error(" -> Error caught calling gameManager.enableDrawingFeature():", e);
          activationSuccessful = false;
     }
-    // SOLO cambiar el estado del jugador SI la activación de la UI fue exitosa
-    if (activationSuccessful) {
-        this.playerData.isDrawingUnlocked = true;
-        console.log(` -> Activation successful. playerData.isDrawingUnlocked set to: ${this.playerData.isDrawingUnlocked}`);
-        return true; // La acción completa fue exitosa
-    } else {
-        console.error(" -> Activation FAILED. Reverting purchase logic. isDrawingUnlocked remains false.");
-        return false; // La acción falló porque la activación de la UI falló
+
+    if (!activationSuccessful) {
+        console.error(" -> Activation FAILED. Reverting playerData.isDrawingUnlocked a false.");
+        this.playerData.isDrawingUnlocked = false;
+        return false;
     }
+
+    console.log(` -> Activation successful. isDrawingUnlocked permanece: ${this.playerData.isDrawingUnlocked}`);
+    return true;
 }
 /** Acción para mejorar el multiplicador de combo. */
 private purchaseComboMultiplierAction(): boolean {
-    // El chequeo de nivel máximo se hace en executePurchaseAction
     this.playerData.comboMultiplierLevel++;
     console.log(` -> Nivel Multiplicador Combo incrementado a: ${this.playerData.comboMultiplierLevel}`);
-    // La UI (tooltip) se actualiza automáticamente al final de executePurchaseAction
     return true;
 }
 
 /** Acción para mejorar la reducción del costo de tinta. */
 private purchaseInkCostReductionAction(): boolean {
-    // El chequeo de nivel máximo y si el dibujo está desbloqueado se hace antes
     this.playerData.inkCostReductionLevel++;
     console.log(` -> Nivel Reducción Costo Tinta incrementado a: ${this.playerData.inkCostReductionLevel}`);
-    this.gameManager.updateInkUI(); // Actualizar UI de tinta por si afecta botones
+    this.gameManager.updateInkUI();
     return true;
 }
 
@@ -593,31 +586,26 @@ private purchaseMaxCatSizeAction(): boolean {
     console.log(` -> Nivel Tamaño Máximo Gato incrementado a: ${this.playerData.maxCatSizeLevel}`);
     return true;
     }
-    
+
   private purchaseUnlockCatFoodAction(): boolean {
       console.log("ShopManager: Executing purchaseUnlockCatFoodAction...");
-      if (this.playerData.isCatFoodUnlocked) { return false; } // Ya desbloqueado
+      if (this.playerData.isCatFoodUnlocked) { return false; }
       this.playerData.isCatFoodUnlocked = true;
-      // Rellenar la comida por primera vez al desbloquear
       this.playerData.refillCatFood();
-      // Notificar a GameManager para que muestre la UI de comida
-      this.gameManager.enableCatFoodFeature(); // Necesitaremos añadir este método a GameManager
+      this.gameManager.enableCatFoodFeature();
       console.log(" -> Cat Food feature unlocked and refilled.");
       return true;
   }
 
   private purchaseRefillCatFoodAction(): boolean {
       console.log("ShopManager: Executing purchaseRefillCatFoodAction...");
-      // Verificar si ya está lleno (opcional, pero buena práctica)
       if (this.playerData.currentCatFood >= this.playerData.getMaxCatFood()) {
           console.log(" -> Cat food is already full.");
-          return false; // No permitir comprar si ya está lleno
+          return false;
       }
-      this.playerData.refillCatFood(); // Llama al método en PlayerData
-      // Notificar a GameManager para actualizar la barra de comida
-      this.gameManager.updateCatFoodUI(); // Necesitaremos añadir este método a GameManager
+      this.playerData.refillCatFood();
+      this.gameManager.updateCatFoodUI();
       return true;
   }
-  // *********************
 
-} // Fin clase ShopManager
+}
