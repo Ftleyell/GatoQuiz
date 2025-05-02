@@ -10,25 +10,23 @@ import { CatTemplate } from '../types/CatTemplate';
 import Matter from 'matter-js';
 import { GameManager } from '../game/GameManager';
 
-// --- Constantes ---
+// --- Constantes de Colisión ---
 const WALL_COLLISION_CATEGORY = 0x0001;
 const CAT_COLLISION_CATEGORY = 0x0002;
 const INK_COLLISION_CATEGORY = 0x0004;
-const CAT_GROWTH_FACTOR = 1.15; // Crecimiento al comer (se aplica si no está al límite)
-// const MAX_CAT_SIZE = 300; // Ya no es una constante fija aquí, se obtiene de PlayerData
-const SIZE_SIMILARITY_THRESHOLD = 1.02; // Para comer
+const FOOD_PELLET_COLLISION_CATEGORY = 0x0008; // <-- Asegúrate que esta constante exista y sea única
+// ----------------------------
+
+const CAT_GROWTH_FACTOR = 1.15;
+const MAX_CAT_SIZE = 300; // Límite absoluto (puede ser diferente al límite mejorable)
+const SIZE_SIMILARITY_THRESHOLD = 1.02;
 const RARITY_GLOW_MAP: { [key: number]: string | null } = {
     0: null, 1: 'glow-gray', 2: 'glow-green',
     3: 'glow-blue', 4: 'glow-violet', 5: 'glow-orange',
 };
-const SIZE_INCREMENT_PER_CORRECT = 1; // Crecimiento por acierto (para growExistingCats)
-const MAX_CORRECT_ANSWER_GROWTH = 4;  // Límite de crecimiento por aciertos
-// ------------------
+const SIZE_INCREMENT_PER_CORRECT = 1;
+const MAX_CORRECT_ANSWER_GROWTH = 4;
 
-/**
- * CatManager: Gestiona gatos, incluyendo creación, eliminación,
- * actualización visual y lógica de colisión/fusión iniciada por el jugador.
- */
 export class CatManager {
   private cats: Map<string, CatEntity> = new Map();
   private physicsManager!: PhysicsManager;
@@ -78,12 +76,14 @@ export class CatManager {
     return weightedTemplates;
   }
 
+  // MODIFICADO: Ajusta la máscara de colisión del gato
   public addCat(templateId: string, initialPosition?: { x: number; y: number }): CatEntity | null {
     if (!this.gameManager) { console.error("CatManager: GameManager no disponible."); return null; }
     const currentCatCount = this.cats.size;
     const maxAllowed = this.gameManager.getPlayerData().getMaxCatsAllowed();
     if (currentCatCount >= maxAllowed) {
-        console.log(`Max cats limit reached (${currentCatCount}/${maxAllowed}).`); return null;
+        // console.log(`Max cats limit reached (${currentCatCount}/${maxAllowed}).`); // Log opcional
+        return null;
     }
     if (!this.catContainerElement || !this.physicsManager) { console.error("CatManager: Falta #cat-container o PhysicsManager."); return null; }
     const template = this.templates.get(templateId);
@@ -97,10 +97,20 @@ export class CatManager {
     const y = initialPosition?.y ?? initialSize / 2 + 10;
 
     const defaultPhysics: Matter.IBodyDefinition = { restitution: 0.6, friction: 0.1, frictionAir: 0.01, density: 0.005 };
+
+    // *** ¡CAMBIO IMPORTANTE AQUÍ! ***
     const bodyOptions: Matter.IBodyDefinition = {
-        ...defaultPhysics, ...(template.physicsOptions ?? {}), label: 'cat',
-        collisionFilter: { category: CAT_COLLISION_CATEGORY, mask: WALL_COLLISION_CATEGORY | CAT_COLLISION_CATEGORY | INK_COLLISION_CATEGORY },
+        ...defaultPhysics,
+        ...(template.physicsOptions ?? {}),
+        label: 'cat',
+        collisionFilter: {
+            category: CAT_COLLISION_CATEGORY, // El gato pertenece a la categoría GATO
+            // El gato PUEDE COLISIONAR con: PAREDES, OTROS GATOS, TINTA y ¡COMIDA!
+            mask: WALL_COLLISION_CATEGORY | CAT_COLLISION_CATEGORY | INK_COLLISION_CATEGORY | FOOD_PELLET_COLLISION_CATEGORY
+        },
     };
+    // *******************************
+
     const body = Matter.Bodies.circle(x, y, initialSize / 2, bodyOptions);
     Matter.Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.2);
     const physicsComp = new PhysicsComponent(body);
@@ -127,7 +137,7 @@ export class CatManager {
     if (this.catContainerElement) { this.catContainerElement.appendChild(element); }
     else { console.error("Error Crítico: #cat-container no encontrado."); return null; }
     const renderComp = new RenderComponent(element);
-    const valueComp = new ValueComponent(rarity, scoreValue, initialSize, 0); // growthLevel inicia en 0
+    const valueComp = new ValueComponent(rarity, scoreValue, initialSize, 0);
     const newCat = new CatEntity(entityId, physicsComp, renderComp, valueComp);
 
     try { Matter.World.add(this.physicsManager.getWorld(), body); }
@@ -142,6 +152,7 @@ export class CatManager {
   }
 
   public removeCat(entityId: string): void {
+    // ... (sin cambios) ...
     const cat = this.cats.get(entityId);
     if (cat) {
       const body = cat.physics.body;
@@ -161,6 +172,7 @@ export class CatManager {
   }
 
   public processPlayerInitiatedCollision(bodyIdA: number, bodyIdB: number, draggerBodyId: number): void {
+    // ... (sin cambios) ...
       const entityIdA = this.bodyIdToEntityIdMap.get(bodyIdA);
       const entityIdB = this.bodyIdToEntityIdMap.get(bodyIdB);
       if (entityIdA && entityIdB) {
@@ -172,119 +184,68 @@ export class CatManager {
               if (draggerCat && targetCat) {
                   this.handleCatVsCatCollision(draggerCat, targetCat);
               } else { console.error("Error: No se pudo determinar dragger/target cat."); }
-          } else { /* Ignorar si un gato ya fue removido */ }
-      } else { /* Ignorar si no se encontraron entidades */ }
+          } else { /* Ignorar */ }
+      } else { /* Ignorar */ }
   }
 
-  // MODIFICADO: Usa el límite de tamaño de PlayerData y ajusta lógica de comer
   private handleCatVsCatCollision(draggerCat: CatEntity, targetCat: CatEntity): void {
-      if (!draggerCat.physics.body || !draggerCat.value || !targetCat.physics.body || !targetCat.value || !this.gameManager) {
-          console.warn("handleCatVsCatCollision skipped: Missing components or GameManager.");
-          return;
-      }
+    // ... (sin cambios) ...
+      if (!draggerCat.physics.body || !draggerCat.value || !targetCat.physics.body || !targetCat.value || !this.gameManager) { return; }
       if (draggerCat.id === targetCat.id) return;
-
       const draggerSize = draggerCat.value.currentSize;
       const draggerRarity = draggerCat.value.rarity;
       const targetSize = targetCat.value.currentSize;
       const targetRarity = targetCat.value.rarity;
-
-      // Obtener el límite de tamaño actual del jugador
       const currentMaxSizeLimit = this.gameManager.getPlayerData().getCurrentMaxSizeLimit();
       const isDraggerAtLimit = draggerSize >= currentMaxSizeLimit;
-
-      let canEat = false;
-      let stealTier = false;
-      let eatForGrowth = false; // Flag para indicar si el comer implica crecimiento
-
-      // Condición 1: Dragger debe ser suficientemente más grande
+      let canEat = false; let stealTier = false; let eatForGrowth = false;
       if (draggerSize > targetSize * SIZE_SIMILARITY_THRESHOLD) {
-          // Condición 2: ¿Está el dragger por debajo del límite de tamaño?
           if (!isDraggerAtLimit) {
-              // Puede comer normalmente (para crecer y/o robar tier)
-              canEat = true;
-              eatForGrowth = true; // Comer implica crecimiento
-              stealTier = draggerRarity < targetRarity; // Robar tier si aplica
-              // console.log(` -> Eat Allowed (Below Limit): Growth=true, Steal=${stealTier}`);
+              canEat = true; eatForGrowth = true; stealTier = draggerRarity < targetRarity;
           } else {
-              // Dragger está en el límite o por encima. Solo puede comer para robar tier.
               if (draggerRarity < targetRarity) {
-                  canEat = true;
-                  eatForGrowth = false; // Comer NO implica crecimiento
-                  stealTier = true;
-                  // console.log(` -> Eat Allowed (At Limit - Tier Steal Only): Growth=false, Steal=${stealTier}`);
-              } else {
-                   // console.log(` -> Eat Blocked (At Limit - No Tier Steal): DraggerR=${draggerRarity}, TargetR=${targetRarity}`);
+                  canEat = true; eatForGrowth = false; stealTier = true;
               }
           }
-      } else {
-           // console.log(` -> Eat Blocked (Size): DraggerSize=${draggerSize.toFixed(1)}, TargetSize=${targetSize.toFixed(1)}`);
       }
-
-      if (canEat) {
-          this.performEat(draggerCat, targetCat, stealTier, eatForGrowth); // Pasar el flag eatForGrowth
-      }
+      if (canEat) { this.performEat(draggerCat, targetCat, stealTier, eatForGrowth); }
   }
 
-  // MODIFICADO: Añade parámetro 'applyGrowth' y lo usa
   private performEat(eater: CatEntity, eaten: CatEntity, stealTier: boolean, applyGrowth: boolean): void {
-      if (!eater.physics.body || !eater.value || !eater.render.element || !eaten.value ) {
-           console.error("PerformEat failed: Missing components."); return;
-      }
-      const eatenId = eaten.id;
-      const eatenRarity = eaten.value.rarity;
-      this.removeCat(eatenId); // Eliminar al comido
-
-      // 1. Aplicar Crecimiento (SOLO si applyGrowth es true)
+    // ... (sin cambios) ...
+      if (!eater.physics.body || !eater.value || !eater.render.element || !eaten.value ) { return; }
+      const eatenId = eaten.id; const eatenRarity = eaten.value.rarity;
+      this.removeCat(eatenId);
       if (applyGrowth) {
           const currentSize = eater.value.currentSize;
-          // Usar el límite actual para calcular el tamaño máximo al crecer
           const currentMaxSizeLimit = this.gameManager.getPlayerData().getCurrentMaxSizeLimit();
           let newSize = Math.min(currentMaxSizeLimit, currentSize * CAT_GROWTH_FACTOR);
           const scaleFactor = newSize / currentSize;
-
           if (scaleFactor > 1.001) {
               eater.value.currentSize = newSize;
               try {
                   if (this.physicsManager.getWorld && Matter.Composite.get(this.physicsManager.getWorld(), eater.physics.body.id, 'body')) {
                        Matter.Body.scale(eater.physics.body, scaleFactor, scaleFactor);
-                  } else { throw new Error("Body not found in world"); }
-              } catch (error) {
-                   console.error(`Error scaling body ${eater.id}:`, error);
-                   eater.value.currentSize = currentSize; // Revertir si falla el escalado
-                   // No continuar si falla el escalado, pero el tier steal sí puede ocurrir
-              }
-              // Actualizar tamaño visual independientemente de si falló el escalado físico (para consistencia)
-              eater.render.element.style.width = `${newSize}px`;
-              eater.render.element.style.height = `${newSize}px`;
+                  } else { throw new Error("Body not found"); }
+              } catch (error) { console.error(`Error scaling body ${eater.id}:`, error); eater.value.currentSize = currentSize; }
+              eater.render.element.style.width = `${newSize}px`; eater.render.element.style.height = `${newSize}px`;
           }
-      } else {
-           // console.log(` -> Skipping growth for Eater ${eater.id} (applyGrowth=false)`); // Log opcional
       }
-
-      // 2. Aplicar Tier Steal (Siempre se aplica si stealTier es true)
       if (stealTier && eatenRarity > eater.value.rarity) {
           const currentEaterGlow = RARITY_GLOW_MAP[eater.value.rarity];
           if (currentEaterGlow && eater.render.element) { eater.render.element.classList.remove(currentEaterGlow); }
           eater.value.rarity = eatenRarity;
           const newGlowClass = RARITY_GLOW_MAP[eatenRarity];
           if (newGlowClass && eater.render.element) { eater.render.element.classList.add(newGlowClass); }
-          // console.log(` -> Tier Steal applied to Eater ${eater.id}. New Rarity: ${eatenRarity}`); // Log opcional
       }
-
-      // 3. Reproducir sonido
-      try { this.audioManager.playSound('eat'); }
-      catch (e) { console.error("Error playing 'eat' sound:", e)}
+      try { this.audioManager.playSound('eat'); } catch (e) { console.error("Error playing 'eat' sound:", e)}
   }
 
-  // updateCats (Sin cambios)
   public updateCats(deltaTime: number): void {
+    // ... (sin cambios) ...
     this.cats.forEach((cat) => {
-      const body = cat.physics.body;
-      const element = cat.render.element;
-      const value = cat.value;
+      const body = cat.physics.body; const element = cat.render.element; const value = cat.value;
       if (!body || !element || !value) return;
-
       const size = value.currentSize;
       if (cat.render.isVisible) {
          if (element.style.display === 'none') element.style.display = '';
@@ -292,65 +253,48 @@ export class CatManager {
          element.style.transform = `translate(${body.position.x - halfSize}px, ${body.position.y - halfSize}px) rotate(${body.angle}rad)`;
          const currentVisualSize = parseFloat(element.style.width);
          if (isNaN(currentVisualSize) || Math.abs(currentVisualSize - size) > 0.1) {
-            element.style.width = `${size}px`;
-            element.style.height = `${size}px`;
+            element.style.width = `${size}px`; element.style.height = `${size}px`;
          }
-      } else {
-        if (element.style.display !== 'none') element.style.display = 'none';
-      }
+      } else { if (element.style.display !== 'none') element.style.display = 'none'; }
     });
   }
 
-  // Getters (Sin cambios)
   public getCat(catId: string): CatEntity | undefined { return this.cats.get(catId); }
   public getAllCats(): CatEntity[] { return Array.from(this.cats.values()); }
 
-  // removeAllCats (Sin cambios)
   public removeAllCats(): void {
-       // console.log(`CatManager: Eliminando ${this.cats.size} gatos...`); // Log opcional
+    // ... (sin cambios) ...
        const catIds = Array.from(this.cats.keys());
        catIds.forEach(catId => this.removeCat(catId));
        if (this.cats.size > 0) { console.warn("CatManager: Faltaron gatos por eliminar."); this.cats.clear(); }
        this.bodyIdToEntityIdMap.clear();
        this.nextCatIdCounter = 0;
-       // console.log("CatManager: Todos los gatos eliminados."); // Log opcional
    }
 
-  // growExistingCats (Sin cambios)
   public growExistingCats(amount: number, maxGrowthLevel: number): void {
+    // ... (sin cambios) ...
     let grownCount = 0;
     this.cats.forEach((cat) => {
-        if (!cat.value || !cat.physics.body || !this.physicsManager) { return; }
+        if (!cat.value || !cat.physics.body || !this.physicsManager || !this.gameManager) { return; }
         if (cat.value.rarity === 0 && cat.value.growthLevel < maxGrowthLevel) {
             const currentSize = cat.value.currentSize;
-            // Usar el límite actual también aquí para el crecimiento por acierto
             const currentMaxSizeLimit = this.gameManager.getPlayerData().getCurrentMaxSizeLimit();
-            let newSize = currentSize + amount;
-            newSize = Math.min(newSize, currentMaxSizeLimit); // No exceder el límite actual
-
+            let newSize = Math.min(currentMaxSizeLimit, currentSize + amount);
             const scaleFactor = newSize / currentSize;
-            if (scaleFactor > 1.001) {
-                 cat.value.growthLevel++;
-                 cat.value.currentSize = newSize;
+            if (scaleFactor > 1.0001) {
+                 cat.value.growthLevel++; cat.value.currentSize = newSize;
                  try {
                      const body = cat.physics.body;
                      if (this.physicsManager.getWorld && Matter.Composite.get(this.physicsManager.getWorld(), body.id, 'body')) {
-                          Matter.Body.scale(body, scaleFactor, scaleFactor);
-                          grownCount++;
-                     } else {
-                          console.warn(` -> Cuerpo ${cat.id} no encontrado para escalar (crecimiento por acierto), revirtiendo.`);
-                          cat.value.growthLevel--;
-                          cat.value.currentSize = currentSize;
-                     }
+                          Matter.Body.scale(body, scaleFactor, scaleFactor); grownCount++;
+                     } else { throw new Error("Body not found"); }
                  } catch(error) {
-                      console.error(` -> Error escalando cuerpo ${cat.id} (crecimiento por acierto):`, error);
-                      cat.value.growthLevel--;
-                      cat.value.currentSize = currentSize;
+                      console.error(` -> Error escalando gato ${cat.id} (crecimiento por acierto):`, error);
+                      cat.value.growthLevel--; cat.value.currentSize = currentSize;
                  }
             }
         }
     });
-    // if (grownCount > 0) { console.log(`CatManager: ${grownCount} gatos crecieron por acierto.`); } // Log opcional
   }
 
 } // Fin CatManager

@@ -5,32 +5,43 @@
 :root {
   /* Variables CSS para efectos dinámicos (GDD Alpha) */
   --flare-intensity: 0; /* Controla el brillo/flare del score (0 a 1) */
-  --combo-font-size: 3.0rem; /* Tamaño base del combo */
+  --combo-font-size: 1.5rem; /* Tamaño base del combo (modificado por JS) */
   --element-glow-intensity: 0; /* Controla el glow de qbox/botones (0 a 1) */
+  --ink-percentage: 0%; /* Porcentaje de tinta para la barra */
   --score-font-size: 2.5rem; /* Tamaño base del score */
   --score-line-height: 1.1; /* Altura de línea del score */
+  /* Variables para dificultad (GDD Alpha) */
   --difficulty-glow-color: transparent; /* Color del glow de dificultad */
   --difficulty-glow-blur: 0px; /* Desenfoque del glow de dificultad */
-  --ink-percentage: 0%; /* Porcentaje de tinta para la barra */
+  --difficulty-glow-spread: 0px; /* Propagación (no usada en Alpha, pero podría añadirse) */
 
-  /* Variables CSS para las sombras del flare del score */
-  --flare-shadow: 0 0 5px hsla(0, 0%, 100%, 0), 0 0 10px hsla(55, 100%, 70%, 0), 0 0 15px hsla(40, 100%, 60%, 0), 0 0 20px hsla(10, 100%, 55%, 0);
-  --flare-shadow-pulse: 0 0 5px hsla(0, 0%, 100%, 0), 0 0 12px hsla(50, 100%, 75%, 0), 0 0 18px hsla(35, 100%, 65%, 0), 0 0 24px hsla(5, 100%, 60%, 0);
+  /* Variables CSS para las sombras del flare del score (GDD Alpha) */
+  /* Nota: Estos HSLA usan la variable --flare-intensity para la opacidad */
+  --flare-shadow:
+    0 0 5px hsla(0, 0%, 100%, calc(var(--flare-intensity) * 0.5)),
+    0 0 10px hsla(55, 100%, 70%, calc(var(--flare-intensity) * 0.8)),
+    0 0 15px hsla(40, 100%, 60%, calc(var(--flare-intensity) * 0.6)),
+    0 0 20px hsla(10, 100%, 55%, calc(var(--flare-intensity) * 0.4));
+  --flare-shadow-pulse: /* Sombra durante la animación de pulso */
+    0 0 5px hsla(0, 0%, 100%, calc(var(--flare-intensity) * 0.5)),
+    0 0 12px hsla(50, 100%, 75%, calc(var(--flare-intensity) * 0.7)), /* Ajustado */
+    0 0 18px hsla(35, 100%, 65%, calc(var(--flare-intensity) * 0.5)), /* Ajustado */
+    0 0 24px hsla(5, 100%, 60%, calc(var(--flare-intensity) * 0.3)); /* Ajustado */
 }
 
 body {
   margin: 0;
-  font-family: 'Poppins', sans-serif; /* Fuente principal del prototipo */
+  font-family: 'Poppins', sans-serif; /* Fuente principal GDD Alpha */
   position: relative;
   min-height: 100vh;
-  background-color: #111827; /* Fondo oscuro inicial */
-  color: #e5e7eb; /* Color de texto base */
-  overflow: hidden; /* Evitar scroll */
+  background-color: #111827; /* Fondo oscuro inicial GDD Alpha */
+  color: #e5e7eb; /* Color de texto base GDD Alpha */
+  overflow: hidden; /* Evitar scroll GDD Alpha */
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
-  /* Transición suave para el cambio de color de fondo */
+  /* Transición suave para el cambio de color de fondo GDD Alpha */
   transition: background-color 0.8s ease-in-out;
 }
 
@@ -49,17 +60,8 @@ body {
   display: none !important;
 }
 
-/* --- Estilos para Estados del Body (Control de visibilidad global) --- */
-/* Ocultar controles laterales por defecto */
-#right-controls {
-  display: none;
-}
-/* Mostrar controles solo en el estado de juego */
-body.state-quizgameplay #right-controls {
-  display: flex;
-}
-
-/* --- Estilos básicos MainMenu/GameOver --- */
+/* --- Estilos básicos MainMenu/GameOver (Opcional, basado en tu TS) --- */
+/* Puedes ajustar o eliminar esto si tu MainMenuState/GameOverState generan HTML diferente */
 .main-menu-title {
   font-size: 2.5rem; font-weight: bold; margin-bottom: 2rem; color: #fde047;
   text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
@@ -71,17 +73,26 @@ body.state-quizgameplay #right-controls {
 }
 .play-button:hover { background-color: #2563eb; }
 .play-button:active { transform: translateY(1px); box-shadow: 0 2px 3px rgba(0,0,0,0.3); }
-.game-over-container {
+
+.game-over-container { /* Clase usada en GameOverState.ts */
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  height: 100%; text-align: center; padding: 1rem; background-color: rgba(17, 24, 39, 0.9);
+  height: 100%; text-align: center; padding: 1rem;
+  /* Background lo aplica el estado del body o el propio overlay */
   color: white; border-radius: 0.5rem;
 }
-.game-over-text { font-size: 3rem; font-weight: 900; color: #ef4444; margin-bottom: 1rem; }
-.final-score { font-size: 1.5rem; color: #facc15; margin-bottom: 2rem; }
-.restart-prompt { font-size: 1rem; color: #d1d5db; }
+.game-over-text { /* Clase usada en GameOverState.ts */
+    color: #ef4444; font-size: 3rem; font-weight: 900; line-height: 1.2;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5); margin-bottom: 0.5rem;
+}
+.final-score { /* Clase usada en GameOverState.ts */
+    font-size: 1.5rem; color: #facc15; margin-bottom: 2rem;
+}
+.restart-prompt { /* Clase usada en GameOverState.ts */
+    font-size: 1rem; color: #d1d5db;
+}
 
 
-/* --- Animaciones Globales (del prototipo GDD Alpha) --- */
+/* --- Animaciones Globales (GDD Alpha) --- */
 @keyframes pulseHeart {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.15); }
@@ -98,7 +109,7 @@ body.state-quizgameplay #right-controls {
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.05); opacity: 0.9; }
 }
-/* Animación de flare para el score */
+/* Animación de flare para el score (GDD Alpha) */
 @keyframes pulseFlare {
   0%, 100% { text-shadow: var(--flare-shadow); opacity: 1; }
   50% { text-shadow: var(--flare-shadow-pulse); opacity: 0.85; }
@@ -110,9 +121,20 @@ body.state-quizgameplay #right-controls {
 /* Animación del div #score-pulse (añadida/quitada por JS) */
 @keyframes scorePulseAnim {
   0% { transform: translate(-50%, -50%) scale(0); opacity: 0.7; }
-  100% { transform: translate(-50%, -50%) scale(200); opacity: 0; }
+  100% { transform: translate(-50%, -50%) scale(200); opacity: 0; } /* Aumentado scale */
 }
 #score-pulse.pulsing {
    animation: scorePulseAnim 0.6s ease-out forwards;
 }
 
+/* --- Estilos para Estados del Body (Control de visibilidad global) --- */
+/* Ocultar controles laterales por defecto */
+#right-controls {
+  display: none;
+}
+/* Mostrar controles solo en el estado de juego */
+body.state-quizgameplay #right-controls {
+  display: flex;
+}
+/* Ocultar elementos específicos en ciertos estados si es necesario */
+/* body:not(.state-quizgameplay) .game-container { display: none; } */ /* Ejemplo */

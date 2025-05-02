@@ -47,6 +47,29 @@
     "actionId": "purchaseUnlockDrawing"
   },
   {
+    "id": "unlockCatFood",
+    "name": "Desbloquear Comida",
+    "icon": "🍲",
+    "category": "unlockable",
+    "isLeveled": false,
+    "cost": { "base": 120 },
+    "effectTemplate": "Permite usar comida para gatos {isUnlocked}.",
+    "purchaseCheck": { "condition": "isFalse", "valueRef": "isCatFoodUnlocked" },
+    "isPurchasedCheck": { "condition": "isTrue", "valueRef": "isCatFoodUnlocked"},
+    "actionId": "purchaseUnlockCatFood"
+  },
+  {
+    "id": "refillCatFood",
+    "name": "Rellenar Comida",
+    "icon": "➕🍲",
+    "category": "consumable",
+    "isLeveled": false,
+    "cost": { "base": 40 },
+    "effectTemplate": "Rellena la barra de comida ({currentValue}/25).",
+    "purchaseCheck": { "condition": "isTrue", "valueRef": "isCatFoodUnlocked" },
+    "actionId": "purchaseRefillCatFood"
+  },
+  {
     "id": "comboMultiplier",
     "name": "Multiplicador Combo",
     "icon": "✨",

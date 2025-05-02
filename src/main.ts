@@ -1,13 +1,11 @@
 // src/main.ts
-
-// Importar CSS Base y Layout/Quiz (que ahora contienen estilos GDD Alpha)
 import './styles/base.css';
-import './styles/layout.css'; // Estilos generales de layout
-import './styles/quiz-elements.css'; // Estilos específicos del quiz (GDD Alpha)
+import './styles/layout.css';
+import './styles/quiz-elements.css';
 import './styles/cat.css';
 import './styles/ink.css';
 import './styles/shop.css';
-// ELIMINADOS: patterns.css, themes.css
+import './styles/cat_food.css';
 
 // Importar GameManager
 import { GameManager } from './game/GameManager';

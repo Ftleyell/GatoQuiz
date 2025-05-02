@@ -1,21 +1,21 @@
 // src/systems/PhysicsManager.ts
 
 import Matter from 'matter-js';
-import { CatManager } from './CatManager'; // Asegúrate que la ruta sea correcta
+import { CatManager } from './CatManager';
+import { CatFoodManager } from './CatFoodManager'; // <-- NUEVO: Importar CatFoodManager
+import { GameManager } from '../game/GameManager'; // <-- NUEVO: Importar GameManager
 
-// Constantes de Colisión
+// --- Constantes de Colisión ---
 const WALL_COLLISION_CATEGORY = 0x0001;
 const CAT_COLLISION_CATEGORY = 0x0002;
-const INK_COLLISION_CATEGORY = 0x0004; // Asegúrate que coincida con CatManager e InkManager
+const INK_COLLISION_CATEGORY = 0x0004; // Asegúrate que coincida
+const FOOD_PELLET_COLLISION_CATEGORY = 0x0008; // Asegúrate que coincida
 const WALL_THICKNESS = 60;
-
-// *** CONSTANTE AÑADIDA DEL GDD ALPHA ***
 const MAX_CAT_SPEED = 70;
-// **************************************
+// ----------------------------
 
 /**
- * PhysicsManager: Encapsula la configuración y el control del motor de física Matter.js,
- * incluyendo los límites del mundo dinámicos, la detección de colisiones y el límite de velocidad.
+ * PhysicsManager: Encapsula Matter.js, límites, colisiones y límite de velocidad.
  */
 export class PhysicsManager {
   private engine!: Matter.Engine;
@@ -27,44 +27,40 @@ export class PhysicsManager {
   private topWall!: Matter.Body;
   private resizeListener: () => void;
   private catManager: CatManager;
+  private catFoodManager!: CatFoodManager; // <-- NUEVO: Referencia a CatFoodManager
   private mouseConstraint?: Matter.MouseConstraint;
 
-  // Referencias a los handlers de eventos para poder removerlos
   private collisionHandler: (event: Matter.IEventCollision<Matter.Engine>) => void;
   private speedLimitHandler: () => void;
 
-  constructor(catManager: CatManager) {
+  /**
+   * Crea una instancia de PhysicsManager.
+   * @param catManager - Instancia del CatManager para colisiones gato-gato.
+   * @param catFoodManager - Instancia del CatFoodManager para colisiones gato-comida. // <-- NUEVO PARÁMETRO
+   */
+  constructor(catManager: CatManager, catFoodManager: CatFoodManager) { // <-- NUEVO PARÁMETRO
     console.log('PhysicsManager Creado');
     this.catManager = catManager;
+    this.catFoodManager = catFoodManager; // <-- GUARDAR REFERENCIA
     this.resizeListener = this.handleResize.bind(this);
-    // Guardar referencia a los handlers BINDEADOS
     this.collisionHandler = this.handleCollisions.bind(this);
-    this.speedLimitHandler = this.limitAllCatSpeeds.bind(this); // <-- Nuevo handler
+    this.speedLimitHandler = this.limitAllCatSpeeds.bind(this);
   }
 
   public init(containerElement: HTMLElement): void {
     console.log('PhysicsManager: init');
-
     this.engine = Matter.Engine.create();
     this.world = this.engine.world;
     this.runner = Matter.Runner.create();
-
     this.engine.gravity.y = 0.8;
     this.engine.gravity.x = 0;
     this.engine.enableSleeping = true;
-
     console.log('Matter.js Engine, World, Runner creados.');
-
     this.createWalls();
     this.setupMouseConstraint(containerElement);
-
-    // Añadir listeners de eventos usando los handlers guardados
     console.log("PhysicsManager: Añadiendo listeners...");
     Matter.Events.on(this.engine, 'collisionStart', this.collisionHandler);
-    // *** AÑADIR LISTENER PARA LÍMITE DE VELOCIDAD ***
     Matter.Events.on(this.engine, 'beforeUpdate', this.speedLimitHandler);
-    // *********************************************
-
     window.addEventListener('resize', this.resizeListener);
   }
 
@@ -96,56 +92,72 @@ export class PhysicsManager {
       }
   }
 
-  // handleCollisions (Sin cambios)
+  /**
+   * Manejador para el evento 'collisionStart' de Matter.js.
+   * Detecta colisiones gato-gato (iniciadas por jugador) y gato-comida.
+   * @param event - El objeto del evento de colisión.
+   */
+  // MODIFICADO: Añade detección de colisión gato-comida
   private handleCollisions(event: Matter.IEventCollision<Matter.Engine>): void {
       const pairs = event.pairs;
+
       for (let i = 0; i < pairs.length; i++) {
           const pair = pairs[i];
           const bodyA = pair.bodyA;
           const bodyB = pair.bodyB;
-          const isBodyACat = bodyA?.label === 'cat';
-          const isBodyBCat = bodyB?.label === 'cat';
 
-          if (isBodyACat && isBodyBCat) {
+          // Identificar etiquetas
+          const labelA = bodyA?.label;
+          const labelB = bodyB?.label;
+
+          // --- Lógica Gato vs Gato (para comer/fusionar por arrastre) ---
+          if (labelA === 'cat' && labelB === 'cat') {
               const isDraggingA = this.mouseConstraint?.body === bodyA;
               const isDraggingB = this.mouseConstraint?.body === bodyB;
-              if (isDraggingA !== isDraggingB) { // Solo procesar si uno está siendo arrastrado
+              // Solo procesar si exactamente uno está siendo arrastrado
+              if (isDraggingA !== isDraggingB) {
                   if (typeof bodyA.id !== 'undefined' && typeof bodyB.id !== 'undefined') {
                       const draggerBodyId = isDraggingA ? bodyA.id : bodyB.id;
                       this.catManager.processPlayerInitiatedCollision(bodyA.id, bodyB.id, draggerBodyId);
                   } else { console.error("Error: IDs indefinidos en colisión gato-gato."); }
               }
           }
+          // --- Lógica Gato vs Comida ---
+          else if ((labelA === 'cat' && labelB === 'foodPellet') || (labelA === 'foodPellet' && labelB === 'cat')) {
+              const catBody = (labelA === 'cat') ? bodyA : bodyB;
+              const foodBody = (labelA === 'foodPellet') ? bodyA : bodyB;
+
+              // Verificar que los IDs existan y llamar al CatFoodManager
+              if (typeof catBody.id !== 'undefined' && foodBody) {
+                   // Pasar el ID del cuerpo del gato y el cuerpo completo de la comida
+                   this.catFoodManager.processCatFoodCollision(catBody.id, foodBody);
+              } else {
+                   console.warn("Colisión Gato-Comida detectada pero falta ID de gato o cuerpo de comida.");
+              }
+          }
+          // --- Podrías añadir más tipos de colisión aquí (ej: gato vs tinta) ---
+          // else if ((labelA === 'cat' && labelB === 'inkLine') || (labelA === 'inkLine' && labelB === 'cat')) {
+          //    // Lógica para interacción gato-tinta si es necesaria
+          // }
       }
   }
 
-  // *** NUEVO MÉTODO PARA LIMITAR VELOCIDAD ***
+  // limitAllCatSpeeds (Sin cambios)
   private limitAllCatSpeeds(): void {
-      if (!this.world) return; // Asegurarse que el mundo existe
-
+      if (!this.world) return;
       const bodies = Matter.Composite.allBodies(this.world);
       for (let i = 0; i < bodies.length; i++) {
           const body = bodies[i];
-          // Aplicar solo a cuerpos no estáticos y con etiqueta 'cat'
           if (!body.isStatic && body.label === 'cat') {
               const speed = Matter.Vector.magnitude(body.velocity);
-
               if (speed > MAX_CAT_SPEED) {
-                  // Calcular velocidad normalizada (dirección)
                   const normalizedVelocity = Matter.Vector.normalise(body.velocity);
-                  // Crear nuevo vector de velocidad con la magnitud máxima permitida
                   const cappedVelocity = Matter.Vector.mult(normalizedVelocity, MAX_CAT_SPEED);
-                  // Establecer la nueva velocidad limitada
                   Matter.Body.setVelocity(body, cappedVelocity);
-                   // Opcional: Limitar también velocidad angular si es necesario
-                   // if (Math.abs(body.angularVelocity) > MAX_ANGULAR_SPEED) {
-                   //    Matter.Body.setAngularVelocity(body, Math.sign(body.angularVelocity) * MAX_ANGULAR_SPEED);
-                   // }
               }
           }
       }
   }
-  // ****************************************
 
   // handleResize (Sin cambios)
   private handleResize(): void {
@@ -173,28 +185,20 @@ export class PhysicsManager {
 
   // stop (Sin cambios)
   public stop(): void {
-     if (!this.runner) { console.warn("PhysicsManager: Runner no inicializado, no se puede detener."); return; }
+     if (!this.runner) { console.warn("PhysicsManager: Runner no inicializado."); return; }
      Matter.Runner.stop(this.runner);
   }
 
-  // MODIFICADO: Asegurar que se remuevan *ambos* listeners
+  // shutdown (Sin cambios respecto a la versión anterior)
   public shutdown(): void {
       console.log('PhysicsManager: shutdown');
       this.stop();
-
-      // Remover listeners usando las referencias guardadas
       if (this.engine) {
           Matter.Events.off(this.engine, 'collisionStart', this.collisionHandler);
-          Matter.Events.off(this.engine, 'beforeUpdate', this.speedLimitHandler); // <-- Remover nuevo listener
+          Matter.Events.off(this.engine, 'beforeUpdate', this.speedLimitHandler);
           console.log("PhysicsManager: Listeners de engine removidos.");
-      } else {
-          console.warn("PhysicsManager shutdown: Engine no encontrado para remover listeners.");
-      }
+      } else { console.warn("PhysicsManager shutdown: Engine no encontrado."); }
       window.removeEventListener('resize', this.resizeListener);
-
-      // Opcional: Limpiar mundo/engine
-      // if (this.world) Matter.World.clear(this.world, false);
-      // if (this.engine) Matter.Engine.clear(this.engine);
   }
 
   // Getters (Sin cambios)

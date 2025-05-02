@@ -13,6 +13,7 @@ export class PlayerData {
 
     // --- Desbloqueables ---
     public isDrawingUnlocked: boolean = false;
+    public isCatFoodUnlocked: boolean = false; // <-- NUEVO: Estado de desbloqueo
 
     // --- Consumibles / Estado Temporal ---
     public hasShield: boolean = false;
@@ -21,17 +22,19 @@ export class PlayerData {
     // --- Recursos ---
     public currentInk: number = 0;
     private readonly MAX_INK: number = 1000;
+    public currentCatFood: number = 0; // <-- NUEVO: Cantidad actual de comida
+    private readonly MAX_CAT_FOOD: number = 25; // <-- NUEVO: Capacidad máxima
 
     // --- Mejoras por Nivel ---
     public comboMultiplierLevel: number = 0;
     public inkCostReductionLevel: number = 0;
     public extraCatSpawnLevel: number = 0;
     public maxCatsLevel: number = 0;
-    public maxCatSizeLevel: number = 0; // <-- NUEVO: Nivel para tamaño máximo
+    public maxCatSizeLevel: number = 0;
 
     // --- Constantes para Cálculos ---
-    private readonly BASE_MAX_CAT_SIZE_LIMIT = 150; // <-- NUEVO: Límite base reducido
-    private readonly MAX_CAT_SIZE_INCREMENT_PER_LEVEL = 25; // <-- NUEVO: Cuánto aumenta por nivel
+    private readonly BASE_MAX_CAT_SIZE_LIMIT = 150;
+    private readonly MAX_CAT_SIZE_INCREMENT_PER_LEVEL = 25;
 
     // --- Valores Calculados (Basados en Niveles) ---
 
@@ -59,11 +62,9 @@ export class PlayerData {
         return BASE_LIMIT + (this.maxCatsLevel * INCREMENT);
     }
 
-    // *** NUEVO MÉTODO: Calcula el límite de tamaño máximo actual ***
     public getCurrentMaxSizeLimit(): number {
         return this.BASE_MAX_CAT_SIZE_LIMIT + (this.maxCatSizeLevel * this.MAX_CAT_SIZE_INCREMENT_PER_LEVEL);
     }
-    // ************************************************************
 
     public getMaxInk(): number {
         return this.MAX_INK;
@@ -84,24 +85,55 @@ export class PlayerData {
 
     public refillInk(): void {
         this.currentInk = this.getMaxInk();
-        // console.log(`Ink refilled. Current: ${this.currentInk}/${this.getMaxInk()}`); // Log opcional
+    }
+
+    // --- Métodos de Gestión de Comida para Gatos ---
+
+    /** Obtiene la capacidad máxima de comida. */
+    public getMaxCatFood(): number {
+        // Podría ser mejorable en el futuro
+        return this.MAX_CAT_FOOD;
+    }
+
+    /**
+     * Intenta gastar una unidad de comida.
+     * @returns true si se pudo gastar, false si no había comida.
+     */
+    public spendCatFoodUnit(): boolean {
+        if (!this.isCatFoodUnlocked) return false; // No se puede gastar si no está desbloqueado
+        if (this.currentCatFood > 0) {
+            this.currentCatFood--;
+            console.log(`Cat food spent. Remaining: ${this.currentCatFood}/${this.getMaxCatFood()}`); // Log
+            return true;
+        }
+        console.log("No cat food left to spend."); // Log
+        return false;
+    }
+
+    /** Rellena la comida al máximo. */
+    public refillCatFood(): void {
+        if (!this.isCatFoodUnlocked) return; // No rellenar si no está desbloqueado
+        this.currentCatFood = this.getMaxCatFood();
+        console.log(`Cat food refilled. Current: ${this.currentCatFood}/${this.getMaxCatFood()}`); // Log
     }
 
     // --- Método para Resetear ---
-    // MODIFICADO: Incluye el nuevo nivel
+    // MODIFICADO: Incluye los nuevos estados de comida
     public reset(): void {
         console.log("PlayerData: Reseteando datos...");
         this.score = 0;
         this.lives = 3;
         this.isDrawingUnlocked = false;
+        this.isCatFoodUnlocked = false; // <-- NUEVO: Resetear
         this.hasShield = false;
         this.hintCharges = 0;
         this.currentInk = 0;
+        this.currentCatFood = 0; // <-- NUEVO: Resetear
         this.comboMultiplierLevel = 0;
         this.inkCostReductionLevel = 0;
         this.extraCatSpawnLevel = 0;
         this.maxCatsLevel = 0;
-        this.maxCatSizeLevel = 0; // <-- NUEVO: Resetear nivel de tamaño
+        this.maxCatSizeLevel = 0;
     }
 
     constructor() {

@@ -9,7 +9,7 @@
       {"key": "D", "text": "Marte"}
     ],
     "correctAnswerKey": "A",
-    "difficulty": "easy",
+    "difficulty": "1",
     "explanation": "Mercurio es el planeta más cercano al Sol, orbitando a una distancia promedio de 58 millones de kilómetros."
   },
   {
@@ -22,7 +22,7 @@
       {"key": "D", "text": "Argón"}
     ],
     "correctAnswerKey": "A",
-    "difficulty": "easy",
+    "difficulty": "1",
     "explanation": "El nitrógeno constituye aproximadamente el 78% de la atmósfera terrestre."
   },
   {
@@ -35,7 +35,7 @@
       {"key": "D", "text": "Jorge Luis Borges"}
     ],
     "correctAnswerKey": "A",
-    "difficulty": "medium",
+    "difficulty": "5",
     "explanation": "Miguel de Cervantes es el autor de la novela 'Don Quijote de la Mancha', publicada en 1605 y 1615."
   },
   {
@@ -48,7 +48,7 @@
       {"key": "D", "text": "Misisipi"}
     ],
     "correctAnswerKey": "A",
-    "difficulty": "medium",
+    "difficulty": "5",
     "explanation": "El río Nilo, con una longitud de aproximadamente 6,650 km, es considerado el más largo del mundo."
   },
   {
@@ -61,7 +61,7 @@
       {"key": "D", "text": "6"}
     ],
     "correctAnswerKey": "A",
-    "difficulty": "easy",
+    "difficulty": "1",
     "explanation": "La suma de 2 + 2 da como resultado 4."
   },
   {
@@ -74,7 +74,7 @@
       {"key": "D", "text": "Australia"}
     ],
     "correctAnswerKey": "A",
-    "difficulty": "easy",
+    "difficulty": "1",
     "explanation": "Egipto está ubicado en el noreste de África."
   },
   {
@@ -87,7 +87,7 @@
       {"key": "D", "text": "AnFómetro"}
     ],
     "correctAnswerKey": "A",
-    "difficulty": "medium",
+    "difficulty": "5",
     "explanation": "El barómetro es el instrumento utilizado para medir la presión atmosférica."
   },
   {
@@ -100,7 +100,7 @@
       {"key": "D", "text": "Francés"}
     ],
     "correctAnswerKey": "A",
-    "difficulty": "easy",
+    "difficulty": "1",
     "explanation": "El idioma oficial de Brasil es el portugués, único país de habla portuguesa en América del Sur."
   },
   {
@@ -113,7 +113,7 @@
       {"key": "D", "text": "Gorila"}
     ],
     "correctAnswerKey": "A",
-    "difficulty": "easy",
+    "difficulty": "1",
     "explanation": "El león es conocido como el 'rey de la selva' debido a su fuerza y liderazgo en la sabana."
   },
   {
@@ -126,7 +126,7 @@
       {"key": "D", "text": "H₂SO₄"}
     ],
     "correctAnswerKey": "A",
-    "difficulty": "easy",
+    "difficulty": "1",
     "explanation": "La fórmula del agua es H₂O, que representa dos átomos de hidrógeno y uno de oxígeno."
   },
   {
@@ -139,7 +139,7 @@
       {"key": "D", "text": "Claude Monet"}
     ],
     "correctAnswerKey": "A",
-    "difficulty": "medium",
+    "difficulty": "5",
     "explanation": "La 'Mona Lisa' fue pintada por Leonardo da Vinci en el siglo XVI."
   },
   {
@@ -152,7 +152,7 @@
       {"key": "D", "text": "Austria"}
     ],
     "correctAnswerKey": "A",
-    "difficulty": "easy",
+    "difficulty": "1",
     "explanation": "La bandera de Canadá tiene una hoja de arce roja en el centro, conocida como la 'Maple Leaf'."
   },
   {
@@ -165,7 +165,7 @@
       {"key": "D", "text": "Radio"}
     ],
     "correctAnswerKey": "A",
-    "difficulty": "medium",
+    "difficulty": "5",
     "explanation": "El fémur, ubicado en el muslo, es el hueso más largo y fuerte del cuerpo humano."
   },
   {
@@ -178,7 +178,7 @@
       {"key": "D", "text": "Ártico"}
     ],
     "correctAnswerKey": "A",
-    "difficulty": "easy",
+    "difficulty": "1",
     "explanation": "California está bañada por el océano Pacífico en su costa oeste."
   },
   {
@@ -217,7 +217,7 @@
       {"key": "D", "text": "1929"}
     ],
     "correctAnswerKey": "A",
-    "difficulty": "medium",
+    "difficulty": "5",
     "explanation": "La Segunda Guerra Mundial comenzó en 1939 con la invasión de Polonia por parte de Alemania."
   },
   {
@@ -230,7 +230,7 @@
       {"key": "D", "text": "Batería"}
     ],
     "correctAnswerKey": "A",
-    "difficulty": "easy",
+    "difficulty": "1",
     "explanation": "Un violinista es un músico que toca el violín, un instrumento de cuerda."
   },
   {
@@ -243,7 +243,7 @@
       {"key": "D", "text": "Anfibio"}
     ],
     "correctAnswerKey": "A",
-    "difficulty": "easy",
+    "difficulty": "1",
     "explanation": "Las ballenas son mamíferos marinos, ya que respiran aire y amamantan a sus crías."
   },
   {
@@ -256,7 +256,7 @@
       {"key": "D", "text": "Tailandia"}
     ],
     "correctAnswerKey": "A",
-    "difficulty": "medium",
+    "difficulty": "5",
     "explanation": "Japón es conocido como la 'Tierra del Sol Naciente' debido a su ubicación al este, donde el sol aparece primero."
   }
 ]

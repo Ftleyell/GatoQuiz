@@ -37,11 +37,6 @@
   #ink-label, #ink-bar-container {
       display: none;
   }
-  /* Mostrar si el área tiene la clase 'ink-visible' */
-  #score-area.ink-visible #ink-label,
-  #score-area.ink-visible #ink-bar-container {
-      display: block;
-  }
   
   /* --- NUEVO: Atenuar UI del Quiz cuando el pincel está activo --- */
   /* Seleccionamos el canvas activo y luego los elementos del quiz dentro de #app */

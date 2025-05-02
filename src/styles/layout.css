@@ -1,164 +1,193 @@
 /* src/styles/layout.css */
 
+/* Contenedor principal del juego (donde se genera la UI del Quiz) */
+.game-container {
+  /* NOTA: Tailwind se usa en Alpha para text-center.
+     UIManager.ts aplica 'game-container', 'text-center', 'quiz-wrapper'.
+     Aseguramos aquí el posicionamiento y tamaño base. */
+  border-radius: 1.5rem; /* GDD Alpha */
+  padding: 0 2.5rem; /* GDD Alpha padding horizontal */
+  z-index: 20; /* GDD Alpha */
+  position: relative;
+  width: 90%; /* GDD Alpha */
+  pointer-events: auto;
+  transition: opacity 0.3s ease-in-out; /* GDD Alpha */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: transparent; /* Base transparente */
+}
+
+.quiz-content-container {
+  width: 60%;        /* Establece el ancho al 60% del padre (.game-container) */
+  max-width: 100%;     /* Asegura que no exceda el 100% si el padre es muy pequeño */
+  margin-left: auto;   /* Centra el contenedor si el padre no usa flex */
+  margin-right: auto;  /* Centra el contenedor si el padre no usa flex */
+  /* Nota: Si .game-container ya tiene 'display: flex; align-items: center;',
+     los márgenes auto podrían no ser necesarios, pero no hacen daño. */
+  box-sizing: border-box; /* Asegura que el padding no afecte el ancho total */
+}
+
+/* Atenuación de la UI del juego (GDD Alpha) */
+.game-container.ui-faded {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Contenedor para los gatos (Matter.js) (GDD Alpha) */
 #cat-container {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    pointer-events: none;
-    z-index: 10; /* Detrás de UI principal */
-    overflow: hidden;
-  }
-  
-  /* Contenedor principal del Quiz */
-  .quiz-wrapper {
-      position: relative;
-      overflow: hidden; /* Clipa los patrones de fondo */
-      border-radius: 1rem; /* Borde redondeado base */
-      padding: 1.5rem;
-      width: 90%;
-      max-width: 600px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-      border: 1px solid rgba(150, 150, 150, 0.2); /* Borde sutil */
-      transition: opacity 0.3s ease-in-out; /* Para fade con pincel */
-  }
-  /* Estilo para atenuar cuando el pincel está activo */
-  .quiz-wrapper.ui-faded {
-      opacity: 0.3;
-  }
-  
-  /* Contenido interno del Quiz (para z-index sobre patrones) */
-  .quiz-content-container {
-      position: relative;
-      z-index: 1; /* Asegura que el contenido esté sobre ::before/::after */
-  }
-  
-  /* Controles Laterales */
-  .control-container {
-    position: fixed;
-    right: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex; /* Controlado por clases de estado en body */
-    flex-direction: column;
-    gap: 0.75rem;
-    z-index: 30;
-  }
-  
-  .control-button {
-    background-color: rgba(31, 41, 55, 0.8);
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 10; /* Detrás de la UI principal */
+  overflow: hidden;
+}
+
+/* Canvas de Dibujo (GDD Alpha) */
+#drawing-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5; /* Detrás de gatos y UI por defecto */
+  pointer-events: none;
+  background-color: transparent;
+}
+/* Estado activo del canvas (GDD Alpha) */
+#drawing-canvas.active {
+  pointer-events: auto;
+  cursor: crosshair;
+  z-index: 25; /* Encima de la UI del quiz al dibujar */
+}
+
+/* Controles Laterales (Derecha) (GDD Alpha) */
+#right-controls { /* ID usado en GDD Alpha HTML */
+  position: fixed;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  /* display: flex; - Controlado por clases de estado en body (base.css) */
+  flex-direction: column;
+  gap: 0.75rem;
+  z-index: 30; /* Encima de casi todo */
+  pointer-events: auto; /* Asegurar que los botones sean clickeables */
+}
+
+/* Estilo base botones de control (GDD Alpha) */
+.control-button {
+    background-color: rgba(17, 24, 39, 0.8); /* Fondo GDD Alpha */
     color: #e5e7eb;
-    border: 1px solid #4b5563;
+    border: 2px solid #4b5563; /* Borde GDD Alpha */
     border-radius: 0.5rem;
     padding: 0.6rem;
     cursor: pointer;
     transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease;
-    font-size: 1.5rem; /* Tamaño del icono */
-    width: 50px;
-    height: 50px;
+    font-size: 1.2rem; /* Tamaño ícono GDD Alpha */
+    width: 45px; /* Tamaño GDD Alpha */
+    height: 45px; /* Tamaño GDD Alpha */
     display: flex;
     justify-content: center;
     align-items: center;
     box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-  }
-  .control-button:hover {
-    background-color: rgba(55, 65, 81, 0.9);
-    border-color: #6b7280;
-    transform: scale(1.05);
-  }
-  .control-button:active {
-    transform: scale(0.98);
-  }
-  .control-button:disabled {
+}
+.control-button:hover {
+    background-color: rgba(31, 41, 55, 0.9); /* Hover GDD Alpha */
+    border-color: #6b7280; /* Hover GDD Alpha */
+    transform: scale(1.05); /* Efecto hover añadido para consistencia */
+}
+.control-button:active {
+    transform: scale(0.98); /* Efecto click añadido */
+}
+.control-button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
     transform: none;
-    background-color: rgba(31, 41, 55, 0.8);
+    background-color: rgba(17, 24, 39, 0.8);
     border-color: #4b5563;
-  }
-  
-  /* Estilo específico para botón de pincel activo */
-  #toggle-brush-button.active {
-    background-color: rgba(167, 139, 250, 0.8); /* Morado */
-    border-color: #a78bfa;
-    box-shadow: 0 0 8px rgba(167, 139, 250, 0.5);
-  }
-  
-  /* Contenedor para botones de dibujo (inicialmente oculto) */
-  #drawing-buttons-container {
-    display: none; /* Oculto por defecto */
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-  /* Mostrar botones de dibujo cuando drawing está desbloqueado */
-  #right-controls.drawing-unlocked #drawing-buttons-container {
-    display: flex;
-  }
-  
-  /* Overlays (Tienda, Backdrop) */
-  .overlay {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    display: none; /* Controlado por JS/clase .visible */
-    opacity: 0;
-    justify-content: center;
-    align-items: center;
-    transition: opacity 0.3s ease-in-out;
-    z-index: 100; /* Encima de todo excepto quizás tooltips muy específicos */
-  }
-  .overlay.visible {
-    display: flex; /* O 'block' o 'grid' según necesidad */
-    opacity: 1;
-  }
-  
-  .blur-backdrop {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background-color: rgba(17, 24, 39, 0.5); /* Fondo oscuro semi-transparente */
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
-    opacity: 0;
-    transition: opacity 0.4s ease-in-out;
-    pointer-events: none; /* No interactuable */
-    z-index: 99; /* Justo debajo de overlays */
-    display: none; /* Controlado por JS/clase .visible */
-  }
-  .blur-backdrop.visible {
-    display: block;
-    opacity: 1;
-    pointer-events: auto; /* Permitir clicks si es necesario (ej. cerrar modal) */
-  }
-  /* Añadir a layout.css o base.css */
+}
+
+/* Botón de Pincel Activo (GDD Alpha) */
+#toggle-brush-button.active {
+  background-color: rgba(167, 139, 250, 0.8); /* Morado */
+  border-color: #a78bfa;
+  box-shadow: 0 0 8px rgba(167, 139, 250, 0.5);
+}
+
+/* Contenedor Botones Dibujo (Oculto por defecto) (GDD Alpha) */
+#drawing-buttons-container {
+  display: none;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+/* Mostrar contenedor cuando el control padre tiene la clase */
+#right-controls.drawing-unlocked #drawing-buttons-container {
+  display: flex;
+}
+
+/* Overlays (Tienda, Backdrop, Explicación, Game Over) (GDD Alpha) */
 .overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    display: none; /* Oculto por defecto */
-    opacity: 0;
-    justify-content: center; align-items: center; text-align: center;
-    z-index: 101; /* Encima del blur backdrop */
-    transition: opacity 0.4s ease-in-out;
-    padding: 2rem; box-sizing: border-box;
-  }
-  .overlay.visible {
-    display: flex; opacity: 1; pointer-events: auto;
-  }
-  /* Evitar que el overlay capture clics si no es la tienda/gameover/explanation */
-  .overlay:not(#shop-popup):not(#explanation-overlay):not(#game-over-overlay) {
-      cursor: pointer;
-  }
-  .overlay-content-wrapper {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    max-width: 80%; pointer-events: none; /* Evitar clics en el wrapper */
-  }
-  .overlay-content-wrapper > * {
-    pointer-events: auto; /* Permitir clics en el contenido */
-  }
-  #explanation-text-content { /* Estilo para el texto de explicación */
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%; /* Cubre toda la pantalla */
+  display: none; /* Controlado por JS/clase .visible */
+  opacity: 0;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  transition: opacity 0.4s ease-in-out; /* Transición Alpha */
+  z-index: 101; /* Encima del backdrop */
+  padding: 2rem; box-sizing: border-box; /* Padding Alpha */
+}
+.overlay.visible {
+  display: flex; /* Usar flex para centrar contenido */
+  opacity: 1;
+  pointer-events: auto; /* Hacer interactuable cuando visible */
+}
+/* Evitar que el overlay capture clics si no es el contenido */
+.overlay:not(#shop-popup):not(#explanation-overlay):not(#game-over-overlay) {
+    cursor: default; /* O pointer si quieres que se cierre al clickear fuera */
+}
+
+/* Contenedor del contenido dentro del overlay (GDD Alpha) */
+.overlay-content-wrapper {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  max-width: 80%; /* Limitar ancho */
+  pointer-events: none; /* Evitar clics en el wrapper */
+}
+.overlay-content-wrapper > * {
+  pointer-events: auto; /* Permitir clics en el contenido real */
+}
+
+/* Backdrop de Desenfoque (GDD Alpha) */
+#blur-backdrop {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background-color: rgba(17, 24, 39, 0.5); /* Fondo oscuro semi-transparente */
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  opacity: 0;
+  transition: opacity 0.4s ease-in-out; /* Transición Alpha */
+  pointer-events: none; /* No interactuable por defecto */
+  z-index: 100; /* Justo debajo de overlays */
+  display: none; /* Controlado por JS/clase .visible */
+}
+#blur-backdrop.visible {
+  display: block;
+  opacity: 1;
+  /* pointer-events: auto; - Quitado, el overlay maneja el click */
+}
+
+/* Estilos específicos para texto de explicación y prompt (GDD Alpha) */
+#explanation-text-content {
     color: white; font-size: 1.75rem; line-height: 1.6; font-weight: 600;
     text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
-    background-color: rgba(17, 24, 39, 0.8); /* Fondo semi-transparente */
+    /* Añadido fondo para mejor legibilidad sobre el blur */
+    background-color: rgba(17, 24, 39, 0.8);
     padding: 1rem 1.5rem;
     border-radius: 0.75rem;
     border: 1px solid rgba(75, 85, 99, 0.5);
-  }
-  .overlay-continue-prompt { /* Estilo para el texto "CLICK..." */
+}
+.overlay-continue-prompt {
     margin-top: 1.5rem; font-size: 0.9rem; color: rgba(229, 231, 235, 0.7);
     font-weight: 400; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-  }
+}
