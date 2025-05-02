@@ -40,7 +40,7 @@
     "icon": "🖌️",
     "category": "unlockable",
     "isLeveled": false,
-    "cost": { "base": 200 },
+    "cost": { "base": 0 },
     "effectTemplate": "Permite usar el pincel {isUnlocked}.",
     "purchaseCheck": { "condition": "isFalse", "valueRef": "isDrawingUnlocked" },
      "isPurchasedCheck": { "condition": "isTrue", "valueRef": "isDrawingUnlocked"},

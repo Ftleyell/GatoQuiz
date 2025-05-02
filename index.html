@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="/src/style.css" />
     </head>
   <body>
+    <canvas id="drawing-canvas"></canvas>
+
     <div id="app">
       </div>
 
@@ -17,26 +19,28 @@
         <button id="shop-button" class="control-button" title="Abrir Tienda (S)">
             🛒
         </button>
+
+        <div id="drawing-buttons-container">
+            <button id="toggle-brush-button" class="control-button" title="Activar/Desactivar Pincel (B)">
+                🖌️ </button>
+            <button id="clear-ink-button" class="control-button" title="Borrar Trazos (C)">
+                🗑️ </button>
+        </div>
         </div>
 
     <div id="blur-backdrop" class="blur-backdrop"></div>
-
     <div id="shop-popup" class="overlay shop-overlay">
         <div id="shop-content" class="shop-content-box">
             <button id="shop-close-button" class="shop-close-btn" title="Cerrar Tienda (Esc)">&times;</button>
-
             <h2 id="shop-title" class="shop-title-text">Tienda de Mejoras</h2>
-
             <p id="shop-player-score" class="shop-score-text">Puntos: 0</p>
-
             <div id="shop-items-container" class="shop-items-grid">
                 </div>
-
             <div id="shop-tooltip" class="shop-tooltip-box">
                 <div id="tooltip-name" class="tooltip-item-name">Pasa el mouse sobre un ítem</div>
                 <div id="tooltip-level" class="tooltip-item-level hidden"></div>
                 <div id="tooltip-effect" class="tooltip-item-effect"></div>
-                <div id="tooltip-cost" class.="tooltip-item-cost"></div>
+                <div id="tooltip-cost" class="tooltip-item-cost"></div>
                 <div id="tooltip-status" class="tooltip-item-status hidden"></div>
             </div>
         </div>

@@ -9,14 +9,16 @@ import { AudioManager } from './AudioManager';
 import { CatTemplate } from '../types/CatTemplate';
 import Matter from 'matter-js';
 
-// Constantes
-const CAT_COLLISION_CATEGORY = 0x0002;
+// --- Constantes de Colisión (Asegúrate que sean consistentes con otros archivos) ---
 const WALL_COLLISION_CATEGORY = 0x0001;
-const CAT_GROWTH_FACTOR = 1.15; // Factor de crecimiento al comer
-const MAX_CAT_SIZE = 300;       // Tamaño máximo (diámetro)
-const SIZE_SIMILARITY_THRESHOLD = 1.02; // Gatos con tamaño +/- 2% no se comen
+const CAT_COLLISION_CATEGORY = 0x0002;
+const INK_COLLISION_CATEGORY = 0x0004; // Categoría para la tinta
+// --------------------------------------------------------------------------------
 
-// Mapeo de rareza numérica a glow class (asegúrate que coincida con style.css)
+const CAT_GROWTH_FACTOR = 1.15;
+const MAX_CAT_SIZE = 300;
+const SIZE_SIMILARITY_THRESHOLD = 1.02;
+
 const RARITY_GLOW_MAP: { [key: number]: string | null } = {
     0: null, // o 'glow-common' si existe
     1: 'glow-gray',
@@ -38,51 +40,6 @@ export class CatManager {
   private nextCatIdCounter: number = 0;
   private catContainerElement: HTMLElement | null = null;
   private templates: Map<string, CatTemplate> = new Map();
-
-
-/**
- * Carga y almacena las plantillas de gato desde un array de datos.
- * @param templateData - Array de objetos CatTemplate.
- */
-public loadTemplates(templateData: CatTemplate[]): void {
-    this.templates.clear();
-    if (!Array.isArray(templateData)) {
-        console.error("CatManager: Formato de datos de plantilla inválido.");
-        return;
-    }
-    templateData.forEach(template => {
-        if (template?.id) {
-            // Asegurar que spawnWeight tenga un valor por defecto si no está en JSON
-            if (typeof template.spawnWeight !== 'number' || template.spawnWeight <= 0) {
-                // console.warn(`Plantilla ${template.id} sin spawnWeight válido, usando 1.`);
-                template.spawnWeight = 1; // Default weight
-            }
-            this.templates.set(template.id, template);
-        } else {
-            console.warn("CatManager: Plantilla inválida o sin ID.", template);
-        }
-    });
-    // console.log(`CatManager: ${this.templates.size} plantillas de gato cargadas/registradas.`);
-}
-
-/**
- * Devuelve una lista de IDs de plantillas y sus pesos de aparición.
- * Útil para la selección aleatoria ponderada.
- * @returns Un array de objetos { id: string, weight: number }.
- */
-public getSpawnableTemplatesWeighted(): { id: string; weight: number }[] {
-    const weightedTemplates: { id: string; weight: number }[] = [];
-    this.templates.forEach((template) => {
-        // Usar spawnWeight si existe y es mayor que 0, sino un peso por defecto (ej: 1)
-        const weight = template.spawnWeight && template.spawnWeight > 0 ? template.spawnWeight : 1;
-        weightedTemplates.push({ id: template.id, weight: weight });
-    });
-    return weightedTemplates;
-}
-
-
-// ... (resto de métodos de CatManager: addCat, removeCat, etc.) ...
-
 
   /**
    * Crea una instancia de CatManager.
@@ -118,12 +75,32 @@ public getSpawnableTemplatesWeighted(): { id: string; weight: number }[] {
       }
       templateData.forEach(template => {
           if (template?.id) {
+              // Asegurar que spawnWeight tenga un valor por defecto si no está en JSON
+              if (typeof template.spawnWeight !== 'number' || template.spawnWeight <= 0) {
+                  // console.warn(`Plantilla ${template.id} sin spawnWeight válido, usando 1.`);
+                  template.spawnWeight = 1; // Default weight
+              }
               this.templates.set(template.id, template);
           } else {
               console.warn("CatManager: Plantilla inválida o sin ID.", template);
           }
       });
-      // console.log(`CatManager: ${this.templates.size} plantillas de gato cargadas/registradas.`); // Log menos verboso
+      // console.log(`CatManager: ${this.templates.size} plantillas de gato cargadas/registradas.`);
+  }
+
+  /**
+   * Devuelve una lista de IDs de plantillas y sus pesos de aparición.
+   * Útil para la selección aleatoria ponderada.
+   * @returns Un array de objetos { id: string, weight: number }.
+   */
+  public getSpawnableTemplatesWeighted(): { id: string; weight: number }[] {
+    const weightedTemplates: { id: string; weight: number }[] = [];
+    this.templates.forEach((template) => {
+        // Usar spawnWeight si existe y es mayor que 0, sino un peso por defecto (ej: 1)
+        const weight = template.spawnWeight && template.spawnWeight > 0 ? template.spawnWeight : 1;
+        weightedTemplates.push({ id: template.id, weight: weight });
+    });
+    return weightedTemplates;
   }
 
   /**
@@ -149,109 +126,124 @@ public getSpawnableTemplatesWeighted(): { id: string; weight: number }[] {
     const rarity = template.rarity;
     const scoreValue = template.scoreValue ?? 0;
     const x = initialPosition?.x ?? Math.random() * (window.innerWidth - initialSize) + initialSize / 2;
-    const y = initialPosition?.y ?? initialSize / 2 + 10;
+    const y = initialPosition?.y ?? initialSize / 2 + 10; // Empezar un poco más abajo
 
-    // 1. Crear Cuerpo Físico
+    // Propiedades físicas por defecto y las de la plantilla
     const defaultPhysics: Matter.IBodyDefinition = { restitution: 0.6, friction: 0.1, frictionAir: 0.01, density: 0.005 };
+
+    // Configuración de colisión
     const bodyOptions: Matter.IBodyDefinition = {
         ...defaultPhysics,
         ...(template.physicsOptions ?? {}),
-        label: 'cat', // Etiqueta crucial para la detección de colisiones
-        collisionFilter: { category: CAT_COLLISION_CATEGORY, mask: WALL_COLLISION_CATEGORY | CAT_COLLISION_CATEGORY },
+        label: 'cat', // Etiqueta para identificar en colisiones
+        collisionFilter: {
+            category: CAT_COLLISION_CATEGORY, // Pertenece a la categoría GATO
+            // Puede colisionar con: PAREDES, OTROS GATOS, y TINTA
+            mask: WALL_COLLISION_CATEGORY | CAT_COLLISION_CATEGORY | INK_COLLISION_CATEGORY
+        },
     };
+
+    // Crear cuerpo físico circular
     const body = Matter.Bodies.circle(x, y, initialSize / 2, bodyOptions);
-    Matter.Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.2);
+    Matter.Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.2); // Pequeña rotación inicial
     const physicsComp = new PhysicsComponent(body);
 
-    // Mapear body.id a entityId para referencia futura
+    // Mapear ID del cuerpo físico al ID de la entidad para referencias rápidas
     this.bodyIdToEntityIdMap.set(body.id, entityId);
 
-    // 2. Crear Elemento Visual (HTML)
+    // Crear elemento visual HTML
     const element = document.createElement('div');
     element.id = entityId;
     element.classList.add('cat');
     element.style.width = `${initialSize}px`;
     element.style.height = `${initialSize}px`;
+
+    // Aplicar opciones de renderizado de la plantilla
     const renderOpts = template.renderOptions ?? {};
-    const glowClass = renderOpts.glowClass ?? RARITY_GLOW_MAP[rarity];
+    const glowClass = renderOpts.glowClass ?? RARITY_GLOW_MAP[rarity]; // Usar glow de plantilla o mapeo
     if (glowClass) {
         element.classList.add(glowClass);
     }
+
+    // Intentar cargar imagen, usar fallback si falla o no se especifica
     let finalImageUrl = renderOpts.imageUrl;
-    const fallbackColor = renderOpts.backgroundColor ?? '#cccccc';
-    if (!finalImageUrl) { // Usar Cataas si no hay imagen definida
+    const fallbackColor = renderOpts.backgroundColor ?? '#cccccc'; // Color gris por defecto
+    if (!finalImageUrl) { // Usar Cataas si no hay URL definida
         finalImageUrl = `https://cataas.com/cat?${Date.now()}&width=${Math.round(initialSize)}&height=${Math.round(initialSize)}`;
     }
-    if (finalImageUrl) { // Aplicar imagen con fallback
+
+    if (finalImageUrl) {
         element.style.backgroundImage = `url('${finalImageUrl}')`;
         element.style.backgroundSize = 'cover';
         element.style.backgroundPosition = 'center';
+        // Añadir manejo de error para la imagen
         const img = new Image();
         img.onerror = () => {
             console.warn(`CatManager: Fallo al cargar imagen: ${finalImageUrl}. Usando color ${fallbackColor}`);
-            element.style.backgroundImage = 'none';
-            element.style.backgroundColor = fallbackColor;
+            element.style.backgroundImage = 'none'; // Quitar imagen fallida
+            element.style.backgroundColor = fallbackColor; // Aplicar color de fallback
         };
-        img.src = finalImageUrl;
-    } else { // Usar solo color si no hay URL
+        img.src = finalImageUrl; // Iniciar carga
+    } else { // Si no hay URL de imagen, usar solo el color de fondo
         element.style.backgroundColor = fallbackColor;
     }
-    if (this.catContainerElement) { // Verificar que el contenedor exista
+
+    // Añadir elemento visual al contenedor en el DOM
+    if (this.catContainerElement) {
         this.catContainerElement.appendChild(element);
     } else {
-         console.error("Error Crítico: #cat-container desapareció al añadir elemento de gato.");
-         // Podríamos intentar recrearlo o lanzar un error más grave
-         return null;
+         console.error("Error Crítico: #cat-container no encontrado al añadir elemento de gato.");
+         return null; // No se puede continuar sin contenedor
     }
     const renderComp = new RenderComponent(element);
 
-    // 3. Crear ValueComponent con tamaño inicial
+    // Crear componente de valor (rareza, score, tamaño)
     const valueComp = new ValueComponent(rarity, scoreValue, initialSize);
 
-    // 4. Crear la Entidad CatEntity
+    // Crear la entidad completa
     const newCat = new CatEntity(entityId, physicsComp, renderComp, valueComp);
 
-    // 5. Añadir cuerpo físico al mundo de Matter.js
+    // Añadir cuerpo físico al mundo de Matter.js
     try {
         Matter.World.add(this.physicsManager.getWorld(), body);
     } catch (error) {
         console.error(`CatManager: Error al añadir cuerpo ${entityId} al mundo:`, error);
-        if (element.parentNode) element.parentNode.removeChild(element); // Limpiar elemento visual
+        if (element.parentNode) element.parentNode.removeChild(element); // Limpiar elemento visual si falla
         this.bodyIdToEntityIdMap.delete(body.id); // Limpiar mapa
-        return null;
+        return null; // Falló la creación
     }
 
-    // 6. Añadir entidad al mapa del manager
+    // Añadir entidad al mapa del manager
     this.cats.set(entityId, newCat);
-    // console.log(`CatManager: Gato '${templateId}' añadido con ID ${entityId}`); // Log menos verboso
+    // console.log(`CatManager: Gato '${templateId}' añadido con ID ${entityId}`); // Log opcional
     return newCat;
   }
 
   /**
-   * Elimina una entidad Gato por su ID.
+   * Elimina una entidad Gato por su ID, incluyendo su cuerpo físico y elemento visual.
    * @param entityId - El ID de la CatEntity a eliminar.
    */
   public removeCat(entityId: string): void {
     const cat = this.cats.get(entityId);
     if (cat) {
       const body = cat.physics.body;
+      // Eliminar cuerpo físico si existe y está en el mundo
       if (body) {
-          // Limpiar mapeo ANTES de remover del mundo
-          this.bodyIdToEntityIdMap.delete(body.id);
+          this.bodyIdToEntityIdMap.delete(body.id); // Limpiar mapeo
           try {
               // Verificar si el cuerpo aún existe en el mundo antes de intentar removerlo
-              if (this.physicsManager.getWorld && Matter.Composite.get(this.physicsManager.getWorld(), body.id, 'body')) {
+              if (this.physicsManager?.getWorld && Matter.Composite.get(this.physicsManager.getWorld(), body.id, 'body')) {
                   Matter.World.remove(this.physicsManager.getWorld(), body);
               }
           } catch(error) {
               console.warn(`Error eliminando cuerpo físico gato ${entityId}:`, error);
           }
       }
-      // Remover elemento visual del DOM
-      if (cat.render.element?.parentNode) { // Usar optional chaining
+      // Remover elemento visual del DOM si existe y tiene padre
+      if (cat.render.element?.parentNode) {
         cat.render.element.parentNode.removeChild(cat.render.element);
       }
-      // Eliminar la entidad del mapa
+      // Eliminar la entidad del mapa del manager
       this.cats.delete(entityId);
       // console.log(`CatManager: Gato ${entityId} removido.`); // Log opcional
     }
@@ -264,18 +256,15 @@ public getSpawnableTemplatesWeighted(): { id: string; weight: number }[] {
    * @param draggerBodyId - ID del cuerpo Matter que está siendo arrastrado por el jugador.
    */
   public processPlayerInitiatedCollision(bodyIdA: number, bodyIdB: number, draggerBodyId: number): void {
-      // LOG 5
-      console.log(`CatManager: processPlayerInitiatedCollision recibido Body IDs: ${bodyIdA}, ${bodyIdB}. Dragger ID: ${draggerBodyId}`);
+      // console.log(`CatManager: processPlayerInitiatedCollision recibido Body IDs: ${bodyIdA}, ${bodyIdB}. Dragger ID: ${draggerBodyId}`);
       const entityIdA = this.bodyIdToEntityIdMap.get(bodyIdA);
       const entityIdB = this.bodyIdToEntityIdMap.get(bodyIdB);
-      // LOG 6
-      console.log(`  -> Mapped Entity IDs: ${entityIdA ?? 'not found'}, ${entityIdB ?? 'not found'}`);
+      // console.log(`  -> Mapped Entity IDs: ${entityIdA ?? 'not found'}, ${entityIdB ?? 'not found'}`);
 
       if (entityIdA && entityIdB) {
           const catA = this.cats.get(entityIdA);
           const catB = this.cats.get(entityIdB);
-           // LOG 7
-          console.log(`  -> Retrieved Cat Entities: ${catA ? catA.id : 'null'}, ${catB ? catB.id : 'null'}`);
+           // console.log(`  -> Retrieved Cat Entities: ${catA ? catA.id : 'null'}, ${catB ? catB.id : 'null'}`);
 
           if (catA && catB) {
               // Determinar quién es el dragger y quién el target
@@ -283,9 +272,7 @@ public getSpawnableTemplatesWeighted(): { id: string; weight: number }[] {
               const targetCat = (bodyIdA === draggerBodyId) ? catB : catA;
 
               if (draggerCat && targetCat) {
-                  // LOG 8
-                  console.log(`    --> Calling handleCatVsCatCollision (Player Initiated). Dragger: ${draggerCat.id}, Target: ${targetCat.id}`);
-                  // Llamar a la lógica de colisión pasando el dragger y el target
+                  // console.log(`    --> Calling handleCatVsCatCollision (Player Initiated). Dragger: ${draggerCat.id}, Target: ${targetCat.id}`);
                   this.handleCatVsCatCollision(draggerCat, targetCat);
               } else {
                   console.error("    --> Error: No se pudo determinar dragger/target cat.");
@@ -313,7 +300,7 @@ public getSpawnableTemplatesWeighted(): { id: string; weight: number }[] {
       }
       // Evitar auto-colisión (por si acaso)
       if (draggerCat.id === targetCat.id) {
-          console.log("  -> Self-collision detected during drag, ignoring.");
+          // console.log("  -> Self-collision detected during drag, ignoring.");
           return;
       }
 
@@ -321,11 +308,8 @@ public getSpawnableTemplatesWeighted(): { id: string; weight: number }[] {
       const draggerRarity = draggerCat.value.rarity;
       const targetSize = targetCat.value.currentSize;
       const targetRarity = targetCat.value.rarity;
-      // LOG 9
-      console.log(`CatManager: handleCatVsCatCollision (Player): Dragger(id:${draggerCat.id}, size:${draggerSize.toFixed(1)}, r:${draggerRarity}) vs Target(id:${targetCat.id}, size:${targetSize.toFixed(1)}, r:${targetRarity})`);
-
-      // LOG Adicional
-      console.log(`  -> Checking size difference: Dragger > Target*thresh? ${draggerSize} > ${targetSize * SIZE_SIMILARITY_THRESHOLD} (${draggerSize > targetSize * SIZE_SIMILARITY_THRESHOLD})`);
+      // console.log(`CatManager: handleCatVsCatCollision (Player): Dragger(id:${draggerCat.id}, size:${draggerSize.toFixed(1)}, r:${draggerRarity}) vs Target(id:${targetCat.id}, size:${targetSize.toFixed(1)}, r:${targetRarity})`);
+      // console.log(`  -> Checking size difference: Dragger > Target*thresh? ${draggerSize} > ${targetSize * SIZE_SIMILARITY_THRESHOLD} (${draggerSize > targetSize * SIZE_SIMILARITY_THRESHOLD})`);
 
       let canEat = false;
       let stealTier = false;
@@ -335,32 +319,19 @@ public getSpawnableTemplatesWeighted(): { id: string; weight: number }[] {
       if (draggerSize > targetSize * SIZE_SIMILARITY_THRESHOLD) {
           // Condición 2: Dragger tiene igual o mayor rareza (Normal Eat) O menor rareza (Tier Steal)
           if (draggerRarity >= targetRarity) {
-              canEat = true;
-              stealTier = false;
-              reason = "Dragger larger and >= rarity (Normal Eat)";
+              canEat = true; stealTier = false; reason = "Dragger larger and >= rarity (Normal Eat)";
           } else { // draggerRarity < targetRarity
-              canEat = true;
-              stealTier = true;
-              reason = "Dragger larger but < rarity (Tier Steal)";
+              canEat = true; stealTier = true; reason = "Dragger larger but < rarity (Tier Steal)";
           }
       }
 
       if (canEat) {
-          // LOG 10
-          console.log(`  -> Determined Eater: ${draggerCat.id} (Reason: ${reason})`);
-          if (stealTier) {
-              // LOG 12
-               console.log(`    --> Calling performEat (Tier Steal). DraggerR:${draggerRarity}, TargetR:${targetRarity}`);
-              this.performEat(draggerCat, targetCat, true);
-          } else {
-              // LOG 11
-              console.log(`    --> Calling performEat (Normal). DraggerR:${draggerRarity}, TargetR:${targetRarity}`);
-              this.performEat(draggerCat, targetCat, false);
-          }
-      } else {
-           // LOG 13
-           console.log(`  -> No eat occurred. Reason: ${reason}`);
+          // console.log(`  -> Determined Eater: ${draggerCat.id} (Reason: ${reason})`);
+          // if (stealTier) console.log(`    --> Calling performEat (Tier Steal). DraggerR:${draggerRarity}, TargetR:${targetRarity}`);
+          // else console.log(`    --> Calling performEat (Normal). DraggerR:${draggerRarity}, TargetR:${targetRarity}`);
+          this.performEat(draggerCat, targetCat, stealTier);
       }
+      // else { console.log(`  -> No eat occurred. Reason: ${reason}`); }
   }
 
   /**
@@ -375,24 +346,21 @@ public getSpawnableTemplatesWeighted(): { id: string; weight: number }[] {
       if (!eater.physics.body || !eater.value || !eater.render.element || !eaten.value ) {
            console.error("PerformEat failed: Missing components in eater or eaten."); return;
       }
-      // LOG 14
-      console.log(`CatManager: performEat - Eater: ${eater.id}, Eaten: ${eaten.id}, StealTier: ${stealTier}`);
+      // console.log(`CatManager: performEat - Eater: ${eater.id}, Eaten: ${eaten.id}, StealTier: ${stealTier}`);
 
       const eatenId = eaten.id;
       const eatenRarity = eaten.value.rarity;
-      const eatenGlowClass = RARITY_GLOW_MAP[eatenRarity];
+      // const eatenGlowClass = RARITY_GLOW_MAP[eatenRarity]; // No se usa directamente aquí
 
-      // 1. Eliminar al gato comido (primero para evitar conflictos)
+      // 1. Eliminar al gato comido
       this.removeCat(eatenId);
-      // LOG 15
-      console.log(`  -> Eaten cat ${eatenId} removed.`);
+      // console.log(`  -> Eaten cat ${eatenId} removed.`);
 
       // 2. Calcular y aplicar crecimiento al comedor
       const currentSize = eater.value.currentSize;
       let newSize = Math.min(MAX_CAT_SIZE, currentSize * CAT_GROWTH_FACTOR);
       const scaleFactor = newSize / currentSize;
-      // LOG 16
-      console.log(`  -> Growth Calc: current=${currentSize.toFixed(1)}, new=${newSize.toFixed(1)}, factor=${scaleFactor.toFixed(2)}`);
+      // console.log(`  -> Growth Calc: current=${currentSize.toFixed(1)}, new=${newSize.toFixed(1)}, factor=${scaleFactor.toFixed(2)}`);
 
       if (scaleFactor > 1.001) { // Aplicar solo si hay crecimiento notable
           eater.value.currentSize = newSize; // Actualizar tamaño lógico
@@ -400,8 +368,7 @@ public getSpawnableTemplatesWeighted(): { id: string; weight: number }[] {
               // Verificar si el cuerpo aún existe en el mundo físico
               if (this.physicsManager.getWorld && Matter.Composite.get(this.physicsManager.getWorld(), eater.physics.body.id, 'body')) {
                    Matter.Body.scale(eater.physics.body, scaleFactor, scaleFactor); // Escalar cuerpo físico
-                   // LOG 17
-                   console.log(`    --> Body ${eater.id} scaled.`);
+                   // console.log(`    --> Body ${eater.id} scaled.`);
               } else {
                    console.warn(`    --> Body ${eater.id} no encontrado en el mundo para escalar.`);
                    eater.value.currentSize = currentSize; // Revertir si falla
@@ -415,40 +382,32 @@ public getSpawnableTemplatesWeighted(): { id: string; weight: number }[] {
           // Actualizar tamaño visual
           eater.render.element.style.width = `${newSize}px`;
           eater.render.element.style.height = `${newSize}px`;
-           // LOG 18
-          console.log(`    --> Element ${eater.id} resized.`);
-      } else {
-           console.log(`  -> No significant growth needed.`);
+           // console.log(`    --> Element ${eater.id} resized.`);
       }
+      // else { console.log(`  -> No significant growth needed.`); }
 
       // 3. Aplicar lógica de "Tier Steal" si corresponde
       if (stealTier && eatenRarity > eater.value.rarity) {
-          // LOG 19
-          console.log(`  -> Attempting Tier Steal: EaterR=${eater.value.rarity}, EatenR=${eatenRarity}`);
+          // console.log(`  -> Attempting Tier Steal: EaterR=${eater.value.rarity}, EatenR=${eatenRarity}`);
           const currentEaterGlow = RARITY_GLOW_MAP[eater.value.rarity];
           // Quitar clase de brillo anterior del elemento visual
           if (currentEaterGlow && eater.render.element) {
               eater.render.element.classList.remove(currentEaterGlow);
-              // console.log(`    --> Removed old glow: ${currentEaterGlow}`); // Log opcional
           }
           // Actualizar rareza lógica
           eater.value.rarity = eatenRarity;
-          console.log(`    --> Eater rarity updated to ${eatenRarity}`);
+          // console.log(`    --> Eater rarity updated to ${eatenRarity}`);
           // Añadir nueva clase de brillo (si existe)
           const newGlowClass = RARITY_GLOW_MAP[eatenRarity];
           if (newGlowClass && eater.render.element) {
               eater.render.element.classList.add(newGlowClass);
-               // LOG 20
-              console.log(`    --> Added new glow: ${newGlowClass}`);
+              // console.log(`    --> Added new glow: ${newGlowClass}`);
           }
       }
 
       // 4. Reproducir sonido de comer
-      try {
-        this.audioManager.playSound('eat');
-        // LOG 21
-        console.log(`  -> 'eat' sound played.`);
-      } catch (e) { console.error("Error playing 'eat' sound:", e)}
+      try { this.audioManager.playSound('eat'); }
+      catch (e) { console.error("Error playing 'eat' sound:", e)}
   }
 
   /**
@@ -473,7 +432,7 @@ public getSpawnableTemplatesWeighted(): { id: string; weight: number }[] {
          // Aplicar transformación para sincronizar posición y rotación
          element.style.transform = `translate(${body.position.x - halfSize}px, ${body.position.y - halfSize}px) rotate(${body.angle}rad)`;
 
-         // Sincronizar tamaño visual si difiere del lógico
+         // Sincronizar tamaño visual si difiere del lógico (evita saltos visuales)
          const currentVisualSize = parseFloat(element.style.width);
          if (isNaN(currentVisualSize) || Math.abs(currentVisualSize - size) > 0.1) {
             element.style.width = `${size}px`;
@@ -493,13 +452,13 @@ public getSpawnableTemplatesWeighted(): { id: string; weight: number }[] {
    * Elimina todos los gatos del juego y limpia los registros.
    */
   public removeAllCats(): void {
-       // console.log(`CatManager: Eliminando ${this.cats.size} gatos...`); // Log menos verboso
+       // console.log(`CatManager: Eliminando ${this.cats.size} gatos...`);
        const catIds = Array.from(this.cats.keys());
        catIds.forEach(catId => this.removeCat(catId)); // Llama a removeCat para limpieza individual
        if (this.cats.size > 0) { console.warn("CatManager: Faltaron gatos por eliminar al limpiar."); this.cats.clear(); }
        this.bodyIdToEntityIdMap.clear(); // Limpiar mapa
        this.nextCatIdCounter = 0; // Resetear contador
-       // console.log("CatManager: Todos los gatos eliminados."); // Log menos verboso
+       // console.log("CatManager: Todos los gatos eliminados.");
    }
 
 } // Fin CatManager

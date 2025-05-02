@@ -11,6 +11,7 @@ import { PlayerData } from './PlayerData';
 import { CatTemplate } from '../types/CatTemplate';
 // Importamos la interfaz JSON, aunque no la usemos directamente aquí
 import { ShopItemJsonData } from '../types/ShopItemData';
+import { InkManager } from '../systems/InkManager'; // Importar InkManager
 
 // Importaciones de Estados
 import { LoadingState } from './states/LoadingState';
@@ -31,6 +32,7 @@ export class GameManager {
   private catManager: CatManager;
   private playerData: PlayerData;
   private shopManager: ShopManager;
+  private inkManager: InkManager; // Propiedad para InkManager
   private lastTimestamp: number = 0;
   private isRunning: boolean = false;
   private gameLoopRequestId?: number;
@@ -48,8 +50,9 @@ export class GameManager {
     this.playerData = new PlayerData();
     this.catManager = new CatManager(this.audioManager);
     this.physicsManager = new PhysicsManager(this.catManager);
-    // Pasar 'this' (GameManager) a ShopManager
+    // Pasar 'this' (GameManager) a ShopManager e InkManager
     this.shopManager = new ShopManager(this.playerData, this);
+    this.inkManager = new InkManager(this); // Instanciar InkManager
     this.stateMachine = new StateMachine();
     this.catManager.setPhysicsManager(this.physicsManager);
     this.setupStates();
@@ -63,8 +66,8 @@ export class GameManager {
     this.playerData.reset(); // Reinicia los datos del jugador
     this.physicsManager.init(this.getWorldContainer()); // Inicializa la física
     await this.preload(); // Carga datos JSON (preguntas, plantillas, tienda)
-    // ShopManager se inicializa dentro de preload ahora
-    console.log("GameManager init completado (ShopManager inicializado desde preload).");
+    // ShopManager e InkManager se inicializan en el constructor o preload
+    console.log("GameManager init completado.");
   }
 
   /**
@@ -104,7 +107,7 @@ export class GameManager {
         if (!questionsLoaded) throw new Error("Fallo al procesar preguntas en QuizSystem.");
         this.catManager.loadTemplates(templateData);
         // Inicializar ShopManager con los datos JSON cargados
-        this.shopManager.init(shopItemJsonData);
+        this.shopManager.init(shopItemJsonData); // ShopManager se inicializa aquí
 
         console.log('GameManager: Preload completado exitosamente.');
     } catch (error: any) {
@@ -144,6 +147,7 @@ export class GameManager {
   public update(deltaTime: number): void {
     this.stateMachine.update(deltaTime); // Actualiza el estado actual
     this.catManager.updateCats(deltaTime); // Actualiza la posición visual de los gatos
+    // InkManager no necesita update por ahora
   }
 
   /** Inicia el bucle de juego y la física. */
@@ -177,9 +181,10 @@ export class GameManager {
         catch (e) { console.warn("Error en exit() del estado durante shutdown:", e) }
     }
     this.catManager.removeAllCats(); // Elimina todos los gatos
+    this.inkManager.destroy(); // Limpia listeners de InkManager
+    this.shopManager.destroy(); // Limpia listeners de la tienda
     this.containerElement.innerHTML = ''; // Limpia la UI principal
     this.setBodyStateClass(null); // Limpia la clase CSS del body
-    this.shopManager.destroy(); // Limpia listeners de la tienda
   }
 
   /** Devuelve el elemento contenedor para la física/mouse. */
@@ -246,29 +251,30 @@ export class GameManager {
   // --------------------------
 
   // --- Método para habilitar la función de dibujo ---
-  /** Activa la UI relacionada con la función de dibujo (llamado por ShopManager). */
+  /** Activa la UI y la funcionalidad del InkManager. */
   public enableDrawingFeature(): void {
       console.log("GameManager: Habilitando función de dibujo...");
-      // Busca los elementos de UI relevantes por ID
+
+      // --- CORRECCIÓN: Añadir clase al contenedor de controles ---
       const rightControls = document.getElementById('right-controls');
-      const inkLabel = document.getElementById('ink-label');
-      const inkBar = document.getElementById('ink-bar-container');
-      const scoreArea = document.getElementById('score-area');
-      // Modifica clases/estilos para mostrarlos
-      if (rightControls) rightControls.classList.add('drawing-unlocked');
-      if (inkLabel) inkLabel.classList.remove('hidden');
-      if (inkBar) inkBar.classList.remove('hidden');
-      if (scoreArea) scoreArea.classList.add('ink-visible');
-      this.updateInkUI(); // Actualiza la barra de tinta (implementación pendiente)
-      // Aquí se inicializaría el InkManager si existiera
+      if (rightControls) {
+          rightControls.classList.add('drawing-unlocked');
+          console.log("GameManager: Clase 'drawing-unlocked' añadida a #right-controls.");
+      } else {
+          console.warn("GameManager: No se encontró #right-controls para añadir clase 'drawing-unlocked'.");
+      }
+      // ---------------------------------------------------------
+
+      // Llama a init() de InkManager para configurar canvas y listeners
+      this.inkManager.init();
+      // Nota: updateInkUI se llama dentro de init() de InkManager ahora
   }
 
-  // --- Método para actualizar UI de tinta (placeholder) ---
-  /** Actualiza la barra de progreso de tinta (implementación pendiente). */
+  /** Delega la actualización de la UI de tinta al InkManager. */
   public updateInkUI(): void {
-      // TODO: Implementar lógica para obtener tinta de PlayerData
-      // y actualizar el estilo '--ink-percentage' del elemento #ink-bar-fill
-      console.warn("GameManager.updateInkUI() - Implementación pendiente.");
+      // Esta función podría ya no ser necesaria si InkManager maneja su UI
+      // internamente, pero la dejamos por si acaso otros sistemas necesitan forzarla.
+      this.inkManager.updateInkUI();
   }
   // -----------------------------------------------------
 
@@ -287,10 +293,10 @@ export class GameManager {
     // Llama a updateShieldIcon() solo si el estado actual tiene ese método
     if (typeof (currentState as any)?.updateShieldIcon === 'function') {
         (currentState as any).updateShieldIcon(isActive);
-    } else {
-         // Podría ser normal si el estado actual no maneja este icono (ej. MainMenu)
-         // console.warn("updateExternalShieldUI: El estado actual no tiene updateShieldIcon().");
     }
+    // else { // Comentado para reducir ruido en consola
+         // console.warn("updateExternalShieldUI: El estado actual no tiene updateShieldIcon().");
+    // }
   }
   /** Notifica al estado actual para actualizar la UI de la pista. */
   public updateExternalHintUI(charges: number): void {
@@ -298,10 +304,10 @@ export class GameManager {
      // Llama a updateHintIcon() solo si el estado actual tiene ese método
      if (typeof (currentState as any)?.updateHintIcon === 'function') {
         (currentState as any).updateHintIcon(charges);
-     } else {
-        // Podría ser normal si el estado actual no maneja este icono
-        // console.warn("updateExternalHintUI: El estado actual no tiene updateHintIcon().");
      }
+    // else { // Comentado para reducir ruido en consola
+        // console.warn("updateExternalHintUI: El estado actual no tiene updateHintIcon().");
+    // }
   }
   // --------------------------------------------------------------------------------------
 
@@ -313,6 +319,7 @@ export class GameManager {
   public getCatManager(): CatManager { return this.catManager; }
   public getShopManager(): ShopManager { return this.shopManager; }
   public getPlayerData(): PlayerData { return this.playerData; }
+  public getInkManager(): InkManager { return this.inkManager; } // Getter para InkManager
   public getContainerElement(): HTMLElement { return this.containerElement; }
   /** Obtiene la instancia del estado actualmente activo. */
   public getCurrentState(): IState | null { return this.stateMachine.getCurrentState(); }

@@ -1,396 +1,197 @@
 /* src/style.css */
 
-/* Añade aquí los estilos para .glow-* (glow-gray, glow-green, etc.) si los usas */
-/* Ejemplo: */
-/* .glow-blue {
-  box-shadow: inset -2px -2px 5px rgba(0,0,0,0.3),
-              0 0 8px 3px rgba(0, 150, 255, 0.6);
-} */
-
-/* Estilos para la UI del Quiz (si usas estas clases en QuizGameplayState) */
-.quiz-ui-container {
-    /* ... tus estilos ... */
-    z-index: 20; /* Debe estar sobre el cat-container */
-}
-/* --- Estilos Base (Asegúrate que estos existan) --- */
+/* --- Estilos Base --- */
 body {
   margin: 0;
-  font-family: sans-serif; /* O la fuente que uses */
-  position: relative; /* Para elementos posicionados fijos */
+  font-family: sans-serif;
+  position: relative;
   min-height: 100vh;
-  background-color: #111827; /* Fondo oscuro ejemplo */
-  color: #e5e7eb; /* Color de texto base */
-  overflow: hidden; /* Prevenir scroll */
+  background-color: #111827;
+  color: #e5e7eb;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 #app {
-  /* Contenedor principal del juego */
   width: 100%;
   height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
+  position: relative;
+  /* z-index: 20; /* Quitar o bajar z-index si interfiere */
 }
 
 #cat-container {
   position: fixed;
   top: 0; left: 0; width: 100%; height: 100%;
   pointer-events: none;
-  z-index: 10;
+  z-index: 10; /* Gatos encima del canvas base, debajo de UI */
   overflow: hidden;
 }
 
-/* --- Estilos Controles Laterales (Ejemplo) --- */
-.control-container {
-    position: fixed;
-    right: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    z-index: 30; /* Encima de los gatos pero debajo de popups */
-}
+/* --- Estilos Sistema de Tinta --- */
 
-.control-button {
-    background-color: rgba(31, 41, 55, 0.8); /* Fondo semi-transparente */
-    color: #e5e7eb;
-    border: 1px solid #4b5563;
-    border-radius: 0.5rem;
-    padding: 0.6rem;
-    cursor: pointer;
-    transition: background-color 0.2s ease, border-color 0.2s ease;
-    font-size: 1.5rem; /* Tamaño del icono/emoji */
-    width: 50px;
-    height: 50px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-}
-.control-button:hover {
-    background-color: rgba(55, 65, 81, 0.9);
-    border-color: #6b7280;
-}
-.control-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-
-/* --- Estilos Tienda --- */
-
-/* Overlay General */
-.overlay {
+#drawing-canvas {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  display: none; /* Oculto por defecto */
-  opacity: 0;
-  justify-content: center;
-  align-items: center;
+  /* z-index: 5; /* Z-index base bajo */
+  pointer-events: none; /* No interceptar eventos por defecto */
+  background-color: transparent;
+  z-index: 5; /* Por defecto, debajo de gatos y UI */
+}
+
+/* Estilo cuando el pincel está activo */
+#drawing-canvas.active {
+  pointer-events: auto; /* Permitir eventos */
+  cursor: crosshair;
+  z-index: 25; /* *** TEMPORALMENTE ENCIMA de #app (z-index: 20) *** */
+}
+
+/* Contenedor principal del quiz (atenuado al dibujar) */
+.quiz-ui-container.ui-faded {
+  opacity: 0.3;
+  /* pointer-events: none; /* Quitar esto, el canvas encima lo bloquea */
   transition: opacity 0.3s ease-in-out;
-  z-index: 100; /* Encima de todo excepto quizás otros popups */
 }
 
-/* Backdrop con Blur (Opcional) */
-.blur-backdrop {
-  position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background-color: rgba(17, 24, 39, 0.5); /* Fondo oscuro semi-transparente */
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-  opacity: 0;
-  transition: opacity 0.4s ease-in-out;
-  pointer-events: none; /* No debe interceptar clics */
-  z-index: 99; /* Detrás del popup de la tienda */
-  display: none; /* Oculto por defecto */
-}
-.blur-backdrop.visible {
-    display: block;
-    opacity: 1;
-    pointer-events: auto; /* Permitir clic si es necesario (para cerrar?) */
+/* Área de Score/Status */
+#score-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    margin-bottom: 1rem;
 }
 
-
-/* Estilo específico para el overlay de la tienda */
-.shop-overlay {
-  /* Puedes añadir un fondo aquí si no usas el blur backdrop */
-  /* background-color: rgba(0, 0, 0, 0.6); */
+/* Etiqueta "Tinta" */
+#ink-label {
+  font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.05em; color: #f472b6; margin-bottom: 0.1rem;
+  display: none; /* JS controla visibilidad */
 }
 
-.shop-overlay.visible {
-  display: flex; /* Mostrar cuando tenga la clase */
-  opacity: 1;
+/* Contenedor de la barra de tinta */
+#ink-bar-container {
+  width: 9rem; height: 0.75rem; background-color: #374151;
+  border-radius: 9999px; overflow: hidden; border: 1px solid #4b5563;
+  display: none; /* JS controla visibilidad */
 }
 
-/* Contenedor del contenido de la tienda */
-.shop-content-box {
-  background-color: rgba(17, 24, 39, 0.97); /* Fondo oscuro casi opaco */
-  padding: 1.5rem 2rem;
-  border-radius: 1rem;
-  border: 1px solid #4b5563; /* Borde sutil */
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6); /* Sombra pronunciada */
-  max-width: 90%;
-  width: 450px; /* Ancho máximo */
-  position: relative; /* Para posicionar el botón de cierre */
-  color: #e5e7eb; /* Color de texto */
-  max-height: 90vh; /* Altura máxima */
-  overflow-y: auto; /* Scroll si el contenido excede la altura */
-  display: flex;
-  flex-direction: column; /* Apilar elementos verticalmente */
+/* Relleno de la barra de tinta */
+#ink-bar-fill {
+  height: 100%;
+  background-image: linear-gradient(to right, #a78bfa, #7c3aed);
+  border-radius: 9999px;
+  transition: width 0.3s ease-out;
+  width: 0%;
 }
 
-/* Botón de cierre */
-.shop-close-btn {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.75rem;
-  background: none;
-  border: none;
-  color: #9ca3af; /* Gris claro */
-  font-size: 2rem; /* Tamaño grande */
-  line-height: 1;
-  cursor: pointer;
-  transition: color 0.2s ease;
-  padding: 0.25rem;
-}
-.shop-close-btn:hover {
-  color: #e5e7eb; /* Blanco al pasar el mouse */
-}
-
-/* Título y Puntuación */
-.shop-title-text {
-  font-size: 1.75rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-  text-align: center;
-}
-.shop-score-text {
-  font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: 1.5rem;
-  text-align: center;
-  color: #a5b4fc; /* Color para destacar puntos */
-}
-
-/* Contenedor de los ítems */
-#shop-items-container {
-    /* No necesita estilos específicos si las secciones manejan el layout */
-    margin-bottom: 1rem; /* Espacio antes del tooltip */
-}
-
-/* Estilos para Secciones (Opcional, si usas categorías) */
-.shop-section-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #9ca3af; /* Gris */
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-top: 1rem; /* Espacio entre secciones */
-    margin-bottom: 0.75rem;
-    padding-bottom: 0.25rem;
-    border-bottom: 1px solid #4b5563; /* Línea divisoria */
-    text-align: left;
-}
-.shop-section-items {
-    display: flex; /* Organizar ítems */
-    flex-wrap: wrap; /* Permitir que pasen a la siguiente línea */
-    gap: 1rem; /* Espacio entre ítems */
-    justify-content: flex-start; /* Alinear al inicio */
+/* Mostrar barra de tinta cuando esté desbloqueado */
+#score-area #ink-label:not(.hidden),
+#score-area #ink-bar-container:not(.hidden) {
+    display: block; /* O inline-block / flex si es necesario */
 }
 
 
-/* Estilo de cada ítem */
-.shop-item {
-  background-color: rgba(55, 65, 81, 0.7); /* Fondo gris oscuro semi-transparente */
-  border: 2px solid #4b5563;
-  border-radius: 0.75rem;
-  padding: 0.75rem;
-  cursor: pointer;
-  transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 65px; /* Tamaño fijo */
-  height: 65px;
-  position: relative;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-}
-.shop-item:hover {
-  background-color: rgba(75, 85, 99, 0.8);
-  border-color: #6b7280;
-  transform: translateY(-2px); /* Efecto hover */
-  box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+/* --- Controles Laterales --- */
+.control-container {
+    position: fixed; right: 1rem; top: 50%;
+    transform: translateY(-50%); display: flex;
+    flex-direction: column; gap: 0.75rem; z-index: 30; /* Encima de todo excepto overlays */
 }
 
-/* Icono dentro del ítem */
-.shop-item-icon {
-  font-size: 1.8rem; /* Tamaño del emoji/icono */
-  line-height: 1;
-  /* Centrado por flex en el padre */
+/* Botones de control */
+.control-button {
+    background-color: rgba(31, 41, 55, 0.8); color: #e5e7eb;
+    border: 1px solid #4b5563; border-radius: 0.5rem; padding: 0.6rem;
+    cursor: pointer; transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    font-size: 1.5rem; width: 50px; height: 50px; display: flex;
+    justify-content: center; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.control-button:hover { background-color: rgba(55, 65, 81, 0.9); border-color: #6b7280; }
+.control-button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+#toggle-brush-button.active {
+  background-color: rgba(167, 139, 250, 0.8); border-color: #a78bfa;
+  box-shadow: 0 0 8px rgba(167, 139, 250, 0.5);
 }
 
-/* Estados de los ítems */
-.shop-item.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  border-color: #374151; /* Borde más oscuro */
-}
-.shop-item.disabled:hover { /* Evitar efectos hover en deshabilitado */
-  background-color: rgba(55, 65, 81, 0.7);
-  border-color: #374151;
-  transform: none;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-}
-.shop-item.purchased { /* Ítem no mejorable ya comprado */
-   border-color: #f59e0b; /* Borde dorado */
-   opacity: 0.7;
-   cursor: default;
-}
-.shop-item.purchased:hover { /* Evitar efectos hover */
-  background-color: rgba(55, 65, 81, 0.7);
-  border-color: #f59e0b;
-  transform: none;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-}
-.shop-item.max-level { /* Ítem mejorable al nivel máximo */
-   border-color: #34d399; /* Borde verde */
-   opacity: 0.8;
-   cursor: default;
-}
-.shop-item.max-level:hover { /* Evitar efectos hover */
-  background-color: rgba(55, 65, 81, 0.7);
-  border-color: #34d399;
-  transform: none;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+/* Contenedor de los botones de dibujo */
+#drawing-buttons-container {
+    display: none; /* Oculto por defecto */
+    flex-direction: column;
+    gap: 0.75rem;
 }
 
-/* Tooltip */
-.shop-tooltip-box {
-  position: absolute; /* Posicionar relativo al .shop-content-box */
-  bottom: 1rem; /* En la parte inferior */
-  left: 1rem;
-  right: 1rem;
-  background-color: rgba(17, 24, 39, 0.98); /* Fondo muy oscuro */
-  border: 1px solid #6b7280; /* Borde gris */
-  border-radius: 0.5rem;
-  padding: 1rem;
-  color: #d1d5db; /* Color de texto gris claro */
-  font-size: 0.9rem;
-  text-align: left;
-  z-index: 110; /* Encima de los ítems */
-  opacity: 0; /* Oculto por defecto */
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-  pointer-events: none; /* No interceptar clics */
-  min-height: 80px; /* Altura mínima */
+/* Mostrar botones cuando el padre tiene la clase */
+#right-controls.drawing-unlocked #drawing-buttons-container {
+    display: flex;
 }
-.shop-tooltip-box.visible {
-  opacity: 1;
-  visibility: visible;
-}
+
+/* --- Estilos Tienda --- */
+.overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: none; opacity: 0; justify-content: center; align-items: center; transition: opacity 0.3s ease-in-out; z-index: 100; }
+.blur-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(17, 24, 39, 0.5); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); opacity: 0; transition: opacity 0.4s ease-in-out; pointer-events: none; z-index: 99; display: none; }
+.blur-backdrop.visible { display: block; opacity: 1; pointer-events: auto; }
+.shop-overlay.visible { display: flex; opacity: 1; }
+.shop-content-box { background-color: rgba(17, 24, 39, 0.97); padding: 1.5rem 2rem; border-radius: 1rem; border: 1px solid #4b5563; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6); max-width: 90%; width: 450px; position: relative; color: #e5e7eb; max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; }
+.shop-close-btn { position: absolute; top: 0.5rem; right: 0.75rem; background: none; border: none; color: #9ca3af; font-size: 2rem; line-height: 1; cursor: pointer; transition: color 0.2s ease; padding: 0.25rem; }
+.shop-close-btn:hover { color: #e5e7eb; }
+.shop-title-text { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; text-align: center; }
+.shop-score-text { font-size: 1rem; font-weight: 600; margin-bottom: 1.5rem; text-align: center; color: #a5b4fc; }
+#shop-items-container { margin-bottom: 1rem; }
+.shop-section-title { font-size: 1.1rem; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1rem; margin-bottom: 0.75rem; padding-bottom: 0.25rem; border-bottom: 1px solid #4b5563; text-align: left; }
+.shop-section-items { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: flex-start; }
+.shop-item { background-color: rgba(55, 65, 81, 0.7); border: 2px solid #4b5563; border-radius: 0.75rem; padding: 0.75rem; cursor: pointer; transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease; display: flex; justify-content: center; align-items: center; width: 65px; height: 65px; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+.shop-item:hover { background-color: rgba(75, 85, 99, 0.8); border-color: #6b7280; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.4); }
+.shop-item-icon { font-size: 1.8rem; line-height: 1; }
+.shop-item.disabled { opacity: 0.5; cursor: not-allowed; border-color: #374151; }
+.shop-item.disabled:hover { background-color: rgba(55, 65, 81, 0.7); border-color: #374151; transform: none; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+.shop-item.purchased { border-color: #f59e0b; opacity: 0.7; cursor: default; }
+.shop-item.purchased:hover { background-color: rgba(55, 65, 81, 0.7); border-color: #f59e0b; transform: none; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+.shop-item.max-level { border-color: #34d399; opacity: 0.8; cursor: default; }
+.shop-item.max-level:hover { background-color: rgba(55, 65, 81, 0.7); border-color: #34d399; transform: none; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+.shop-tooltip-box { position: absolute; bottom: 1rem; left: 1rem; right: 1rem; background-color: rgba(17, 24, 39, 0.98); border: 1px solid #6b7280; border-radius: 0.5rem; padding: 1rem; color: #d1d5db; font-size: 0.9rem; text-align: left; z-index: 110; opacity: 0; visibility: hidden; transition: opacity 0.2s ease, visibility 0.2s ease; pointer-events: none; min-height: 80px; }
+.shop-tooltip-box.visible { opacity: 1; visibility: visible; }
 .tooltip-item-name { font-size: 1.1rem; font-weight: 600; color: #f9fafb; margin-bottom: 0.25rem; }
 .tooltip-item-level { font-size: 0.85rem; color: #6ee7b7; margin-bottom: 0.25rem; font-weight: bold; }
 .tooltip-item-effect { margin-bottom: 0.5rem; }
-.tooltip-item-cost { font-weight: 600; color: #facc15; } /* Amarillo para costo */
-.tooltip-item-status { font-style: italic; color: #fca5a5; margin-top: 0.5rem; } /* Rojo pálido para estado */
-
-/* Clase helper para ocultar elementos (como el nivel o estado del tooltip) */
-.hidden {
-    display: none !important;
-}
-#cat-container {
-  position: fixed; /* O absolute, dependiendo de tu layout */
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none; /* El contenedor no intercepta clics */
-  overflow: hidden; /* Evita que los gatos fuera de pantalla causen scroll */
-  z-index: 10; /* Asegura que esté por encima del fondo pero debajo de la UI principal */
-}
-
-.cat {
-  position: absolute; /* Permite posicionar con top/left o transform */
-  border-radius: 50%; /* Hacerlos circulares */
-  background-color: #ccc; /* Color base si no hay imagen */
-  background-size: cover;
-  background-position: center;
-  /* Transiciones opcionales para suavizar cambios de tamaño/sombra */
-  transition: box-shadow 0.3s ease-out, width 0.3s ease-out, height 0.3s ease-out;
-  cursor: grab; /* Cursor para indicar que se pueden arrastrar */
-  pointer-events: auto; /* Los gatos SÍ interceptan clics/arrastres */
-  /* Evitar selección de texto al arrastrar */
-  user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  will-change: transform; /* Optimización para transformaciones frecuentes */
-  box-shadow: inset -2px -2px 5px rgba(0,0,0,0.3); /* Sombra interna base */
-  transition: box-shadow 0.3s ease-out; /* Para suavizar cambios si es necesario */
-}
-
-/* Sobrescribir box-shadow para cada nivel de brillo/rareza */
-.glow-gray {
-  box-shadow: inset -3px -3px 8px rgba(0,0,0,0.4), /* Sombra interna */
-              1px 1px 3px rgba(0,0,0,0.2),      /* Sombra externa sutil */
-              0 0 10px 4px rgba(180, 180, 180, 0.7); /* Brillo Gris */
-}
-
-.glow-green {
-  box-shadow: inset -3px -3px 8px rgba(0,0,0,0.4),
-              1px 1px 3px rgba(0,0,0,0.2),
-              0 0 12px 5px rgba(0, 255, 0, 0.7); /* Brillo Verde */
-}
-
-.glow-blue {
-  box-shadow: inset -3px -3px 8px rgba(0,0,0,0.4),
-              1px 1px 3px rgba(0,0,0,0.2),
-              0 0 12px 5px rgba(0, 150, 255, 0.7); /* Brillo Azul */
-}
-
-.glow-violet {
-  box-shadow: inset -3px -3px 8px rgba(0,0,0,0.4),
-              1px 1px 3px rgba(0,0,0,0.2),
-              0 0 14px 6px rgba(180, 0, 255, 0.65); /* Brillo Violeta */
-}
-
-.glow-orange {
-  box-shadow: inset -3px -3px 8px rgba(0,0,0,0.4),
-              1px 1px 3px rgba(0,0,0,0.2),
-              0 0 15px 7px rgba(255, 140, 0, 0.7); /* Brillo Naranja/Legendario */
-}
-
-/* -------------------------------------------------------------- */
+.tooltip-item-cost { font-weight: 600; color: #facc15; }
+.tooltip-item-status { font-style: italic; color: #fca5a5; margin-top: 0.5rem; }
+.hidden { display: none !important; } /* Mantener por si se usa en JS para barra/label */
 
 
-.cat:active {
-    cursor: grabbing; /* Cursor al arrastrar */
-}
-/* --- Visibilidad de Controles por Estado --- */
+/* --- Estilos Gatos --- */
+.cat { position: absolute; border-radius: 50%; background-color: #ccc; background-size: cover; background-position: center; transition: box-shadow 0.3s ease-out, width 0.3s ease-out, height 0.3s ease-out; cursor: grab; pointer-events: auto; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; will-change: transform; box-shadow: inset -2px -2px 5px rgba(0,0,0,0.3); }
+.cat:active { cursor: grabbing; }
+.glow-gray { box-shadow: inset -3px -3px 8px rgba(0,0,0,0.4), 1px 1px 3px rgba(0,0,0,0.2), 0 0 10px 4px rgba(180, 180, 180, 0.7); }
+.glow-green { box-shadow: inset -3px -3px 8px rgba(0,0,0,0.4), 1px 1px 3px rgba(0,0,0,0.2), 0 0 12px 5px rgba(0, 255, 0, 0.7); }
+.glow-blue { box-shadow: inset -3px -3px 8px rgba(0,0,0,0.4), 1px 1px 3px rgba(0,0,0,0.2), 0 0 12px 5px rgba(0, 150, 255, 0.7); }
+.glow-violet { box-shadow: inset -3px -3px 8px rgba(0,0,0,0.4), 1px 1px 3px rgba(0,0,0,0.2), 0 0 14px 6px rgba(180, 0, 255, 0.65); }
+.glow-orange { box-shadow: inset -3px -3px 8px rgba(0,0,0,0.4), 1px 1px 3px rgba(0,0,0,0.2), 0 0 15px 7px rgba(255, 140, 0, 0.7); }
 
-/* Ocultar controles por defecto o en estados no deseados */
+/* --- Estilos UI Quiz --- */
+.quiz-ui-container { z-index: 20; /* Encima del canvas y gatos */ }
+/* ... (Asegúrate que los estilos para .top-ui-container, .quiz-lives, etc. existan) ... */
+/* Colores específicos para feedback */
+#quiz-feedback.text-green-400 { color: #34d399; }
+#quiz-feedback.text-red-400 { color: #f87171; }
+#quiz-feedback.text-blue-400 { color: #60a5fa; }
+
+
+/* --- Estilos Estados del Body (Control Visibilidad Controles Laterales) --- */
+/* Ocultar controles laterales por defecto */
 body:not(.state-quizgameplay) #right-controls {
   display: none;
 }
-
-/* Mostrar controles específicamente en el estado de gameplay */
-/* (Asegúrate que el display sea correcto para tu layout, flex es común) */
+/* Mostrar controles laterales solo en estado gameplay */
 body.state-quizgameplay #right-controls {
-  display: flex; /* O 'block' si #right-controls no es flex */
+  display: flex;
 }
 
-/* Puedes añadir reglas más específicas si, por ejemplo,
-   quieres ocultar solo ciertos botones dentro de #right-controls
-   en lugar de todo el contenedor. Ejemplo:
-*/
-/* body:not(.state-quizgameplay) #shop-button {
-    display: none;
-   }
-   body.state-quizgameplay #shop-button {
-       display: flex; // O block/inline-flex
-   }
-*/
