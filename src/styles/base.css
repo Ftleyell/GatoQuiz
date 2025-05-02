@@ -1,0 +1,118 @@
+/* src/styles/base.css */
+/* Estilos globales, fuentes, body, variables CSS, animaciones */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&display=swap');
+
+:root {
+  /* Variables CSS para efectos dinámicos (GDD Alpha) */
+  --flare-intensity: 0; /* Controla el brillo/flare del score (0 a 1) */
+  --combo-font-size: 3.0rem; /* Tamaño base del combo */
+  --element-glow-intensity: 0; /* Controla el glow de qbox/botones (0 a 1) */
+  --score-font-size: 2.5rem; /* Tamaño base del score */
+  --score-line-height: 1.1; /* Altura de línea del score */
+  --difficulty-glow-color: transparent; /* Color del glow de dificultad */
+  --difficulty-glow-blur: 0px; /* Desenfoque del glow de dificultad */
+  --ink-percentage: 0%; /* Porcentaje de tinta para la barra */
+
+  /* Variables CSS para las sombras del flare del score */
+  --flare-shadow: 0 0 5px hsla(0, 0%, 100%, 0), 0 0 10px hsla(55, 100%, 70%, 0), 0 0 15px hsla(40, 100%, 60%, 0), 0 0 20px hsla(10, 100%, 55%, 0);
+  --flare-shadow-pulse: 0 0 5px hsla(0, 0%, 100%, 0), 0 0 12px hsla(50, 100%, 75%, 0), 0 0 18px hsla(35, 100%, 65%, 0), 0 0 24px hsla(5, 100%, 60%, 0);
+}
+
+body {
+  margin: 0;
+  font-family: 'Poppins', sans-serif; /* Fuente principal del prototipo */
+  position: relative;
+  min-height: 100vh;
+  background-color: #111827; /* Fondo oscuro inicial */
+  color: #e5e7eb; /* Color de texto base */
+  overflow: hidden; /* Evitar scroll */
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  /* Transición suave para el cambio de color de fondo */
+  transition: background-color 0.8s ease-in-out;
+}
+
+#app {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  z-index: 20; /* Contenedor principal de la aplicación */
+}
+
+/* Utilidad para ocultar elementos */
+.hidden {
+  display: none !important;
+}
+
+/* --- Estilos para Estados del Body (Control de visibilidad global) --- */
+/* Ocultar controles laterales por defecto */
+#right-controls {
+  display: none;
+}
+/* Mostrar controles solo en el estado de juego */
+body.state-quizgameplay #right-controls {
+  display: flex;
+}
+
+/* --- Estilos básicos MainMenu/GameOver --- */
+.main-menu-title {
+  font-size: 2.5rem; font-weight: bold; margin-bottom: 2rem; color: #fde047;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+}
+.play-button {
+  padding: 0.8rem 2rem; font-size: 1.2rem; font-weight: bold; color: white;
+  background-color: #3b82f6; border: none; border-radius: 0.5rem; cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+.play-button:hover { background-color: #2563eb; }
+.play-button:active { transform: translateY(1px); box-shadow: 0 2px 3px rgba(0,0,0,0.3); }
+.game-over-container {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 100%; text-align: center; padding: 1rem; background-color: rgba(17, 24, 39, 0.9);
+  color: white; border-radius: 0.5rem;
+}
+.game-over-text { font-size: 3rem; font-weight: 900; color: #ef4444; margin-bottom: 1rem; }
+.final-score { font-size: 1.5rem; color: #facc15; margin-bottom: 2rem; }
+.restart-prompt { font-size: 1rem; color: #d1d5db; }
+
+
+/* --- Animaciones Globales (del prototipo GDD Alpha) --- */
+@keyframes pulseHeart {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+@keyframes shieldPulse {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.1); opacity: 1; }
+}
+@keyframes hintPulse {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.85; }
+  50% { transform: scale(1.08) rotate(5deg); opacity: 1; }
+}
+@keyframes difficultyPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.9; }
+}
+/* Animación de flare para el score */
+@keyframes pulseFlare {
+  0%, 100% { text-shadow: var(--flare-shadow); opacity: 1; }
+  50% { text-shadow: var(--flare-shadow-pulse); opacity: 0.85; }
+}
+/* Clase que activa la animación de flare (añadida/quitada por JS) */
+.score-pulsing {
+  animation: pulseFlare 1.5s infinite ease-in-out;
+}
+/* Animación del div #score-pulse (añadida/quitada por JS) */
+@keyframes scorePulseAnim {
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 0.7; }
+  100% { transform: translate(-50%, -50%) scale(200); opacity: 0; }
+}
+#score-pulse.pulsing {
+   animation: scorePulseAnim 0.6s ease-out forwards;
+}
+

@@ -1,0 +1,30 @@
+/* src/styles/cat.css */
+
+.cat {
+    position: absolute;
+    border-radius: 50%;
+    background-color: #ccc; /* Fallback color */
+    background-size: cover;
+    background-position: center;
+    transition: box-shadow 0.3s ease-out, width 0.3s ease-out, height 0.3s ease-out, transform 0.05s linear; /* Transición suave para tamaño/sombra, rápida para transform */
+    cursor: grab;
+    pointer-events: auto;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    will-change: transform; /* Optimización para movimiento */
+    box-shadow: inset -2px -2px 5px rgba(0,0,0,0.3); /* Sombra interior base */
+  }
+  
+  .cat:active {
+    cursor: grabbing;
+    z-index: 15; /* Poner encima de otros gatos al arrastrar */
+  }
+  
+  /* --- Clases de Brillo (Glow) --- */
+  .glow-gray { box-shadow: inset -3px -3px 8px rgba(0,0,0,0.4), 1px 1px 3px rgba(0,0,0,0.2), 0 0 10px 4px rgba(180, 180, 180, 0.7); }
+  .glow-green { box-shadow: inset -3px -3px 8px rgba(0,0,0,0.4), 1px 1px 3px rgba(0,0,0,0.2), 0 0 12px 5px rgba(0, 255, 0, 0.7); }
+  .glow-blue { box-shadow: inset -3px -3px 8px rgba(0,0,0,0.4), 1px 1px 3px rgba(0,0,0,0.2), 0 0 12px 5px rgba(0, 150, 255, 0.7); }
+  .glow-violet { box-shadow: inset -3px -3px 8px rgba(0,0,0,0.4), 1px 1px 3px rgba(0,0,0,0.2), 0 0 14px 6px rgba(180, 0, 255, 0.65); }
+  .glow-orange { box-shadow: inset -3px -3px 8px rgba(0,0,0,0.4), 1px 1px 3px rgba(0,0,0,0.2), 0 0 15px 7px rgba(255, 140, 0, 0.7); }

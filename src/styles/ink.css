@@ -1,0 +1,46 @@
+/* src/styles/ink.css */
+
+#drawing-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 5; /* Por defecto, detrás de gatos y UI */
+    pointer-events: none; /* No interactuable por defecto */
+    background-color: transparent;
+  }
+  
+  /* Cuando el pincel está activo */
+  #drawing-canvas.active {
+    pointer-events: auto; /* Permite dibujar */
+    cursor: crosshair;
+    z-index: 25; /* Encima de la UI del quiz pero debajo de controles/tienda */
+  }
+  
+  /* --- UI de la Barra de Tinta (dentro de #score-area o .top-ui-container) --- */
+  #ink-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #f472b6; /* Rosa */
+    margin-bottom: 0.1rem;
+    /* display: none; controlado por JS/PlayerData */
+  }
+  
+  #ink-bar-container {
+    /* width y height definidos en el tema o JS si es necesario */
+    background-color: #374151; /* Fondo gris oscuro */
+    border-radius: 9999px; /* Completamente redondeado */
+    overflow: hidden;
+    border: 1px solid #4b5563; /* Borde sutil */
+    /* display: none; controlado por JS/PlayerData */
+  }
+  
+  #ink-bar-fill {
+    height: 100%;
+    background-image: linear-gradient(to right, #a78bfa, #7c3aed); /* Gradiente morado */
+    border-radius: 9999px;
+    transition: width 0.3s ease-out;
+    width: 0%; /* Inicialmente vacía */
+    box-shadow: inset 0 0 2px rgba(255, 255, 255, 0.2); /* Brillo interior sutil */
+  }

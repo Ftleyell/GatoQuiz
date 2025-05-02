@@ -1,6 +1,5 @@
 // src/game/GameManager.ts
 
-// Importaciones de Sistemas y Tipos
 import { PhysicsManager } from '../systems/PhysicsManager';
 import { QuizSystem } from '../systems/QuizSystem';
 import { StateMachine, IState } from './StateMachine';
@@ -9,9 +8,9 @@ import { CatManager } from '../systems/CatManager';
 import { ShopManager } from '../systems/ShopManager';
 import { PlayerData } from './PlayerData';
 import { CatTemplate } from '../types/CatTemplate';
-// Importamos la interfaz JSON, aunque no la usemos directamente aquí
 import { ShopItemJsonData } from '../types/ShopItemData';
-import { InkManager } from '../systems/InkManager'; // Importar InkManager
+import { InkManager } from '../systems/InkManager';
+import { UIManager } from '../systems/UIManager'; // Importar UIManager simplificado
 
 // Importaciones de Estados
 import { LoadingState } from './states/LoadingState';
@@ -20,10 +19,6 @@ import { QuizGameplayState } from './states/QuizGameplayState';
 import { ResultsState } from './states/ResultsState';
 import { GameOverState } from './states/GameOverState';
 
-
-/**
- * GameManager: Orquesta los diferentes sistemas y el flujo general del juego.
- */
 export class GameManager {
   private physicsManager: PhysicsManager;
   private quizSystem: QuizSystem;
@@ -32,17 +27,14 @@ export class GameManager {
   private catManager: CatManager;
   private playerData: PlayerData;
   private shopManager: ShopManager;
-  private inkManager: InkManager; // Propiedad para InkManager
+  private inkManager: InkManager;
+  private uiManager: UIManager;
   private lastTimestamp: number = 0;
   private isRunning: boolean = false;
   private gameLoopRequestId?: number;
   private containerElement: HTMLElement;
-  private previousBodyStateClass: string | null = null; // Para gestionar clase CSS del estado
+  private previousBodyStateClass: string | null = null;
 
-  /**
-   * Constructor de GameManager.
-   * @param container - El elemento HTML principal donde se renderizará el juego.
-   */
   constructor(container: HTMLElement) {
     this.containerElement = container;
     this.audioManager = new AudioManager();
@@ -50,268 +42,96 @@ export class GameManager {
     this.playerData = new PlayerData();
     this.catManager = new CatManager(this.audioManager);
     this.physicsManager = new PhysicsManager(this.catManager);
-    // Pasar 'this' (GameManager) a ShopManager e InkManager
+    this.uiManager = new UIManager(this); // Instanciar UIManager simplificado
     this.shopManager = new ShopManager(this.playerData, this);
-    this.inkManager = new InkManager(this); // Instanciar InkManager
+    this.inkManager = new InkManager(this);
     this.stateMachine = new StateMachine();
     this.catManager.setPhysicsManager(this.physicsManager);
     this.setupStates();
   }
 
-  /**
-   * Inicializa los sistemas principales y carga los assets necesarios.
-   */
   public async init(): Promise<void> {
     console.log('GameManager: init');
-    this.playerData.reset(); // Reinicia los datos del jugador
-    this.physicsManager.init(this.getWorldContainer()); // Inicializa la física
-    await this.preload(); // Carga datos JSON (preguntas, plantillas, tienda)
-    // ShopManager e InkManager se inicializan en el constructor o preload
+    this.playerData.reset();
+    this.physicsManager.init(this.getWorldContainer());
+    await this.preload(); // Carga datos JSON (sin temas)
     console.log("GameManager init completado.");
   }
 
-  /**
-   * Carga los archivos de datos externos (preguntas, plantillas, ítems tienda).
-   */
   public async preload(): Promise<void> {
     console.log('GameManager: preload - Cargando assets...');
     const questionsUrl = '/data/questions.json';
     const templatesUrl = '/data/cat_templates.json';
-    const shopItemsUrl = '/data/shop_items.json'; // URL del JSON de la tienda
+    const shopItemsUrl = '/data/shop_items.json';
 
     try {
-        // Cargar todos los archivos en paralelo
-        const [questionResponse, templateResponse, shopResponse] = await Promise.all([
-            fetch(questionsUrl),
-            fetch(templatesUrl),
-            fetch(shopItemsUrl) // Cargar datos de la tienda
-        ]);
+      // Cargar archivos en paralelo (sin temas)
+      const [questionResponse, templateResponse, shopResponse] = await Promise.all([
+        fetch(questionsUrl),
+        fetch(templatesUrl),
+        fetch(shopItemsUrl)
+      ]);
 
-        // Verificar respuestas de red
-        if (!questionResponse.ok) throw new Error(`HTTP ${questionResponse.status} cargando ${questionsUrl}`);
-        if (!templateResponse.ok) throw new Error(`HTTP ${templateResponse.status} cargando ${templatesUrl}`);
-        if (!shopResponse.ok) throw new Error(`HTTP ${shopResponse.status} cargando ${shopItemsUrl}`);
+      // Verificar respuestas (sin temas)
+      if (!questionResponse.ok) throw new Error(`HTTP ${questionResponse.status} cargando ${questionsUrl}`);
+      if (!templateResponse.ok) throw new Error(`HTTP ${templateResponse.status} cargando ${templatesUrl}`);
+      if (!shopResponse.ok) throw new Error(`HTTP ${shopResponse.status} cargando ${shopItemsUrl}`);
 
-        // Parsear JSON
-        const questionData = await questionResponse.json();
-        const templateData: CatTemplate[] = await templateResponse.json();
-        const shopItemJsonData = await shopResponse.json(); // Datos JSON de la tienda
+      // Parsear JSON (sin temas)
+      const questionData = await questionResponse.json();
+      const templateData: CatTemplate[] = await templateResponse.json();
+      const shopItemJsonData = await shopResponse.json();
 
-        // Validar formato básico
-        if (!Array.isArray(questionData)) throw new Error('Formato inválido de preguntas.');
-        if (!Array.isArray(templateData)) throw new Error('Formato inválido de plantillas.');
-        if (!Array.isArray(shopItemJsonData)) throw new Error('Formato inválido de ítems de tienda.');
+      // Validar formato (sin temas)
+      if (!Array.isArray(questionData)) throw new Error('Formato inválido de preguntas.');
+      if (!Array.isArray(templateData)) throw new Error('Formato inválido de plantillas.');
+      if (!Array.isArray(shopItemJsonData)) throw new Error('Formato inválido de ítems de tienda.');
 
-        // Cargar datos en los sistemas correspondientes
-        const questionsLoaded = await this.quizSystem.loadQuestionsData(questionData);
-        if (!questionsLoaded) throw new Error("Fallo al procesar preguntas en QuizSystem.");
-        this.catManager.loadTemplates(templateData);
-        // Inicializar ShopManager con los datos JSON cargados
-        this.shopManager.init(shopItemJsonData); // ShopManager se inicializa aquí
+      // Cargar datos en sistemas (sin temas)
+      const questionsLoaded = await this.quizSystem.loadQuestionsData(questionData);
+      if (!questionsLoaded) throw new Error("Fallo al procesar preguntas en QuizSystem.");
+      this.catManager.loadTemplates(templateData);
+      this.shopManager.init(shopItemJsonData);
+      // Ya no se cargan temas aquí
 
-        console.log('GameManager: Preload completado exitosamente.');
+      console.log('GameManager: Preload completado exitosamente.');
     } catch (error: any) {
-        console.error('GameManager: Error durante preload:', error);
-        this.containerElement.innerHTML = `Error al cargar assets: ${error.message}. Revisa la consola.`;
-        throw error; // Detener si falla la carga
+      console.error('GameManager: Error durante preload:', error);
+      this.containerElement.innerHTML = `Error al cargar assets: ${error.message}. Revisa la consola.`;
+      throw error;
     }
   }
 
-  /**
-   * Prepara el juego para una nueva partida.
-   */
   public create(): void {
     console.log('GameManager: create');
-    this.quizSystem.resetAvailableQuestions(); // Reinicia las preguntas disponibles
-    this.catManager.removeAllCats(); // Elimina gatos de partidas anteriores
-    this.stateMachine.changeState('MainMenu'); // Empieza en el menú principal
+    this.quizSystem.resetAvailableQuestions();
+    this.catManager.removeAllCats();
+    // Ya no se establece un tema activo
+    this.stateMachine.changeState('MainMenu');
   }
 
-  /**
-   * El bucle principal del juego.
-   * @param timestamp - Tiempo actual proporcionado por requestAnimationFrame.
-   */
-  private gameLoop(timestamp: number): void {
-    if (!this.isRunning) return; // Si el juego no está corriendo, no hace nada
-    const deltaTime = (timestamp - this.lastTimestamp) / 1000.0; // Calcula tiempo transcurrido en segundos
-    this.lastTimestamp = timestamp; // Actualiza el último timestamp
-    const clampedDeltaTime = Math.min(deltaTime, 0.1); // Limita el deltaTime para evitar saltos grandes
-    this.update(clampedDeltaTime); // Llama al método de actualización
-    this.gameLoopRequestId = requestAnimationFrame(this.gameLoop.bind(this)); // Solicita el próximo frame
-  }
-
-  /**
-   * Actualiza los sistemas del juego en cada frame.
-   * @param deltaTime - Tiempo desde el último frame en segundos.
-   */
-  public update(deltaTime: number): void {
-    this.stateMachine.update(deltaTime); // Actualiza el estado actual
-    this.catManager.updateCats(deltaTime); // Actualiza la posición visual de los gatos
-    // InkManager no necesita update por ahora
-  }
-
-  /** Inicia el bucle de juego y la física. */
-  public start(): void {
-    if (this.isRunning) return; // Evita iniciar si ya está corriendo
-    console.log('GameManager: Iniciando bucle de juego...');
-    this.isRunning = true;
-    this.lastTimestamp = performance.now(); // Establece el tiempo inicial
-    this.physicsManager.start(); // Inicia el runner de física
-    this.gameLoopRequestId = requestAnimationFrame(this.gameLoop.bind(this)); // Inicia el bucle
-  }
-
-  /** Detiene el bucle de juego y la física. */
-  public stop(): void {
-    if (!this.isRunning) return; // Evita detener si ya está detenido
-    console.log('GameManager: Deteniendo bucle de juego...');
-    this.isRunning = false;
-    if (this.gameLoopRequestId) cancelAnimationFrame(this.gameLoopRequestId); // Cancela el próximo frame
-    this.gameLoopRequestId = undefined;
-    this.physicsManager.stop(); // Detiene el runner de física
-  }
-
-  /** Limpia recursos y detiene sistemas al cerrar el juego. */
-  public shutdown(): void {
-    console.log('GameManager: shutdown');
-    this.stop(); // Detiene el bucle y la física
-    this.physicsManager.shutdown(); // Limpia listeners de física
-    // Intenta salir del estado actual de forma segura
-    if (this.stateMachine.getCurrentStateName() && this.stateMachine.getCurrentStateName() !== '__shutdown__') {
-        try { this.stateMachine.changeState('__shutdown__'); }
-        catch (e) { console.warn("Error en exit() del estado durante shutdown:", e) }
-    }
-    this.catManager.removeAllCats(); // Elimina todos los gatos
-    this.inkManager.destroy(); // Limpia listeners de InkManager
-    this.shopManager.destroy(); // Limpia listeners de la tienda
-    this.containerElement.innerHTML = ''; // Limpia la UI principal
-    this.setBodyStateClass(null); // Limpia la clase CSS del body
-  }
-
-  /** Devuelve el elemento contenedor para la física/mouse. */
-  private getWorldContainer(): HTMLElement {
-      // Podría ser un div específico si no quieres que el mouse constraint
-      // funcione sobre toda la página. Por ahora, body está bien.
-      return document.body;
-  }
-
-  /** Configura e instancia los estados del juego. */
-  private setupStates(): void {
-    this.stateMachine.addState('Loading', new LoadingState(this));
-    this.stateMachine.addState('MainMenu', new MainMenuState(this));
-    this.stateMachine.addState('QuizGameplay', new QuizGameplayState(this));
-    this.stateMachine.addState('Results', new ResultsState(this));
-    this.stateMachine.addState('GameOver', new GameOverState(this));
-    this.stateMachine.addState('__shutdown__', { enter: () => {}, exit: () => {}, update: () => {} }); // Estado dummy para limpieza
-  }
-
-  /**
-   * Actualiza la clase CSS en el elemento <body> para reflejar el estado actual.
-   * Útil para mostrar/ocultar elementos de UI contextualmente.
-   * @param stateName - Nombre descriptivo del estado actual (ej: 'mainmenu', 'gameplay').
-   */
-  public setBodyStateClass(stateName: string | null): void {
-    const body = document.body;
-    // Elimina la clase del estado anterior si existe
-    if (this.previousBodyStateClass) {
-        body.classList.remove(`state-${this.previousBodyStateClass}`);
-    }
-    // Añade la nueva clase si se proporciona un nombre
-    if (stateName) {
-        const newStateClass = `state-${stateName}`;
-        body.classList.add(newStateClass);
-        this.previousBodyStateClass = stateName; // Guarda la clase actual para la próxima vez
-    } else {
-        this.previousBodyStateClass = null; // Limpia si no hay estado
-    }
-  }
-
-
-  // --- Métodos para Vidas (Delegan a PlayerData y notifican UI) ---
-  /** Obtiene las vidas actuales del jugador. */
+  // --- Métodos gameLoop, update, start, stop, shutdown, getWorldContainer, setupStates, setBodyStateClass, Vidas, Tienda, Dibujo, Actualización UI Externa (SIN CAMBIOS) ---
+  private gameLoop(timestamp: number): void { if (!this.isRunning) return; const deltaTime = (timestamp - this.lastTimestamp) / 1000.0; this.lastTimestamp = timestamp; const clampedDeltaTime = Math.min(deltaTime, 0.1); this.update(clampedDeltaTime); this.gameLoopRequestId = requestAnimationFrame(this.gameLoop.bind(this)); }
+  public update(deltaTime: number): void { this.stateMachine.update(deltaTime); this.catManager.updateCats(deltaTime); }
+  public start(): void { if (this.isRunning) return; console.log('GameManager: Iniciando bucle de juego...'); this.isRunning = true; this.lastTimestamp = performance.now(); this.physicsManager.start(); this.gameLoopRequestId = requestAnimationFrame(this.gameLoop.bind(this)); }
+  public stop(): void { if (!this.isRunning) return; console.log('GameManager: Deteniendo bucle de juego...'); this.isRunning = false; if (this.gameLoopRequestId) cancelAnimationFrame(this.gameLoopRequestId); this.gameLoopRequestId = undefined; this.physicsManager.stop(); }
+  public shutdown(): void { console.log('GameManager: shutdown'); this.stop(); this.physicsManager.shutdown(); const currentStateName = this.stateMachine.getCurrentStateName(); if (currentStateName && currentStateName !== '__shutdown__') { try { const currentState = this.stateMachine.getCurrentState(); currentState?.exit(); this.stateMachine.changeState('__shutdown__'); } catch (e) { console.warn("Error en exit() del estado durante shutdown:", e) } } this.catManager.removeAllCats(); this.inkManager.destroy(); this.shopManager.destroy(); this.containerElement.innerHTML = ''; this.setBodyStateClass(null); }
+  private getWorldContainer(): HTMLElement { return document.body; }
+  private setupStates(): void { this.stateMachine.addState('Loading', new LoadingState(this)); this.stateMachine.addState('MainMenu', new MainMenuState(this)); this.stateMachine.addState('QuizGameplay', new QuizGameplayState(this)); this.stateMachine.addState('Results', new ResultsState(this)); this.stateMachine.addState('GameOver', new GameOverState(this)); this.stateMachine.addState('__shutdown__', { enter: () => {}, exit: () => {}, update: () => {} }); }
+  public setBodyStateClass(stateName: string | null): void { const body = document.body; if (this.previousBodyStateClass) { body.classList.remove(`state-${this.previousBodyStateClass}`); } if (stateName) { const newStateClass = `state-${stateName}`; body.classList.add(newStateClass); this.previousBodyStateClass = stateName; } else { this.previousBodyStateClass = null; } }
   public getLives(): number { return this.playerData.lives; }
-  /** Decrementa una vida y actualiza la UI. */
-  public decrementLives(): void {
-      if (this.playerData.lives > 0) {
-          this.playerData.lives--;
-          this.updateExternalLivesUI(); // Notifica al estado actual para actualizar la UI
-      }
-  }
-  /** Incrementa una vida y actualiza la UI. */
-  public incrementLives(): void {
-       this.playerData.lives++;
-       this.updateExternalLivesUI(); // Notifica al estado actual para actualizar la UI
-  }
-  // --------------------------------------------------------------
-
-  // --- Métodos para Tienda ---
-  /** Abre el popup de la tienda. */
+  public decrementLives(): void { if (this.playerData.lives > 0) { this.playerData.lives--; this.updateExternalLivesUI(); } }
+  public incrementLives(): void { this.playerData.lives++; this.updateExternalLivesUI(); }
   public openShop(): void { this.shopManager.openShop(); }
-  /** Cierra el popup de la tienda. */
   public closeShop(): void { this.shopManager.closeShop(); }
-  // --------------------------
+  public enableDrawingFeature(): void { console.log("GameManager: Habilitando función de dibujo..."); const rightControls = document.getElementById('right-controls'); if (rightControls) { rightControls.classList.add('drawing-unlocked'); console.log("GameManager: Clase 'drawing-unlocked' añadida a #right-controls."); } else { console.warn("GameManager: No se encontró #right-controls para añadir clase 'drawing-unlocked'."); } this.inkManager.init(); }
+  public updateInkUI(): void { this.inkManager.updateInkUI(); }
+  public updateExternalLivesUI(): void { if (this.uiManager) { this.uiManager.updateLivesDisplay(this.playerData.lives); } else { console.warn("updateExternalLivesUI llamado antes de que UIManager esté listo."); } }
+  public updateExternalShieldUI(isActive: boolean): void { if (this.uiManager) { this.uiManager.updateShieldIcon(isActive); } else { console.warn("updateExternalShieldUI llamado antes de que UIManager esté listo."); } }
+  public updateExternalHintUI(charges: number): void { if (this.uiManager) { this.uiManager.updateHintIcon(charges); } else { console.warn("updateExternalHintUI llamado antes de que UIManager esté listo."); } }
+  // --- Fin Métodos sin cambios ---
 
-  // --- Método para habilitar la función de dibujo ---
-  /** Activa la UI y la funcionalidad del InkManager. */
-  public enableDrawingFeature(): void {
-      console.log("GameManager: Habilitando función de dibujo...");
-
-      // --- CORRECCIÓN: Añadir clase al contenedor de controles ---
-      const rightControls = document.getElementById('right-controls');
-      if (rightControls) {
-          rightControls.classList.add('drawing-unlocked');
-          console.log("GameManager: Clase 'drawing-unlocked' añadida a #right-controls.");
-      } else {
-          console.warn("GameManager: No se encontró #right-controls para añadir clase 'drawing-unlocked'.");
-      }
-      // ---------------------------------------------------------
-
-      // Llama a init() de InkManager para configurar canvas y listeners
-      this.inkManager.init();
-      // Nota: updateInkUI se llama dentro de init() de InkManager ahora
-  }
-
-  /** Delega la actualización de la UI de tinta al InkManager. */
-  public updateInkUI(): void {
-      // Esta función podría ya no ser necesaria si InkManager maneja su UI
-      // internamente, pero la dejamos por si acaso otros sistemas necesitan forzarla.
-      this.inkManager.updateInkUI();
-  }
-  // -----------------------------------------------------
-
-  // --- MÉTODOS DE ACTUALIZACIÓN DE UI EXTERNA (Llaman a métodos del estado actual si existen) ---
-  /** Notifica al estado actual para actualizar la UI de vidas. */
-  public updateExternalLivesUI(): void {
-    const currentState = this.getCurrentState();
-    // Llama a updateLivesUI() solo si el estado actual tiene ese método
-    if (typeof (currentState as any)?.updateLivesUI === 'function') {
-        (currentState as any).updateLivesUI();
-    }
-  }
-  /** Notifica al estado actual para actualizar la UI del escudo. */
-  public updateExternalShieldUI(isActive: boolean): void {
-    const currentState = this.getCurrentState();
-    // Llama a updateShieldIcon() solo si el estado actual tiene ese método
-    if (typeof (currentState as any)?.updateShieldIcon === 'function') {
-        (currentState as any).updateShieldIcon(isActive);
-    }
-    // else { // Comentado para reducir ruido en consola
-         // console.warn("updateExternalShieldUI: El estado actual no tiene updateShieldIcon().");
-    // }
-  }
-  /** Notifica al estado actual para actualizar la UI de la pista. */
-  public updateExternalHintUI(charges: number): void {
-     const currentState = this.getCurrentState();
-     // Llama a updateHintIcon() solo si el estado actual tiene ese método
-     if (typeof (currentState as any)?.updateHintIcon === 'function') {
-        (currentState as any).updateHintIcon(charges);
-     }
-    // else { // Comentado para reducir ruido en consola
-        // console.warn("updateExternalHintUI: El estado actual no tiene updateHintIcon().");
-    // }
-  }
-  // --------------------------------------------------------------------------------------
-
-  // --- Getters (Proporcionan acceso controlado a los sistemas) ---
+  // --- Getters (Iguales) ---
   public getQuizSystem(): QuizSystem { return this.quizSystem; }
   public getPhysicsManager(): PhysicsManager { return this.physicsManager; }
   public getStateMachine(): StateMachine { return this.stateMachine; }
@@ -319,9 +139,9 @@ export class GameManager {
   public getCatManager(): CatManager { return this.catManager; }
   public getShopManager(): ShopManager { return this.shopManager; }
   public getPlayerData(): PlayerData { return this.playerData; }
-  public getInkManager(): InkManager { return this.inkManager; } // Getter para InkManager
+  public getInkManager(): InkManager { return this.inkManager; }
+  public getUIManager(): UIManager { if (!this.uiManager) { throw new Error("UIManager no ha sido inicializado."); } return this.uiManager; }
   public getContainerElement(): HTMLElement { return this.containerElement; }
-  /** Obtiene la instancia del estado actualmente activo. */
   public getCurrentState(): IState | null { return this.stateMachine.getCurrentState(); }
   // -----------------------------------------------------------
 
