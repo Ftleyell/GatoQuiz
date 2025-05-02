@@ -24,7 +24,8 @@ export class ResultsState implements IState {
     // Limpiar UI de resultados, quitar listeners
   }
 
-  update(deltaTime: number): void {
+  // Corrección: Añadir guion bajo a 'deltaTime'
+  update(_deltaTime: number): void {
     // console.log('ResultsState: update', deltaTime); // No suele necesitar update
   }
 }

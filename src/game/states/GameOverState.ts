@@ -75,7 +75,8 @@ export class GameOverState implements IState {
 
     // Listeners para reiniciar
     this.restartListener = () => this.triggerRestart();
-    this.keydownListener = (event: KeyboardEvent) => {
+    // Corrección: Añadir guion bajo a 'event'
+    this.keydownListener = (_event: KeyboardEvent) => {
         // Reiniciar con cualquier tecla (o filtrar por Enter/Space si prefieres)
         this.triggerRestart();
     };
@@ -122,9 +123,10 @@ export class GameOverState implements IState {
 
   /**
    * Se ejecuta en cada frame (sin uso aquí).
-   * @param deltaTime - Tiempo desde el último frame.
+   * @param _deltaTime - Tiempo desde el último frame (prefijo _ indica no usado).
    */
-  update(deltaTime: number): void {
+  // Corrección: Añadir guion bajo a 'deltaTime'
+  update(_deltaTime: number): void {
     // No se necesita update para este estado simple
   }
 } // Fin clase GameOverState

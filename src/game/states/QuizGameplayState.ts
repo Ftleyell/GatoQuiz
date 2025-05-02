@@ -38,7 +38,8 @@ export class QuizGameplayState implements IState {
       "5": 65
   }; // <-- Valores ajustados
 
-  private readonly FADE_DURATION = 500;
+  // ELIMINADO: FADE_DURATION no se usaba
+  // private readonly FADE_DURATION = 500;
 
   constructor(gameManager: GameManager) {
     this.gameManager = gameManager;
@@ -113,7 +114,8 @@ export class QuizGameplayState implements IState {
 
   }
 
-  update(deltaTime: number): void { /* No action needed per frame */ }
+  // Corrección: Añadir guion bajo a 'deltaTime'
+  update(_deltaTime: number): void { /* No action needed per frame */ }
 
   private calculateScore(difficulty: string | number, streakBefore: number): { totalPoints: number, basePoints: number, difficultyBonus: number, comboBonus: number } {
     const currentStreak = streakBefore + 1;
@@ -171,11 +173,13 @@ export class QuizGameplayState implements IState {
   private handleIncorrectAnswer(): void {
     const playerData = this.gameManager.getPlayerData();
     let gameOver = false;
-    const hintWasActiveForThisQuestion = this.hintAppliedToQuestionId === this.currentQuestion?.id;
-    let shieldSaved = false;
+    // ELIMINADO: hintWasActiveForThisQuestion no se usaba
+    // const hintWasActiveForThisQuestion = this.hintAppliedToQuestionId === this.currentQuestion?.id;
+    // ELIMINADO: shieldSaved no se usaba
+    // let shieldSaved = false;
 
     if (playerData.hasShield) {
-        shieldSaved = true;
+        // shieldSaved = true; // Ya no es necesaria la variable
         playerData.hasShield = false;
         this.uiManager.updateFeedback('¡Escudo Roto!', 'shield');
         this.uiManager.updateShieldIcon(false);

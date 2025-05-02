@@ -5,14 +5,14 @@ import { GameManager } from '../game/GameManager';
 import { PlayerData } from '../game/PlayerData';
 import { PhysicsManager } from './PhysicsManager';
 import { CatManager } from './CatManager';
-import { CatEntity } from '../game/entities/CatEntity';
+// ELIMINADO: import { CatEntity } from '../game/entities/CatEntity'; // No se usaba
 import { AudioManager } from './AudioManager';
 // ------------------------------------------
 import Matter from 'matter-js';
 
 // --- Constantes ---
 const FOOD_PELLET_SIZE = 8;
-const FOOD_PELLET_COLOR = '#A0522D'; // Sienna Brown
+// ELIMINADO: const FOOD_PELLET_COLOR = '#A0522D'; // Estilo manejado por CSS
 const FOOD_PELLET_DURATION = 3500; // ms
 const FOOD_PELLET_COLLISION_CATEGORY = 0x0008; // Asegúrate que sea único
 const CAT_COLLISION_CATEGORY = 0x0002; // Asegúrate que coincida
@@ -43,7 +43,7 @@ export class CatFoodManager {
 
     // Referencias UI
     private catFoodButton: HTMLElement | null = null;
-    private catFoodBarFill: HTMLElement | null = null;
+    // ELIMINADO: private catFoodBarFill: HTMLElement | null = null; // UIManager obtiene por ID
     private catFoodContainer: HTMLElement | null = null; // Container for bar+label
     private catContainerElement: HTMLElement | null = null; // Container where pellets are added
 
@@ -70,7 +70,7 @@ export class CatFoodManager {
             // Obtener elementos DOM
             this.catContainerElement = document.getElementById('cat-container');
             this.catFoodButton = document.getElementById('cat-food-button');
-            this.catFoodBarFill = document.getElementById('cat-food-bar-fill');
+            // Ya no necesitamos guardar catFoodBarFill aquí
             this.catFoodContainer = document.getElementById('cat-food-ui-container'); // ID del contenedor padre
 
             // Verificar referencias cruciales
@@ -244,7 +244,8 @@ export class CatFoodManager {
     }
 
     /** Obtiene coordenadas del evento. */
-    private getClickPosition(event: MouseEvent | TouchEvent, relativeTo: HTMLElement): { x: number, y: number } {
+    // Corrección: Añadir guion bajo a '_relativeTo'
+    private getClickPosition(event: MouseEvent | TouchEvent, _relativeTo: HTMLElement): { x: number, y: number } {
         let clientX = 0, clientY = 0;
         // Handle both mouse and touch events
         if (event instanceof MouseEvent) {
@@ -341,7 +342,8 @@ export class CatFoodManager {
     }
 
     /** Actualiza bolitas (posición, expiración). */
-    public update(deltaTime: number): void {
+    // Corrección: Añadir guion bajo a 'deltaTime'
+    public update(_deltaTime: number): void {
         if (!this.isEnabled || !this.isInitializedSuccessfully || this.activePellets.size === 0) return;
 
         const now = performance.now();
@@ -369,7 +371,8 @@ export class CatFoodManager {
     }
 
     /** Elimina una bolita. */
-    public removeFoodPellet(pelletId: string, consumed: boolean = false): void {
+    // Corrección: Añadir guion bajo a 'consumed'
+    public removeFoodPellet(pelletId: string, _consumed: boolean = false): void {
         const pellet = this.activePellets.get(pelletId);
         if (pellet) {
             // Remove physics body safely

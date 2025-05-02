@@ -24,9 +24,9 @@ const RARITY_GLOW_MAP: { [key: number]: string | null } = {
     0: null, 1: 'glow-gray', 2: 'glow-green',
     3: 'glow-blue', 4: 'glow-violet', 5: 'glow-orange',
 };
-// Constantes para crecimiento por acierto (ajustar según balance)
-const SIZE_INCREMENT_PER_CORRECT = 1; // Píxeles a crecer por acierto
-const MAX_CORRECT_ANSWER_GROWTH = 4;  // Máximo número de veces que un gato común puede crecer así
+// ELIMINADO: Constantes de crecimiento por acierto no se usaban aquí
+// const SIZE_INCREMENT_PER_CORRECT = 1;
+// const MAX_CORRECT_ANSWER_GROWTH = 4;
 
 // *** CORRECCIÓN: Añadir 'export' aquí ***
 export class CatManager {
@@ -230,8 +230,10 @@ export class CatManager {
   }
 
   /** Elimina un gato del juego (DOM y física). */
-  public removeCat(entityId: string): void {
-    const cat = this.cats.get(entityId);
+  // Corrección: Aceptar string o number como entityId
+  public removeCat(entityId: string | number): void {
+    const entityIdStr = String(entityId); // Convertir a string para usar como clave del Map
+    const cat = this.cats.get(entityIdStr);
     if (cat) {
       const body = cat.physics.body;
       // Remover cuerpo físico si existe y está en el mundo
@@ -242,17 +244,18 @@ export class CatManager {
               if (this.physicsManager?.getWorld && Matter.Composite.get(this.physicsManager.getWorld(), body.id, 'body')) {
                   Matter.World.remove(this.physicsManager.getWorld(), body);
               }
-          } catch(error) { console.warn(`Error eliminando cuerpo físico gato ${entityId}:`, error); }
+          } catch(error) { console.warn(`Error eliminando cuerpo físico gato ${entityIdStr}:`, error); }
       }
       // Remover elemento DOM si existe
       if (cat.render.element?.parentNode) {
         cat.render.element.parentNode.removeChild(cat.render.element);
       }
       // Eliminar entidad del mapa
-      this.cats.delete(entityId);
-      // console.log(`Cat removed: ${entityId}`); // Log opcional
+      this.cats.delete(entityIdStr); // Usar string como clave
+      // console.log(`Cat removed: ${entityIdStr}`); // Log opcional
     }
   }
+
 
   /**
    * Procesa una colisión iniciada por el jugador (arrastrando un gato).
@@ -339,12 +342,13 @@ export class CatManager {
           return;
       }
 
+      // Corrección: Usar eaten.id directamente (ya es string o number)
       const eatenId = eaten.id;
       const eatenRarity = eaten.value.rarity;
       const eatenGlowClass = RARITY_GLOW_MAP[eatenRarity]; // Obtener clase de brillo del comido
 
       // 1. Remover el gato comido
-      this.removeCat(eatenId);
+      this.removeCat(eatenId); // La función ahora acepta string | number
 
       // 2. Aplicar crecimiento al que come (si aplica)
       if (applyGrowth) {
@@ -398,7 +402,8 @@ export class CatManager {
   }
 
   /** Actualiza la posición y rotación visual de los gatos basada en la física. */
-  public updateCats(deltaTime: number): void {
+  // Corrección: Añadir guion bajo a 'deltaTime'
+  public updateCats(_deltaTime: number): void {
     this.cats.forEach((cat) => {
       const body = cat.physics.body;
       const element = cat.render.element;

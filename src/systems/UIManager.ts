@@ -325,15 +325,14 @@ export class UIManager {
         containerElement.innerHTML = '';
     }
 
-    /**
-     * Aplica una lista de clases CSS a un elemento.
-     */
-    private applyClasses(element: HTMLElement | null, classes: string | undefined): void {
-        if (!element || !classes) return;
-        classes.split(' ').forEach(cls => {
-            if (cls) element.classList.add(cls);
-        });
-    }
+    // ELIMINADO: applyClasses no se usaba
+    // private applyClasses(element: HTMLElement | null, classes: string | undefined): void {
+    //     if (!element || !classes) return;
+    //     classes.split(' ').forEach(cls => {
+    //         if (cls) element.classList.add(cls);
+    //     });
+    // }
+
 
     // --- Métodos para Explicación (sin cambios) ---
     public showExplanation(explanation: string, onConfirm: () => void): void {
@@ -350,7 +349,8 @@ export class UIManager {
             backdrop.classList.add('visible');
             overlay.classList.add('visible');
 
-            this.explanationConfirmListener = (event: MouseEvent | KeyboardEvent) => {
+            // Corrección: Añadir guion bajo a 'event'
+            this.explanationConfirmListener = (_event: MouseEvent | KeyboardEvent) => {
                 if (this.explanationConfirmListener) {
                     this.hideExplanation();
                     onConfirm();
@@ -434,14 +434,15 @@ export class UIManager {
         const feedbackAreaElement = this.currentUIElements?.feedbackArea;
         if (feedbackAreaElement) {
             feedbackAreaElement.textContent = message;
-            feedbackAreaElement.className = 'feedback-area-base mt-4 h-8 text-center font-bold';
-            const colorClass = type === 'correct' ? 'text-green-400' :
-                               type === 'incorrect' ? 'text-red-400' :
-                               type === 'shield' ? 'text-blue-400' :
-                               'text-gray-400';
-             feedbackAreaElement.classList.add(...colorClass.split(' '));
+            feedbackAreaElement.className = 'feedback-area-base mt-4 h-8 text-center font-bold'; // Resetear clases
+            const colorClass = type === 'correct' ? 'text-green-400 feedback-correct' : // Añadir clase semántica
+                               type === 'incorrect' ? 'text-red-400 feedback-incorrect' :
+                               type === 'shield' ? 'text-blue-400 feedback-shield' :
+                               'text-gray-400 feedback-info';
+             feedbackAreaElement.classList.add(...colorClass.split(' ')); // Aplicar clases Tailwind y semánticas
         }
     }
+
 
     /** Actualiza la visualización de la barra de tinta con fondo del color anterior. */
     public updateInkBar(): void {
@@ -645,20 +646,17 @@ export class UIManager {
         if (!this.currentUIElements.catFoodButton) {
             this.currentUIElements.catFoodButton = document.getElementById('cat-food-button');
         }
-        if (!this.currentUIElements.catFoodBarFill) {
-            this.currentUIElements.catFoodBarFill = document.getElementById('cat-food-bar-fill');
-        }
+        // Ya no necesitamos referenciar catFoodBarFill aquí
+        // if (!this.currentUIElements.catFoodBarFill) {
+        //     this.currentUIElements.catFoodBarFill = document.getElementById('cat-food-bar-fill');
+        // }
     }
     public updateCatFoodBar(currentAmount: number, maxAmount: number): void {
-        const fillElement = this.currentUIElements?.catFoodBarFill as HTMLElement | null
-                           ?? document.getElementById('cat-food-bar-fill');
+        const fillElement = document.getElementById('cat-food-bar-fill') as HTMLElement | null; // Obtener directamente por ID
 
         if (fillElement) {
             const percentage = maxAmount > 0 ? Math.max(0, Math.min(100, (currentAmount / maxAmount) * 100)) : 0;
             fillElement.style.width = `${percentage}%`;
-            if (!this.currentUIElements.catFoodBarFill) {
-                this.currentUIElements.catFoodBarFill = fillElement;
-            }
         }
     }
 

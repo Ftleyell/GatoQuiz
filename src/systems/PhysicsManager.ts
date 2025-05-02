@@ -3,13 +3,13 @@
 import Matter from 'matter-js';
 import { CatManager } from './CatManager';
 import { CatFoodManager } from './CatFoodManager'; // <-- NUEVO: Importar CatFoodManager
-import { GameManager } from '../game/GameManager'; // <-- NUEVO: Importar GameManager
+// ELIMINADO: import { GameManager } from '../game/GameManager'; // No se usaba aquí
 
-// --- Constantes de Colisión ---
+// --- Constantes de Colisión (Usadas por otros módulos) ---
 const WALL_COLLISION_CATEGORY = 0x0001;
 const CAT_COLLISION_CATEGORY = 0x0002;
-const INK_COLLISION_CATEGORY = 0x0004; // Asegúrate que coincida
-const FOOD_PELLET_COLLISION_CATEGORY = 0x0008; // Asegúrate que coincida
+// ELIMINADO: const INK_COLLISION_CATEGORY = 0x0004; // Definido en InkManager
+// ELIMINADO: const FOOD_PELLET_COLLISION_CATEGORY = 0x0008; // Definido en CatFoodManager
 const WALL_THICKNESS = 60;
 const MAX_CAT_SPEED = 70;
 // ----------------------------
@@ -159,20 +159,29 @@ export class PhysicsManager {
       }
   }
 
-  // handleResize (Sin cambios)
+  // handleResize
   private handleResize(): void {
     if (!this.ground || !this.leftWall || !this.rightWall || !this.topWall) return;
     const width = window.innerWidth;
     const height = window.innerHeight;
     try {
+        const groundPath = `L ${-width / 2} ${-WALL_THICKNESS / 2} L ${width / 2} ${-WALL_THICKNESS / 2} L ${width / 2} ${WALL_THICKNESS / 2} L ${-width / 2} ${WALL_THICKNESS / 2}`;
+        const verticalWallPath = `L ${-WALL_THICKNESS / 2} ${-height / 2} L ${WALL_THICKNESS / 2} ${-height / 2} L ${WALL_THICKNESS / 2} ${height / 2} L ${-WALL_THICKNESS / 2} ${height / 2}`;
+        const topWallPath = `L ${-width / 2} ${-WALL_THICKNESS / 2} L ${width / 2} ${-WALL_THICKNESS / 2} L ${width / 2} ${WALL_THICKNESS / 2} L ${-width / 2} ${WALL_THICKNESS / 2}`;
+
+        // Corrección: Añadir el cuerpo como segundo argumento a fromPath
         Matter.Body.setPosition(this.ground, { x: width / 2, y: height + WALL_THICKNESS / 2 });
-        Matter.Body.setVertices(this.ground, Matter.Vertices.fromPath(`L ${-width / 2} ${-WALL_THICKNESS / 2} L ${width / 2} ${-WALL_THICKNESS / 2} L ${width / 2} ${WALL_THICKNESS / 2} L ${-width / 2} ${WALL_THICKNESS / 2}`));
+        Matter.Body.setVertices(this.ground, Matter.Vertices.fromPath(groundPath, this.ground));
+
         Matter.Body.setPosition(this.leftWall, { x: -WALL_THICKNESS / 2, y: height / 2 });
-        Matter.Body.setVertices(this.leftWall, Matter.Vertices.fromPath(`L ${-WALL_THICKNESS / 2} ${-height / 2} L ${WALL_THICKNESS / 2} ${-height / 2} L ${WALL_THICKNESS / 2} ${height / 2} L ${-WALL_THICKNESS / 2} ${height / 2}`));
+        Matter.Body.setVertices(this.leftWall, Matter.Vertices.fromPath(verticalWallPath, this.leftWall));
+
         Matter.Body.setPosition(this.rightWall, { x: width + WALL_THICKNESS / 2, y: height / 2 });
-        Matter.Body.setVertices(this.rightWall, Matter.Vertices.fromPath(`L ${-WALL_THICKNESS / 2} ${-height / 2} L ${WALL_THICKNESS / 2} ${-height / 2} L ${WALL_THICKNESS / 2} ${height / 2} L ${-WALL_THICKNESS / 2} ${height / 2}`));
+        Matter.Body.setVertices(this.rightWall, Matter.Vertices.fromPath(verticalWallPath, this.rightWall));
+
         Matter.Body.setPosition(this.topWall, { x: width / 2, y: -WALL_THICKNESS / 2 });
-        Matter.Body.setVertices(this.topWall, Matter.Vertices.fromPath(`L ${-width / 2} ${-WALL_THICKNESS / 2} L ${width / 2} ${-WALL_THICKNESS / 2} L ${width / 2} ${WALL_THICKNESS / 2} L ${-width / 2} ${WALL_THICKNESS / 2}`));
+        Matter.Body.setVertices(this.topWall, Matter.Vertices.fromPath(topWallPath, this.topWall));
+
         this.updateMouseConstraintOffset();
     } catch (error) { console.error("PhysicsManager: Error actualizando límites en resize:", error); }
   }

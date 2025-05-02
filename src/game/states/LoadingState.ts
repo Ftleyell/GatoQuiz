@@ -26,7 +26,8 @@ export class LoadingState implements IState {
     // Limpiar UI de carga
   }
 
-  update(deltaTime: number): void {
+  // Corrección: Añadir guion bajo a 'deltaTime'
+  update(_deltaTime: number): void {
     // console.log('LoadingState: update', deltaTime); // Puede ser muy verboso
     // Podría revisar si la carga ha terminado para cambiar de estado
   }

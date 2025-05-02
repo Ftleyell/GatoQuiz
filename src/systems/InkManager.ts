@@ -285,7 +285,8 @@ export class InkManager {
         }
 
         const newState = (forceState !== undefined) ? forceState : !this.isBrushActive;
-        const oldState = this.isBrushActive;
+        // ELIMINADO: oldState no se usaba
+        // const oldState = this.isBrushActive;
         // console.log(`[InkManager.toggleBrush] Called. Current state: ${oldState}, Forced state: ${forceState}, New target state: ${newState}`); // Menos verboso
 
         // Si se intenta activar pero no está desbloqueado o no hay tinta, no hacer nada

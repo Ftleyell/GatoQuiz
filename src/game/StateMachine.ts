@@ -20,11 +20,13 @@ export class StateMachine {
   private states: Map<string, IState> = new Map();
   private currentState: IState | null = null;
   private currentStateName: string | null = null;
-  
+
 // Dentro de la clase StateMachine en StateMachine.ts
+/* // ELIMINADO - Esta era la definición duplicada
 public getCurrentState(): IState | null {
   return this.currentState;
 }
+*/
   /**
    * Añade un nuevo estado a la máquina.
    * @param name - Nombre único para identificar el estado.
@@ -107,7 +109,7 @@ public getCurrentState(): IState | null {
    public getCurrentStateName(): string | null {
     return this.currentStateName;
   }
-      // *** MÉTODO AÑADIDO ***
+      // *** MÉTODO MANTENIDO *** (La definición duplicada fue eliminada)
     /**
      * Obtiene la instancia del estado actualmente activo.
      * @returns La instancia de IState activa o null si no hay ninguna.

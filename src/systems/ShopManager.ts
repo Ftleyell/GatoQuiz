@@ -3,7 +3,7 @@
 import { ShopItemJsonData } from '../types/ShopItemData';
 import { PlayerData } from '../game/PlayerData';
 import { GameManager } from '../game/GameManager';
-import { QuizGameplayState } from '../game/states/QuizGameplayState';
+// ELIMINADO: import { QuizGameplayState } from '../game/states/QuizGameplayState'; // No se usaba
 
 // Constantes para IDs de elementos HTML
 const SHOP_POPUP_ID = 'shop-popup';
@@ -107,12 +107,14 @@ export class ShopManager {
     this.shopPopupElement.classList.remove('visible');
 
     const transitionDuration = 300; // Debe coincidir con CSS
+    // Corrección: Añadir chequeo explícito de null
     setTimeout(() => {
-        if (!this.shopPopupElement?.classList.contains('visible')) {
+        if (this.shopPopupElement && !this.shopPopupElement.classList.contains('visible')) {
             this.shopPopupElement.style.display = 'none';
         }
     }, transitionDuration);
   }
+
 
   public updateShopUI(): void {
     if (!this.playerData) return;
@@ -415,11 +417,12 @@ export class ShopManager {
        return (this.playerData as any)[itemData.levelRef] ?? 0;
    }
 
-   private calculateItemCostById(itemId: string): number {
-       const itemData = this.items.get(itemId);
-       if (!itemData) return -1;
-       return this.calculateItemCost(itemData);
-   }
+   // ELIMINADO: Función calculateItemCostById no se usaba
+   // private calculateItemCostById(itemId: string): number {
+   //     const itemData = this.items.get(itemId);
+   //     if (!itemData) return -1;
+   //     return this.calculateItemCost(itemData);
+   // }
 
 
 // --- Ejecutor de Acciones de Compra ---
@@ -608,4 +611,4 @@ private purchaseMaxCatSizeAction(): boolean {
       return true;
   }
 
-}
+} // Fin Clase ShopManager

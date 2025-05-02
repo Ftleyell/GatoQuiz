@@ -183,7 +183,8 @@ export class MainMenuState implements IState {
      this.containerElement = null;
   }
 
-  update(deltaTime: number): void {
+  // Corrección: Añadir guion bajo a 'deltaTime'
+  update(_deltaTime: number): void {
     // No se necesita update aquí
   }
 
