@@ -24,7 +24,11 @@
   .top-ui-container {
      margin-bottom: 1rem;
      width: 100%;
-     background-color: transparent;
+     /* Asegurar que este contenedor también sea transparente */
+     background: none; /* Usar none en lugar de transparent */
+     border: none;
+     padding: 0;
+     box-shadow: none;
   }
   
   #score-area {
@@ -32,11 +36,13 @@
     flex-direction: column;
     align-items: center;
     gap: 0.25rem;
-    /* La altura mínima dependerá del contenido (score + tinta si es visible) */
-    /* Eliminamos min-height fijo para que se ajuste */
     margin-bottom: 0.5rem;
     position: relative;
     width: 100%;
+    /* Asegurar transparencia */
+    background: none;
+    border: none;
+    padding: 0;
   }
   #score-area.ink-visible {
      /* La altura se ajustará automáticamente */
@@ -44,37 +50,46 @@
   
   #status-wrapper { /* Contenedor invisible para vidas y score */
     display: flex;
-    justify-content: center; /* Centra los elementos hijos (vidas y score wrapper) */
+    justify-content: center;
     align-items: center;
-    gap: 1.5rem; /* Espacio entre vidas y score */
+    gap: 1.5rem;
     margin-bottom: 0.25rem;
-    width: auto; /* Ancho se ajusta al contenido */
+    width: auto;
     position: relative;
     z-index: 22;
-    /* Asegurarse de que no tenga estilos visuales propios */
-    background-color: transparent !important; /* Forzar transparencia */
-    border: none !important; /* Forzar sin borde */
-    padding: 0 !important; /* Forzar sin padding */
-    box-shadow: none !important; /* Forzar sin sombra */
+    /* Forzar invisibilidad visual del contenedor */
+    background: none !important; /* Cambiado a none */
+    border: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    /* Resetear propiedades que puedan afectar visibilidad hijos */
+    opacity: 1;
+    visibility: visible;
+    color: inherit; /* Heredar color por defecto */
   }
   
   #lives-container {
     display: flex;
     align-items: center;
     gap: 0.3rem;
+    /* Asegurar visibilidad individual */
+    opacity: 1;
+    visibility: visible;
   }
   .life-emoji {
     font-size: 1.5rem;
     line-height: 1;
-    color: #f43f5e;
+    color: #f43f5e; /* Rojo */
     animation: pulseHeart 1.5s infinite ease-in-out;
   }
   #lives-count {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #f3f4f6;
+    color: #f3f4f6; /* Color visible (Gris claro) - Quitar !important si es posible */
     min-width: 1ch;
     text-align: left;
+    opacity: 1;
+    visibility: visible;
   }
   #shield-icon,
   #hint-icon {
@@ -82,6 +97,8 @@
     line-height: 1;
     margin-left: 0.5rem;
     display: none;
+    opacity: 1; /* Asegurar opacidad si se muestran */
+    visibility: visible;
   }
    #shield-icon {
       filter: drop-shadow(0 0 3px rgba(59, 130, 246, 0.7));
@@ -98,11 +115,17 @@
     justify-content: center;
     align-items: center;
     position: relative;
+    /* Asegurar visibilidad individual */
+    opacity: 1;
+    visibility: visible;
   }
   .score-emoji {
     font-size: 1.8rem;
     line-height: 1;
     margin-right: 0.5rem;
+    opacity: 1;
+    visibility: visible;
+    color: #f3f4f6; /* Darle un color explícito por si acaso */
   }
   #score {
     transition: color 0.5s ease, font-weight 0.5s ease, text-shadow 0.6s ease-out;
@@ -110,9 +133,11 @@
     line-height: var(--score-line-height);
     font-weight: 800;
     text-shadow: var(--flare-shadow);
-    color: #f3f4f6;
+    color: #f3f4f6; /* Color visible (Gris claro) - Quitar !important si es posible */
     text-align: center;
     min-width: 1ch;
+    opacity: 1;
+    visibility: visible;
   }
   #score-pulse {
     position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(0);
@@ -148,17 +173,17 @@
   .question-box-base {
     background-color: rgba(17, 24, 39, 0.85);
     border-radius: 1rem;
-    padding: 1.5rem; /* Padding interno consistente */
+    padding: 1.5rem;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
     box-shadow: inset 0 2px 4px rgba(0,0,0,0.4),
                 0 0 calc(var(--element-glow-intensity) * 18px) calc(var(--element-glow-intensity) * 4px) hsla(50, 100%, 60%, calc(var(--element-glow-intensity) * 0.6));
-    height: auto; /* Altura automática */
-    min-height: 0; /* Eliminar altura mínima */
+    height: auto;
+    min-height: 0;
     transition: box-shadow 0.5s ease-out;
-    width: 100%; /* Ocupar ancho del contenedor */
+    width: 100%;
     margin-bottom: 1rem;
     box-sizing: border-box;
   }
@@ -170,7 +195,7 @@
     transition: color 0.3s ease, background-color 0.3s ease, text-shadow 0.3s ease;
     text-shadow: 0 0 var(--difficulty-glow-blur) var(--difficulty-glow-color),
                  0 0 calc(var(--difficulty-glow-blur) * 1.5) var(--difficulty-glow-color);
-    flex-shrink: 0; /* Evitar que se encoja */
+    flex-shrink: 0;
   }
   .difficulty-1 { color: #9ca3af; background-color: rgba(107, 114, 128, 0.2); }
   .difficulty-2 { color: #34d399; background-color: rgba(16, 185, 129, 0.2); }

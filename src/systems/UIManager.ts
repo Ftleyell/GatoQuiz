@@ -5,9 +5,9 @@ import { GameManager } from '../game/GameManager';
 
 // Tipos locales
 interface QuestionOption { key: string; text: string; }
-interface Question { id: number | string; text: string; options: QuestionOption[]; correctAnswerKey: string; difficulty: string; }
+interface Question { id: number | string; text: string; options: QuestionOption[]; correctAnswerKey: string; difficulty: string; explanation?: string; }
 
-// Mapeo de dificultad (igual que antes)
+// Mapeo de dificultad
 const DIFFICULTY_LEVELS_CONFIG: { [key: number]: { name: string; class: string; glowColor?: string; glowBlur?: string; pulse?: boolean } } = {
     1: { name: "COMÚN", class: "difficulty-1" },
     2: { name: "POCO COMÚN", class: "difficulty-2" },
@@ -16,7 +16,7 @@ const DIFFICULTY_LEVELS_CONFIG: { [key: number]: { name: string; class: string; 
     5: { name: "LEGENDARIA", class: "difficulty-5", glowColor: "rgba(245, 158, 11, 0.7)", glowBlur: "10px", pulse: true }
 };
 
-// Constantes para efectos de combo (igual que antes)
+// Constantes para efectos de combo
 const COMBO_BASE_FONT_SIZE_REM = 3.0;
 const COMBO_FONT_INCREMENT_REM = 0.5;
 const COMBO_HUE_INCREMENT = 35;
@@ -27,9 +27,9 @@ const FLARE_MAX_STREAK = 10;
 const BG_COLOR_START_STREAK = 1;
 const BG_COLOR_MAX_STREAK = 20;
 
-// Mapa de elementos (igual que antes)
+// Mapa de elementos
 type UIElementsMap = {
-    [key: string]: HTMLElement | null;
+    [key: string]: HTMLElement | null | HTMLButtonElement[];
     quizWrapper: HTMLElement | null;
     feedbackArea: HTMLElement | null;
     scoreDisplay: HTMLElement | null;
@@ -44,6 +44,9 @@ type UIElementsMap = {
     questionBox: HTMLElement | null;
     optionButtons: HTMLButtonElement[];
     inkBarFill: HTMLElement | null;
+    explanationOverlay: HTMLElement | null;
+    explanationText: HTMLElement | null;
+    blurBackdrop: HTMLElement | null;
 }
 
 export class UIManager {
@@ -51,6 +54,7 @@ export class UIManager {
     private currentUIElements: Partial<UIElementsMap> = {};
     private optionClickCallback: ((key: string) => void) | null = null;
     private optionListeners: Map<HTMLButtonElement, () => void> = new Map();
+    private explanationConfirmListener: (() => void) | null = null;
 
     constructor(gameManager: GameManager) {
         this.gameManager = gameManager;
@@ -69,143 +73,235 @@ export class UIManager {
 
         const elementsMap: Partial<UIElementsMap> = { optionButtons: [] };
 
-        // --- 1. Crear Contenedor Principal (Wrapper) ---
-        const wrapper = document.createElement('div');
-        wrapper.id = 'quiz-interface-wrapper';
-        wrapper.classList.add('game-container', 'text-center');
-        elementsMap.quizWrapper = wrapper;
-        containerElement.appendChild(wrapper);
+        try { // Envolver toda la creación en try/catch
+            // --- 1. Crear Contenedor Principal (Wrapper) ---
+            const wrapper = document.createElement('div');
+            wrapper.id = 'quiz-interface-wrapper';
+            wrapper.classList.add('game-container', 'text-center');
+            elementsMap.quizWrapper = wrapper;
+            containerElement.appendChild(wrapper);
 
-        // --- 2. Crear Combo Counter ---
-        const comboCounter = document.createElement('span');
-        comboCounter.id = 'combo-counter';
-        comboCounter.classList.add('combo-counter-base'); // Aplicar clase base de CSS
-        comboCounter.style.display = 'none';
-        document.body.appendChild(comboCounter);
-        elementsMap.comboDisplay = comboCounter;
+            // --- 2. Crear Combo Counter ---
+            const comboCounter = document.createElement('span');
+            comboCounter.id = 'combo-counter';
+            comboCounter.classList.add('combo-counter-base');
+            comboCounter.style.display = 'none';
+            document.body.appendChild(comboCounter);
+            elementsMap.comboDisplay = comboCounter;
 
-        // --- 3. Construir el resto de la interfaz DENTRO del wrapper ---
-        const topUIContainer = document.createElement('div');
-        topUIContainer.classList.add('top-ui-container');
-        wrapper.appendChild(topUIContainer);
+            // --- 3. Construir el resto de la interfaz DENTRO del wrapper ---
+            const topUIContainer = document.createElement('div');
+            topUIContainer.classList.add('top-ui-container');
+            wrapper.appendChild(topUIContainer);
 
-        const scoreArea = document.createElement('div');
-        scoreArea.id = 'score-area';
-        scoreArea.classList.add('score-area-base');
-        if (this.gameManager.getPlayerData().isDrawingUnlocked) {
-             scoreArea.classList.add('ink-visible');
+            const scoreArea = document.createElement('div');
+            scoreArea.id = 'score-area';
+            scoreArea.classList.add('score-area-base');
+            if (this.gameManager.getPlayerData().isDrawingUnlocked) {
+                 scoreArea.classList.add('ink-visible');
+            }
+            topUIContainer.appendChild(scoreArea);
+
+            const statusWrapper = document.createElement('div');
+            statusWrapper.id = 'status-wrapper';
+            statusWrapper.classList.add('status-wrapper-base');
+            scoreArea.appendChild(statusWrapper);
+
+            //          --- Lives ---
+            const livesContainer = document.createElement('div');
+            livesContainer.id = 'lives-container';
+            livesContainer.classList.add('lives-container-base');
+            const heartIcon = document.createElement('span'); heartIcon.className = 'life-emoji'; heartIcon.textContent = '❤️';
+            const livesCountSpan = document.createElement('span'); livesCountSpan.id = 'lives-count';
+            // *** DEBUG: Log después de crear livesCountSpan ***
+            console.log('[DEBUG] livesCountSpan creado:', livesCountSpan.outerHTML);
+            const shieldIcon = document.createElement('span'); shieldIcon.id = 'shield-icon'; shieldIcon.textContent = '🛡️'; shieldIcon.style.display = 'none';
+            const hintIcon = document.createElement('span'); hintIcon.id = 'hint-icon'; hintIcon.textContent = '💡'; hintIcon.style.display = 'none';
+            livesContainer.append(heartIcon, livesCountSpan, shieldIcon, hintIcon);
+            statusWrapper.appendChild(livesContainer);
+            elementsMap.livesDisplayCount = livesCountSpan; // Guardar referencia
+            elementsMap.shieldIcon = shieldIcon;
+            elementsMap.hintIcon = hintIcon;
+
+            //          --- Score ---
+            const scoreWrapper = document.createElement('div');
+            scoreWrapper.id = 'score-display-wrapper';
+            scoreWrapper.classList.add('score-display-wrapper-base');
+            const scoreEmoji = document.createElement('span'); scoreEmoji.classList.add('score-emoji'); scoreEmoji.textContent = '⭐';
+            const scoreSpan = document.createElement('span'); scoreSpan.id = 'score'; scoreSpan.classList.add('score-text-base');
+             // *** DEBUG: Log después de crear scoreSpan ***
+            console.log('[DEBUG] scoreSpan creado:', scoreSpan.outerHTML);
+            const scorePulse = document.createElement('div'); scorePulse.id = 'score-pulse';
+            scoreWrapper.append(scoreEmoji, scoreSpan, scorePulse);
+            statusWrapper.appendChild(scoreWrapper);
+            elementsMap.scoreDisplayWrapper = scoreWrapper;
+            elementsMap.scoreDisplay = scoreSpan; // Guardar referencia
+            elementsMap.scorePulse = scorePulse;
+
+            //      --- Ink Elements ---
+            const inkLabel = document.createElement('div'); inkLabel.id = 'ink-label'; inkLabel.classList.add('ink-label-base', 'hidden'); inkLabel.textContent = "Tinta";
+            const inkBarContainer = document.createElement('div'); inkBarContainer.id = 'ink-bar-container'; inkBarContainer.classList.add('ink-bar-container-base', 'hidden');
+            const inkBarFill = document.createElement('div'); inkBarFill.id = 'ink-bar-fill'; inkBarFill.classList.add('ink-bar-fill-base'); inkBarFill.style.width = '0%';
+            inkBarContainer.appendChild(inkBarFill);
+            scoreArea.append(inkLabel, inkBarContainer);
+            elementsMap.inkBarFill = inkBarFill;
+
+            // --- Question Box ---
+            const qBox = document.createElement('div'); qBox.id = 'question-box'; qBox.classList.add('question-box-base');
+            wrapper.appendChild(qBox);
+            elementsMap.questionBox = qBox;
+
+            const difficultyLabel = document.createElement('span'); difficultyLabel.id = 'difficulty-label'; difficultyLabel.classList.add('difficulty-label-base');
+            const qText = document.createElement('p'); qText.id = 'question'; qText.classList.add('question-text-base'); qText.textContent = question.text;
+            qBox.append(difficultyLabel, qText);
+            elementsMap.difficultyLabel = difficultyLabel;
+
+            // --- Options ---
+            const optionsContainer = document.createElement('div'); optionsContainer.id = 'options'; optionsContainer.classList.add('options-container-base');
+            wrapper.appendChild(optionsContainer);
+            elementsMap.optionsContainer = optionsContainer;
+
+            question.options.forEach(option => {
+                 if (!option?.key || typeof option.text === 'undefined') return;
+                 const button = document.createElement('button');
+                 button.classList.add('option-button');
+                 button.dataset.key = option.key; button.textContent = option.text;
+                 const listener = () => { if (this.optionClickCallback) this.optionClickCallback(option.key); };
+                 this.optionListeners.set(button, listener); button.addEventListener('click', listener);
+                 optionsContainer.appendChild(button);
+                 elementsMap.optionButtons?.push(button);
+            });
+
+            // --- Feedback Area ---
+            const feedbackArea = document.createElement('div'); feedbackArea.id = 'feedback'; feedbackArea.classList.add('feedback-area-base');
+            wrapper.appendChild(feedbackArea);
+            elementsMap.feedbackArea = feedbackArea;
+
+            // --- Obtener Overlays ---
+            elementsMap.explanationOverlay = document.getElementById('explanation-overlay');
+            elementsMap.explanationText = document.getElementById('explanation-text-content');
+            elementsMap.blurBackdrop = document.getElementById('blur-backdrop');
+
+        } catch (error) {
+             console.error("UIManager: Error creando elementos de la interfaz:", error);
+             this.clearQuizInterface(containerElement);
+             containerElement.innerHTML = `<p class="text-red-500">Error al construir interfaz. Revisa la consola.</p>`;
+             return;
         }
-        topUIContainer.appendChild(scoreArea);
-
-        const statusWrapper = document.createElement('div');
-        statusWrapper.id = 'status-wrapper';
-        statusWrapper.classList.add('status-wrapper-base');
-        scoreArea.appendChild(statusWrapper);
-
-        const livesContainer = document.createElement('div');
-        livesContainer.id = 'lives-container';
-        livesContainer.classList.add('lives-container-base');
-        const heartIcon = document.createElement('span'); heartIcon.className = 'life-emoji'; heartIcon.textContent = '❤️';
-        const livesCountSpan = document.createElement('span'); livesCountSpan.id = 'lives-count';
-        const shieldIcon = document.createElement('span'); shieldIcon.id = 'shield-icon'; shieldIcon.textContent = '🛡️'; shieldIcon.style.display = 'none';
-        const hintIcon = document.createElement('span'); hintIcon.id = 'hint-icon'; hintIcon.textContent = '💡'; hintIcon.style.display = 'none';
-        livesContainer.append(heartIcon, livesCountSpan, shieldIcon, hintIcon);
-        statusWrapper.appendChild(livesContainer);
-        elementsMap.livesDisplayCount = livesCountSpan;
-        elementsMap.shieldIcon = shieldIcon;
-        elementsMap.hintIcon = hintIcon;
-
-        const scoreWrapper = document.createElement('div');
-        scoreWrapper.id = 'score-display-wrapper';
-        scoreWrapper.classList.add('score-display-wrapper-base');
-        const scoreEmoji = document.createElement('span'); scoreEmoji.classList.add('score-emoji'); scoreEmoji.textContent = '⭐';
-        const scoreSpan = document.createElement('span'); scoreSpan.id = 'score'; scoreSpan.classList.add('score-text-base');
-        const scorePulse = document.createElement('div'); scorePulse.id = 'score-pulse';
-        scoreWrapper.append(scoreEmoji, scoreSpan, scorePulse);
-        statusWrapper.appendChild(scoreWrapper);
-        elementsMap.scoreDisplayWrapper = scoreWrapper;
-        elementsMap.scoreDisplay = scoreSpan;
-        elementsMap.scorePulse = scorePulse;
-
-        const inkLabel = document.createElement('div'); inkLabel.id = 'ink-label'; inkLabel.classList.add('ink-label-base', 'hidden'); inkLabel.textContent = "Tinta";
-        const inkBarContainer = document.createElement('div'); inkBarContainer.id = 'ink-bar-container'; inkBarContainer.classList.add('ink-bar-container-base', 'hidden');
-        const inkBarFill = document.createElement('div'); inkBarFill.id = 'ink-bar-fill'; inkBarFill.classList.add('ink-bar-fill-base'); inkBarFill.style.width = '0%';
-        inkBarContainer.appendChild(inkBarFill);
-        scoreArea.append(inkLabel, inkBarContainer);
-        elementsMap.inkBarFill = inkBarFill;
-
-        const qBox = document.createElement('div'); qBox.id = 'question-box'; qBox.classList.add('question-box-base');
-        wrapper.appendChild(qBox);
-        elementsMap.questionBox = qBox;
-
-        const difficultyLabel = document.createElement('span'); difficultyLabel.id = 'difficulty-label'; difficultyLabel.classList.add('difficulty-label-base');
-        const qText = document.createElement('p'); qText.id = 'question'; qText.classList.add('question-text-base'); qText.textContent = question.text;
-        qBox.append(difficultyLabel, qText);
-        elementsMap.difficultyLabel = difficultyLabel;
-
-        const optionsContainer = document.createElement('div'); optionsContainer.id = 'options'; optionsContainer.classList.add('options-container-base');
-        wrapper.appendChild(optionsContainer);
-        elementsMap.optionsContainer = optionsContainer;
-
-        question.options.forEach(option => {
-             if (!option?.key || typeof option.text === 'undefined') return;
-             const button = document.createElement('button');
-             button.classList.add('option-button'); // Clase base única
-             button.dataset.key = option.key; button.textContent = option.text;
-             const listener = () => { if (this.optionClickCallback) this.optionClickCallback(option.key); };
-             this.optionListeners.set(button, listener); button.addEventListener('click', listener);
-             optionsContainer.appendChild(button);
-             elementsMap.optionButtons?.push(button);
-        });
-
-        const feedbackArea = document.createElement('div'); feedbackArea.id = 'feedback'; feedbackArea.classList.add('feedback-area-base');
-        wrapper.appendChild(feedbackArea);
-        elementsMap.feedbackArea = feedbackArea;
 
         // --- Finalizar ---
-        this.currentUIElements = elementsMap as UIElementsMap;
+        this.currentUIElements = elementsMap as UIElementsMap; // Guardar referencias finales
 
         // --- Actualizar Estado Inicial ---
+        console.log('[DEBUG] Actualizando UI inicial...'); // *** DEBUG Log ***
         this.updateScoreDisplay(this.gameManager.getPlayerData().score);
         this.updateLivesDisplay(this.gameManager.getLives());
         this.updateShieldIcon(this.gameManager.getPlayerData().hasShield);
         this.updateHintIcon(this.gameManager.getPlayerData().hintCharges);
         this.updateInkBar();
         this.updateDifficultyLabel(question.difficulty);
-        this.updateComboVisuals(currentCombo); // Aplicar estado visual inicial del combo
+        this.updateComboVisuals(currentCombo);
+        console.log('[DEBUG] UI inicial actualizada.'); // *** DEBUG Log ***
     }
 
-    /**
-     * Limpia la interfaz del quiz del contenedor especificado.
-     */
-    public clearQuizInterface(containerElement: HTMLElement): void {
+    // clearQuizInterface (SIN CAMBIOS)
+     public clearQuizInterface(containerElement: HTMLElement): void { /* ... */
         console.log("UIManager: Limpiando interfaz del quiz...");
         this.optionListeners.forEach((listener, button) => {
             if (button?.parentNode) button.removeEventListener('click', listener);
         });
         this.optionListeners.clear();
-
         const comboCounter = document.getElementById('combo-counter');
         if (comboCounter?.parentNode) {
             comboCounter.parentNode.removeChild(comboCounter);
         }
-
+        this.removeExplanationListener();
         this.currentUIElements = {};
         this.optionClickCallback = null;
         containerElement.innerHTML = '';
+     }
+
+    // --- Métodos para Explicación (SIN CAMBIOS) ---
+    public showExplanation(explanation: string, onConfirm: () => void): void { /* ... */
+        const overlay = this.currentUIElements?.explanationOverlay;
+        const textElement = this.currentUIElements?.explanationText;
+        const backdrop = this.currentUIElements?.blurBackdrop;
+        if (overlay && textElement && backdrop) {
+            console.log("UIManager: Mostrando explicación.");
+            textElement.textContent = explanation;
+            backdrop.style.display = 'block';
+            overlay.style.display = 'flex';
+            void overlay.offsetHeight; void backdrop.offsetHeight;
+            backdrop.classList.add('visible');
+            overlay.classList.add('visible');
+            this.removeExplanationListener();
+            this.explanationConfirmListener = () => {
+                console.log("UIManager: Confirmación de explicación recibida.");
+                this.hideExplanation();
+                onConfirm();
+            };
+            document.addEventListener('click', this.explanationConfirmListener, { capture: true, once: true });
+            document.addEventListener('keydown', this.explanationConfirmListener, { capture: true, once: true });
+        } else {
+            console.error("UIManager: Elementos del overlay de explicación no encontrados.");
+            onConfirm();
+        }
+    }
+    public hideExplanation(): void { /* ... */
+        const overlay = this.currentUIElements?.explanationOverlay;
+        const backdrop = this.currentUIElements?.blurBackdrop;
+        if (overlay && backdrop) {
+            overlay.classList.remove('visible');
+            const shopPopup = document.getElementById('shop-popup');
+            if (!shopPopup || !shopPopup.classList.contains('visible')) {
+                 backdrop.classList.remove('visible');
+            }
+            this.removeExplanationListener();
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                if (!shopPopup || !shopPopup.classList.contains('visible')) {
+                     if (backdrop) backdrop.style.display = 'none';
+                }
+            }, 400);
+        }
+     }
+    private removeExplanationListener(): void { /* ... */
+        if (this.explanationConfirmListener) {
+            document.removeEventListener('click', this.explanationConfirmListener, { capture: true });
+            document.removeEventListener('keydown', this.explanationConfirmListener, { capture: true });
+            this.explanationConfirmListener = null;
+        }
+     }
+    // --- Fin Métodos de Explicación ---
+
+
+    // --- Métodos de Actualización ---
+
+    public updateScoreDisplay(score: number): void {
+        const element = this.currentUIElements?.scoreDisplay;
+        // *** DEBUG Log ***
+        console.log(`[DEBUG] updateScoreDisplay: Elemento encontrado? ${!!element}. Score: ${score}`);
+        if (element) {
+            element.textContent = score.toString();
+        }
+        const pulseElement = this.currentUIElements?.scorePulse;
+        if (pulseElement) {
+            pulseElement.classList.remove('pulsing');
+            void pulseElement.offsetWidth;
+            pulseElement.classList.add('pulsing');
+        }
     }
 
-    // --- Métodos de Actualización (Iguales que antes, usan variables CSS) ---
-    public updateScoreDisplay(score: number): void { /* ... */
-        const element = this.currentUIElements?.scoreDisplay;
-        if (element) { element.textContent = score.toString(); }
-        const pulseElement = this.currentUIElements?.scorePulse;
-        if (pulseElement) { pulseElement.classList.remove('pulsing'); void pulseElement.offsetWidth; pulseElement.classList.add('pulsing'); }
-    }
-    public updateLivesDisplay(lives: number): void { /* ... */
+    public updateLivesDisplay(lives: number): void {
         const element = this.currentUIElements?.livesDisplayCount;
-        if (element) { element.textContent = lives.toString(); }
+         // *** DEBUG Log ***
+        console.log(`[DEBUG] updateLivesDisplay: Elemento encontrado? ${!!element}. Vidas: ${lives}`);
+        if (element) {
+            element.textContent = lives.toString();
+        }
     }
+
+    // updateComboVisuals, updateDifficultyLabel, etc. (SIN CAMBIOS EN LÓGICA INTERNA)
     public updateComboVisuals(combo: number): void { /* ... */
         const comboElement = this.currentUIElements?.comboDisplay;
         const root = document.documentElement;
@@ -250,7 +346,7 @@ export class UIManager {
         const bgLightness = 10 + bgIntensity * 15;
         const targetBgColor = combo === 0 ? '#111827' : `hsl(${bgHue}, ${bgSaturation}%, ${bgLightness}%)`;
         body.style.backgroundColor = targetBgColor;
-    }
+     }
     public updateDifficultyLabel(difficultyValue: string | number): void { /* ... */
         const element = this.currentUIElements?.difficultyLabel;
         if (element) {
@@ -264,7 +360,7 @@ export class UIManager {
             root.style.setProperty('--difficulty-glow-blur', config.glowBlur || '0px');
             element.classList.toggle('difficulty-pulse', !!config.pulse);
         }
-    }
+     }
     public updateShieldIcon(isActive: boolean): void { /* ... */ const element = this.currentUIElements?.shieldIcon; if (element) { element.style.display = isActive ? 'inline' : 'none'; } }
     public updateHintIcon(charges: number): void { /* ... */ const element = this.currentUIElements?.hintIcon; if (element) { element.style.display = charges > 0 ? 'inline' : 'none'; } }
     public updateFeedback(message: string, type: 'correct' | 'incorrect' | 'shield' | 'info'): void { /* ... */ const element = this.currentUIElements?.feedbackArea; if (element) { element.textContent = message; element.classList.remove('feedback-correct', 'feedback-incorrect', 'feedback-shield'); switch (type) { case 'correct': element.classList.add('feedback-correct'); break; case 'incorrect': element.classList.add('feedback-incorrect'); break; case 'shield': element.classList.add('feedback-shield'); break; case 'info': break; } } }
