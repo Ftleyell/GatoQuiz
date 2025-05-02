@@ -1,0 +1,74 @@
+[
+    {
+      "id": "life",
+      "name": "Comprar 1 Vida",
+      "icon": "❤️",
+      "category": "consumable",
+      "isLeveled": false,
+      "cost": { "base": 50, "perLevel": 25, "levelRef": "lives" },
+      "effectTemplate": "Recupera una vida. Tienes {lives}.",
+      "purchaseCheck": { "condition": "lessThan", "valueRef": "lives", "limit": 5 },
+      "actionId": "purchaseLife"
+    },
+    {
+      "id": "shield",
+      "name": "Escudo Temporal",
+      "icon": "🛡️",
+      "category": "consumable",
+      "isLeveled": false,
+      "cost": { "base": 75 },
+      "effectTemplate": "Absorbe el siguiente error {isActive}.",
+      "purchaseCheck": { "condition": "isFalse", "valueRef": "hasShield" },
+      "isPurchasedCheck": { "condition": "isTrue", "valueRef": "hasShield"},
+      "actionId": "purchaseShield"
+    },
+    {
+      "id": "hint",
+      "name": "Pista (3 Usos)",
+      "icon": "💡",
+      "category": "consumable",
+      "isLeveled": false,
+      "cost": { "base": 60 },
+      "effectTemplate": "Elimina 1 opción incorrecta por 3 preguntas {charges}.",
+      "purchaseCheck": { "condition": "lessThanOrEqual", "valueRef": "hintCharges", "limit": 0 },
+      "isPurchasedCheck": { "condition": "greaterThan", "valueRef": "hintCharges", "limit": 0 },
+      "actionId": "purchaseHint"
+    },
+    {
+      "id": "unlockDrawing",
+      "name": "Desbloquear Dibujo",
+      "icon": "🖌️",
+      "category": "unlockable",
+      "isLeveled": false,
+      "cost": { "base": 200 },
+      "effectTemplate": "Permite usar el pincel {isUnlocked}.",
+      "purchaseCheck": { "condition": "isFalse", "valueRef": "isDrawingUnlocked" },
+       "isPurchasedCheck": { "condition": "isTrue", "valueRef": "isDrawingUnlocked"},
+      "actionId": "purchaseUnlockDrawing"
+    },
+    {
+      "id": "comboMultiplier",
+      "name": "Multiplicador Combo",
+      "icon": "✨",
+      "category": "upgradeable",
+      "isLeveled": true,
+      "maxLevel": 5,
+      "levelRef": "comboMultiplierLevel",
+      "cost": { "base": 100, "multiplier": 2, "type": "exponential"},
+      "effectTemplate": "Multiplicador actual: x{currentValue}.",
+      "actionId": "purchaseComboMultiplier"
+    },
+    {
+      "id": "inkCostReduction",
+      "name": "Reducción Costo Tinta",
+      "icon": "💧",
+      "category": "upgradeable",
+      "isLeveled": true,
+      "maxLevel": 5,
+      "levelRef": "inkCostReductionLevel",
+      "cost": { "base": 80, "multiplier": 1.8, "type": "exponential"},
+      "effectTemplate": "Costo de tinta: {currentValue}/px",
+       "purchaseCheck": { "condition": "isTrue", "valueRef": "isDrawingUnlocked" },
+      "actionId": "purchaseInkCostReduction"
+    }
+  ]

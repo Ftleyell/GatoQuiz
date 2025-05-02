@@ -47,7 +47,10 @@ export interface CatPhysicsOptions {
   
     /** Opciones específicas para la configuración visual */
     renderOptions?: CatRenderOptions;
-  
+
+    /** Probabilidad relativa de aparición (mayor número = más probable). */
+    spawnWeight?: number; // <-- AÑADIDO
+
     // Aquí podrías añadir más propiedades definidas en el GDD 2.6,
     // como por ejemplo:
     // canMerge?: boolean;

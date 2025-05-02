@@ -39,6 +39,51 @@ export class CatManager {
   private catContainerElement: HTMLElement | null = null;
   private templates: Map<string, CatTemplate> = new Map();
 
+
+/**
+ * Carga y almacena las plantillas de gato desde un array de datos.
+ * @param templateData - Array de objetos CatTemplate.
+ */
+public loadTemplates(templateData: CatTemplate[]): void {
+    this.templates.clear();
+    if (!Array.isArray(templateData)) {
+        console.error("CatManager: Formato de datos de plantilla inválido.");
+        return;
+    }
+    templateData.forEach(template => {
+        if (template?.id) {
+            // Asegurar que spawnWeight tenga un valor por defecto si no está en JSON
+            if (typeof template.spawnWeight !== 'number' || template.spawnWeight <= 0) {
+                // console.warn(`Plantilla ${template.id} sin spawnWeight válido, usando 1.`);
+                template.spawnWeight = 1; // Default weight
+            }
+            this.templates.set(template.id, template);
+        } else {
+            console.warn("CatManager: Plantilla inválida o sin ID.", template);
+        }
+    });
+    // console.log(`CatManager: ${this.templates.size} plantillas de gato cargadas/registradas.`);
+}
+
+/**
+ * Devuelve una lista de IDs de plantillas y sus pesos de aparición.
+ * Útil para la selección aleatoria ponderada.
+ * @returns Un array de objetos { id: string, weight: number }.
+ */
+public getSpawnableTemplatesWeighted(): { id: string; weight: number }[] {
+    const weightedTemplates: { id: string; weight: number }[] = [];
+    this.templates.forEach((template) => {
+        // Usar spawnWeight si existe y es mayor que 0, sino un peso por defecto (ej: 1)
+        const weight = template.spawnWeight && template.spawnWeight > 0 ? template.spawnWeight : 1;
+        weightedTemplates.push({ id: template.id, weight: weight });
+    });
+    return weightedTemplates;
+}
+
+
+// ... (resto de métodos de CatManager: addCat, removeCat, etc.) ...
+
+
   /**
    * Crea una instancia de CatManager.
    * @param audioManager - Instancia del AudioManager para reproducir sonidos.

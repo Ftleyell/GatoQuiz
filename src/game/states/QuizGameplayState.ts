@@ -16,25 +16,62 @@ export class QuizGameplayState implements IState {
   private optionListeners: Map<HTMLButtonElement, () => void> = new Map();
   private quizContainer: HTMLDivElement | null = null;
   private nextQuestionTimeoutId: number | null = null;
-  // private score: number = 0; // <-- Ya eliminado
   private consecutiveCorrectAnswers: number = 0;
 
   // Constantes de Puntuación (se mantienen para cálculo)
   private readonly BASE_POINTS_PER_CORRECT = 10;
   private readonly DIFFICULTY_BONUS: { [key: string]: number } = { "easy": 10, "medium": 30, "hard": 50 };
 
-  // Plantillas de Spawn (NOTA: Se refactorizará en el siguiente paso para usar CatManager)
-  private spawnableCatTemplates = [ { id: 'common_gray', weight: 75 }, { id: 'rare_blue', weight: 25 } ];
-  private totalSpawnWeight: number = 0;
+  // Ya no se usan variables locales para plantillas de spawn
+  // private spawnableCatTemplates = [ { id: 'common_gray', weight: 75 }, { id: 'rare_blue', weight: 25 } ];
+  // private totalSpawnWeight: number = 0;
 
   constructor(gameManager: GameManager) {
     this.gameManager = gameManager;
-    this.calculateTotalSpawnWeight(); // Calcular peso inicial
+    // Ya no se necesita calcular el peso aquí
   }
 
-  // Métodos auxiliares para spawn (se refactorizarán)
-  private calculateTotalSpawnWeight(): void { this.totalSpawnWeight = this.spawnableCatTemplates.reduce((sum, t) => sum + t.weight, 0); }
-  private selectRandomCatTemplateId(): string { if(this.totalSpawnWeight<=0||this.spawnableCatTemplates.length===0)return'common_gray';const r=Math.random()*this.totalSpawnWeight;let c=0;for(const t of this.spawnableCatTemplates){c+=t.weight;if(r<c)return t.id;}return this.spawnableCatTemplates[this.spawnableCatTemplates.length-1]?.id??'common_gray'; }
+  // Ya no se necesita calculateTotalSpawnWeight()
+
+  /**
+   * Selecciona aleatoriamente un ID de plantilla de gato para spawnear,
+   * basado en los pesos definidos en las plantillas cargadas por CatManager.
+   * @returns El ID de la plantilla seleccionada o un ID por defecto si falla.
+   */
+  private selectRandomCatTemplateId(): string {
+    const catManager = this.gameManager.getCatManager();
+    // Obtener las plantillas y sus pesos directamente del CatManager
+    const weightedTemplates = catManager.getSpawnableTemplatesWeighted();
+
+    if (weightedTemplates.length === 0) {
+        console.warn("selectRandomCatTemplateId: No hay plantillas spawnables disponibles en CatManager.");
+        return 'common_gray'; // ID por defecto como fallback si no hay plantillas
+    }
+
+    // Calcular el peso total dinámicamente
+    const totalWeight = weightedTemplates.reduce((sum, t) => sum + t.weight, 0);
+
+    if (totalWeight <= 0) {
+        console.warn("selectRandomCatTemplateId: El peso total de las plantillas es 0. Devolviendo la primera.");
+        // Devolver el ID de la primera plantilla o el fallback si el array está vacío (aunque el check anterior lo previene)
+        return weightedTemplates[0]?.id ?? 'common_gray';
+    }
+
+    // Selección aleatoria ponderada
+    const randomNum = Math.random() * totalWeight;
+    let cumulativeWeight = 0;
+    for (const template of weightedTemplates) {
+        cumulativeWeight += template.weight;
+        if (randomNum < cumulativeWeight) {
+            // console.log(`Template seleccionado: ${template.id} (Peso: ${template.weight}, Rnd: ${randomNum.toFixed(2)}/${totalWeight.toFixed(2)})`); // Log opcional
+            return template.id; // Devolver el ID de la plantilla seleccionada
+        }
+    }
+
+    // Fallback (no debería ocurrir si totalWeight > 0 y hay plantillas)
+    console.warn("selectRandomCatTemplateId: Falló la selección ponderada (esto no debería pasar). Devolviendo la última.");
+    return weightedTemplates[weightedTemplates.length - 1]?.id ?? 'common_gray';
+  }
 
 
   /**
@@ -44,15 +81,11 @@ export class QuizGameplayState implements IState {
    */
   enter(params?: any): void {
     console.log('QuizGameplayState: enter', params);
-    this.gameManager.setBodyStateClass('quizgameplay'); // <-- AÑADIR ESTA LÍNEA
-    
-    // *** CORRECCIÓN: Resetear PlayerData al iniciar nueva partida ***
-    this.gameManager.getPlayerData().reset();
+    this.gameManager.setBodyStateClass('quizgameplay'); // Establecer clase CSS para visibilidad de controles
+    this.gameManager.getPlayerData().reset(); // Resetear datos del jugador para nueva partida
     console.log("PlayerData reseteado para nueva partida.");
-    // *************************************************************
-
-    this.consecutiveCorrectAnswers = 0;
-    this.calculateTotalSpawnWeight(); // Recalcular por si cambia en el futuro
+    this.consecutiveCorrectAnswers = 0; // Resetear racha
+    // Ya no se necesita calcular peso aquí
     this.clearUI(); // Limpiar UI anterior si existe
     this.displayNextQuestion(); // Mostrar la primera pregunta
   }
@@ -84,7 +117,6 @@ export class QuizGameplayState implements IState {
     const currentStreak = streakBefore + 1;
     const basePoints = this.BASE_POINTS_PER_CORRECT * currentStreak;
     const difficultyBonus = this.DIFFICULTY_BONUS[difficulty] ?? this.DIFFICULTY_BONUS["easy"];
-    // Obtener multiplicador actual directamente de PlayerData
     const actualComboMultiplier = this.gameManager.getPlayerData().getCurrentComboMultiplier();
     const comboBonus = Math.max(0, (basePoints + difficultyBonus) * (actualComboMultiplier - 1));
     const totalPoints = Math.round(basePoints + difficultyBonus + comboBonus);
@@ -98,18 +130,14 @@ export class QuizGameplayState implements IState {
    * @param difficulty - La dificultad de la pregunta acertada.
    */
   private handleCorrectAnswer(difficulty: string): void {
-    // Calcular desglose de puntos
     const scoreBreakdown = this.calculateScore(difficulty, this.consecutiveCorrectAnswers);
-    this.consecutiveCorrectAnswers++; // Incrementar racha
+    this.consecutiveCorrectAnswers++;
 
-    // Actualizar PlayerData
     this.gameManager.getPlayerData().score += scoreBreakdown.totalPoints;
 
-    // Actualizar UI
     this.updateScoreUI();
     this.updateComboUI();
 
-    // Mostrar Feedback detallado
     let feedbackMessage = `¡Correcto! +${scoreBreakdown.totalPoints} Pts`;
     let details = `(Base: ${scoreBreakdown.basePoints}, Dif: +${scoreBreakdown.difficultyBonus}`;
     const actualComboMultiplier = this.gameManager.getPlayerData().getCurrentComboMultiplier();
@@ -120,12 +148,12 @@ export class QuizGameplayState implements IState {
     feedbackMessage += ` ${details}`;
     this.updateFeedbackUI(feedbackMessage, true);
 
-    // Reproducir sonido
     try { this.gameManager.getAudioManager().playSound('correct'); }
     catch(e) { console.error("Error sonido 'correct':", e); }
 
-    // Spawnear Gato (Usando lógica temporal, se refactorizará)
+    // *** Spawnear Gato usando el método actualizado ***
     const selectedTemplateId = this.selectRandomCatTemplateId();
+    // console.log(`Intentando spawnear gato con template ID: ${selectedTemplateId}`); // Log opcional
     if (selectedTemplateId) {
         try {
             const catManager = this.gameManager.getCatManager();
@@ -138,9 +166,9 @@ export class QuizGameplayState implements IState {
             console.error(` -> ¡Error atrapado! al llamar a catManager.addCat:`, error);
         }
     }
+    // *************************************************
 
-    // Programar siguiente pregunta
-    this.scheduleNextQuestion(1500); // Delay de 1.5s
+    this.scheduleNextQuestion(1500);
   }
 
   /**
@@ -152,27 +180,23 @@ export class QuizGameplayState implements IState {
     const playerData = this.gameManager.getPlayerData();
 
     if (playerData.hasShield) {
-        // Usar escudo
         console.log("Escudo absorbe el golpe.");
-        playerData.hasShield = false; // Consumir escudo
-        this.updateFeedbackUI('¡Escudo Roto!', false, true); // Feedback visual azul
+        playerData.hasShield = false;
+        this.updateFeedbackUI('¡Escudo Roto!', false, true);
         this.gameManager.getAudioManager().playSound('shield_break');
-        this.gameManager.updateExternalShieldUI(false); // Notificar UI
+        this.gameManager.updateExternalShieldUI(false);
 
     } else {
-        // Sin escudo: perder vida y racha
-        this.consecutiveCorrectAnswers = 0; // Resetear racha
-        this.gameManager.decrementLives(); // Restar vida (GameManager actualiza PlayerData y llama a updateExternalLivesUI)
-        // updateLivesUI() // No es necesario llamar aquí, decrementLives ya lo hace
-        this.updateComboUI(); // Ocultar contador de combo
-        this.updateFeedbackUI('Incorrecto.', false); // Feedback visual rojo
+        this.consecutiveCorrectAnswers = 0;
+        this.gameManager.decrementLives(); // GameManager actualiza PlayerData y llama a updateExternalLivesUI
+        this.updateComboUI();
+        this.updateFeedbackUI('Incorrecto.', false);
         this.gameManager.getAudioManager().playSound('incorrect');
     }
 
-    // Verificar Game Over
     if (this.gameManager.getLives() <= 0) {
         console.log("Game Over condition met!");
-        this.updateFeedbackUI('¡Has perdido!', false); // Mensaje final
+        this.updateFeedbackUI('¡Has perdido!', false);
         if (this.nextQuestionTimeoutId) { clearTimeout(this.nextQuestionTimeoutId); this.nextQuestionTimeoutId = null; }
         setTimeout(() => {
             if (this.gameManager.getStateMachine().getCurrentStateName() === 'QuizGameplay') {
@@ -181,8 +205,7 @@ export class QuizGameplayState implements IState {
         }, 1500);
 
     } else {
-        // Si no es game over, programar siguiente pregunta
-        this.scheduleNextQuestion(1500); // Delay de 1.5s
+        this.scheduleNextQuestion(1500);
     }
   }
 
@@ -209,7 +232,7 @@ export class QuizGameplayState implements IState {
    * Añade los elementos al DOM y configura los listeners de los botones.
    */
   private displayNextQuestion(): void {
-    // console.log("[UI DEBUG] --- displayNextQuestion START ---"); // Log menos verboso
+    // console.log("[UI DEBUG] --- displayNextQuestion START ---");
     const quizSystem = this.gameManager.getQuizSystem();
     try {
         this.currentQuestion = quizSystem.selectNextQuestion();
@@ -234,39 +257,33 @@ export class QuizGameplayState implements IState {
     newQuizContainer.style.minHeight = '300px';
 
     try {
-        // Contenedor Superior (Vidas, Score, Combo)
+        // Contenedor Superior (Vidas, Score, Combo, Iconos)
         const topUIContainer = document.createElement('div');
         topUIContainer.className = 'top-ui-container flex justify-between items-center w-full mb-4 p-2 bg-gray-700 rounded';
 
-        // Vidas + Iconos Estado
         const livesDisplayContainer = document.createElement('div');
         livesDisplayContainer.id = 'quiz-lives-container';
-        livesDisplayContainer.className = 'quiz-lives flex items-center gap-2 text-lg text-red-400'; // Aumentado gap
+        livesDisplayContainer.className = 'quiz-lives flex items-center gap-2 text-lg text-red-400';
         const heartIcon = document.createElement('span'); heartIcon.textContent = '❤️';
         const livesCountSpan = document.createElement('span'); livesCountSpan.id = 'quiz-lives-count'; livesCountSpan.className = 'font-bold';
-        // Icono Escudo (inicialmente oculto)
-        const shieldIcon = document.createElement('span'); shieldIcon.id = 'quiz-shield-icon'; shieldIcon.textContent = '🛡️'; shieldIcon.style.display = 'none'; // Oculto por defecto
-        // Icono Pista (inicialmente oculto)
-        const hintIcon = document.createElement('span'); hintIcon.id = 'quiz-hint-icon'; hintIcon.textContent = '💡'; hintIcon.style.display = 'none'; // Oculto por defecto
+        const shieldIcon = document.createElement('span'); shieldIcon.id = 'quiz-shield-icon'; shieldIcon.textContent = '🛡️'; shieldIcon.style.display = 'none';
+        const hintIcon = document.createElement('span'); hintIcon.id = 'quiz-hint-icon'; hintIcon.textContent = '💡'; hintIcon.style.display = 'none';
 
         livesDisplayContainer.appendChild(heartIcon);
         livesDisplayContainer.appendChild(livesCountSpan);
-        livesDisplayContainer.appendChild(shieldIcon); // Añadir icono escudo
-        livesDisplayContainer.appendChild(hintIcon); // Añadir icono pista
+        livesDisplayContainer.appendChild(shieldIcon);
+        livesDisplayContainer.appendChild(hintIcon);
         topUIContainer.appendChild(livesDisplayContainer);
 
-
-        // Score
         const scoreDisplay = document.createElement('p');
-        scoreDisplay.id = 'quiz-score'; // ID para actualizar
+        scoreDisplay.id = 'quiz-score';
         scoreDisplay.className = 'quiz-score text-3xl font-bold text-yellow-300';
         topUIContainer.appendChild(scoreDisplay);
 
-        // Combo
         const comboDisplay = document.createElement('p');
-        comboDisplay.id = 'quiz-combo'; // ID para actualizar
+        comboDisplay.id = 'quiz-combo';
         comboDisplay.className = 'quiz-combo text-xl font-semibold text-orange-400';
-        comboDisplay.style.display = 'none'; // Oculto inicialmente
+        comboDisplay.style.display = 'none';
         topUIContainer.appendChild(comboDisplay);
 
         newQuizContainer.appendChild(topUIContainer);
@@ -320,15 +337,14 @@ export class QuizGameplayState implements IState {
         console.error("[UI DEBUG] ¡Error al añadir UI al DOM!", error);
     }
 
-    // Actualizar valores iniciales de la UI (score, vidas, combo, iconos de estado)
+    // Actualizar valores iniciales de la UI
     this.updateScoreUI();
     this.updateLivesUI();
     this.updateComboUI();
-    // Actualizar estado inicial de iconos escudo/pista basado en PlayerData
     this.updateShieldIcon(this.gameManager.getPlayerData().hasShield);
     this.updateHintIcon(this.gameManager.getPlayerData().hintCharges);
 
-    // console.log("[UI DEBUG] --- displayNextQuestion END ---"); // Log menos verboso
+    // console.log("[UI DEBUG] --- displayNextQuestion END ---");
   }
 
   /**
@@ -376,7 +392,7 @@ export class QuizGameplayState implements IState {
   }
 
   /** Actualiza el elemento de la UI que muestra las vidas. */
-  private updateLivesUI(): void {
+  public updateLivesUI(): void { // Hacer público para que GameManager pueda llamarlo si es necesario
     const livesElement = document.getElementById('quiz-lives-count');
     if (livesElement) {
         livesElement.textContent = this.gameManager.getLives().toString();
@@ -421,22 +437,17 @@ export class QuizGameplayState implements IState {
   // --- Métodos para actualizar iconos de estado (llamados por GameManager) ---
   /** Actualiza la visibilidad del icono de escudo en la UI del quiz. */
    public updateShieldIcon(isActive: boolean): void {
-       const shieldIcon = document.querySelector('#quiz-shield-icon'); // Asumiendo ID dentro del contenedor
+       const shieldIcon = document.querySelector('#quiz-shield-icon');
        if (shieldIcon) {
            (shieldIcon as HTMLElement).style.display = isActive ? 'inline' : 'none';
-       } else {
-           // console.warn("updateShieldIcon: Elemento #quiz-shield-icon no encontrado.");
        }
    }
 
    /** Actualiza la visibilidad del icono de pista en la UI del quiz. */
    public updateHintIcon(charges: number): void {
-       const hintIcon = document.querySelector('#quiz-hint-icon'); // Asumiendo ID dentro del contenedor
+       const hintIcon = document.querySelector('#quiz-hint-icon');
        if (hintIcon) {
            (hintIcon as HTMLElement).style.display = charges > 0 ? 'inline' : 'none';
-           // Aquí podrías añadir lógica para mostrar el número de cargas si quisieras
-       } else {
-            // console.warn("updateHintIcon: Elemento #quiz-hint-icon no encontrado.");
        }
    }
    // ---------------------------------------------------------------------------
