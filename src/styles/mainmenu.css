@@ -31,7 +31,7 @@
     inherits: false;
     initial-value: 0deg;
   }
-  
+
   /* --- Define custom fonts --- */
   .font-pacifico {
       font-family: 'Pacifico', cursive;
@@ -42,8 +42,8 @@
   .font-geist { /* Fuente base del body en el ejemplo */
       font-family: "Geist", sans-serif;
   }
-  
-  
+
+
   /* --- Background Animations --- */
   @keyframes anim_bg {
     0% { --hue1: 0deg; --hue2: 300deg; }
@@ -79,7 +79,7 @@
       0%, 100% { transform: translate(-50%, -50%) rotate(-10deg) scale(1); }
       50% { transform: translate(-50%, -50%) rotate(10deg) scale(1.1); }
   }
-  
+
   /* --- Body Styling (Aplicado por GameManager.setBodyStateClass('mainmenu-whiskers')) --- */
   /* Puedes añadir una regla específica si quieres, o aplicar estos estilos directamente al body en base.css */
   body.state-mainmenu-whiskers { /* O simplemente 'body' si estos son los estilos base */
@@ -111,7 +111,7 @@
       text-align: center;
       cursor: pointer; /* Indicar que es clickeable */
   }
-  
+
   /* Falling paws overlay */
   body.state-mainmenu-whiskers::before {
       content: "";
@@ -123,7 +123,7 @@
       z-index: -4; /* Deepest layer */
       opacity: 0.5;
   }
-  
+
   /* Scrolling white template with paw shape cutouts */
   body.state-mainmenu-whiskers::after {
       content: "";
@@ -134,7 +134,7 @@
       animation: scrollPawTemplate 15s linear infinite;
       z-index: -3; /* Behind circle */
   }
-  
+
   /* --- Paw Wrapper --- */
   .paw-wrapper {
       position: relative;
@@ -144,8 +144,9 @@
       flex-direction: column;
       align-items: center;
       justify-content: center; /* Centra verticalmente también */
+      padding: 1rem; /* Añadir padding para evitar que el contenido toque bordes */
   }
-  
+
   /* --- Background Circle Structure (Simplified) --- */
   .rainbow-circle {
       position: absolute;
@@ -154,12 +155,14 @@
       transform: translate(-50%, -50%);
       width: 80vmin; /* Increased size */
       height: 80vmin;
+      max-width: 90vw; /* Limitar tamaño en pantallas muy anchas pero poco altas */
+      max-height: 90vh;
       z-index: -1; /* Above template, behind paws */
       border-radius: 50%;
       padding: 6px; /* Adjusted padding for border thickness */
       overflow: hidden; /* Clip the pseudo-element */
   }
-  
+
   /* Sharp Rotating Border */
   .rainbow-circle::before {
       content: '';
@@ -173,7 +176,7 @@
       animation: rainbowRotate 4s linear infinite;
       z-index: -1; /* Behind the content div */
   }
-  
+
   /* Inner Circle Content */
   .circle-content {
       width: 100%;
@@ -184,7 +187,7 @@
       z-index: 1;
       box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.1);
   }
-  
+
   /* --- Invisible Container --- */
   .container-invisible {
       background: transparent;
@@ -199,18 +202,20 @@
       justify-content: center;
       align-items: center;
       min-height: 80vmin; /* Match circle size */
+      max-height: 90vh;
   }
-  
+
   /* --- Title --- */
   .title-container {
       position: relative;
-      display: inline-block;
+      display: inline-block; /* Cambiado de inline-block a block para mejor control */
+      width: 100%; /* Asegurar que ocupe ancho */
       z-index: 1;
       margin-bottom: 0;
       text-align: center;
       line-height: 0.9; /* Ajustar interlineado de títulos */
   }
-  
+
   .title-shadow {
       text-shadow: 3px 3px 0px rgba(255, 255, 255, 0.8), 5px 5px 8px rgba(0, 0, 0, 0.15);
       font-size: 6rem; /* Tamaño base */
@@ -219,8 +224,9 @@
       margin: 0;
       color: #ea580c; /* Color naranja */
       display: block;
+      word-break: break-word; /* Evitar desbordamiento */
   }
-  
+
   /* Style for the "&" symbol - Centered and Animated */
   .title-ampersand {
       /* font-family: 'Pacifico', cursive; */ /* Ya aplicado por clase */
@@ -235,7 +241,7 @@
       /* Apply wiggle animation */
       animation: pawWiggle 1.5s ease-in-out infinite;
   }
-  
+
   /* Responsive title sizes */
   @media (min-width: 640px) {
       .title-shadow {
@@ -253,11 +259,11 @@
           font-size: 5.4rem; /* Reduced size */
        }
   }
-  
+
   /* Base styles for Giant Animated Background Paws */
   .animate-paw-wiggle {
       animation: pawWiggle 1.5s ease-in-out infinite;
-      display: inline-block; /* Cambiado para que esté en línea con el título si es necesario, pero absoluto lo posiciona */
+      /* display: inline-block; - No necesario con absolute */
       position: absolute;
       top: 50%;
       left: 50%;
@@ -267,14 +273,14 @@
       z-index: 0; /* Above circle, below content */
       pointer-events: none; /* No interactuable */
   }
-  
+
   /* Style for the FRONT paw (paw-1) */
   .animate-paw-wiggle.paw-1 {
       color: #ffffff;
       text-shadow: 0 0 15px #fb7185, 0 0 25px #fb7185, 0 0 40px #f472b6;
       transform: translate(-50%, -50%) rotate(-10deg) scale(1); /* Posición inicial */
   }
-  
+
   /* Style for the BACK paw (paw-2) */
   .animate-paw-wiggle.paw-2 {
       color: #fb7185;
@@ -283,28 +289,11 @@
       transform: translate(-50%, -50%) rotate(15deg) scale(0.95); /* Posición inicial ligeramente diferente */
       animation-delay: 0.3s; /* Desfase en la animación */
   }
-  
+
    /* Adjust size for smaller screens */
-  @media (max-width: 640px) {
-       .animate-paw-wiggle {
-          font-size: 22rem; /* Más pequeño en móviles */
-       }
-       .rainbow-circle {
-           width: 90vmin;
-           height: 90vmin;
-           padding: 4px;
-       }
-       .title-shadow {
-          font-size: 4.5rem;
-       }
-       .title-ampersand {
-          font-size: 2.4rem; /* Reduced size */
-       }
-      body.state-mainmenu-whiskers::after { /* Ajustar tamaño de máscara en móvil */
-           background-size: 120px 120px;
-       }
-  }
-  
+  /* Movido a Media Queries al final para mejor organización */
+  /* @media (max-width: 640px) { ... } */
+
   /* --- Fading Text Styles --- */
   .fading-click-text {
       /* font-family: 'Poppins', sans-serif; */ /* Ya aplicado por clase */
@@ -323,8 +312,8 @@
           font-size: 1.8rem;
       }
   }
-  
-  
+
+
   /* Yarn ball loading spinner */
   @keyframes spin-yarn {
       0% { transform: rotate(0deg); }
@@ -344,7 +333,7 @@
        font-weight: 600;
        color: #c2410c; /* Naranja oscuro */
   }
-  
+
   /* --- Sparkle SVG Styles --- */
   .sparkle-instance {
       position: absolute;
@@ -359,5 +348,326 @@
   }
   /* Estilo para las líneas dentro del SVG (ya definido en el SVG inline) */
   /* .cls-sparkle{fill:none;stroke-miterlimit:10; stroke: #fff845; stroke-width: 2px;} */
-  
-  
+
+
+/* =========================================== */
+/* ========== MEDIA QUERIES (MÓVIL) ========== */
+/* =========================================== */
+
+@media (max-width: 768px) {
+    /* Reducir tamaño general de fuentes y elementos decorativos */
+
+    .title-shadow {
+      font-size: 4.5rem; /* Reducción significativa */
+      text-shadow: 2px 2px 0px rgba(255, 255, 255, 0.7), 3px 3px 5px rgba(0, 0, 0, 0.1); /* Sombra más simple */
+    }
+
+    .title-ampersand {
+      font-size: 2.4rem; /* Reducción significativa */
+      /* Podría necesitar ajuste de top/left si el % no funciona bien con fuentes más pequeñas */
+    }
+
+    .animate-paw-wiggle {
+      font-size: 22rem; /* Reducción significativa */
+      /* Podríamos ajustar la opacidad o incluso ocultar la pata trasera (.paw-2) */
+      /* &.paw-2 { opacity: 0.3; } */
+    }
+
+    .rainbow-circle {
+       width: 90vmin; /* Mantener relativo al viewport */
+       height: 90vmin;
+       padding: 4px; /* Borde más fino */
+    }
+
+    .container-invisible {
+        min-height: 90vmin; /* Ajustar al círculo */
+    }
+
+    .fading-click-text {
+      font-size: 1.2rem; /* Reducir tamaño */
+      margin-top: 1.5rem; /* Menos espacio */
+    }
+
+    #loading-message span {
+        font-size: 1.2rem; /* Reducir tamaño */
+    }
+
+    .yarn-spinner {
+        width: 30px;
+        height: 30px;
+        border-width: 4px;
+    }
+
+    /* Ajustar patrones de fondo si son muy densos */
+    body.state-mainmenu-whiskers::before {
+        background-size: 100px 100px; /* Patrón más pequeño */
+        opacity: 0.4; /* Menos opaco */
+    }
+    body.state-mainmenu-whiskers::after {
+        background-size: 120px 120px; /* Patrón más pequeño */
+    }
+
+    .sparkle-instance {
+      width: 35px; /* Chispas más pequeñas */
+      height: 35px;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Ajustes adicionales para pantallas muy pequeñas */
+
+    .title-shadow {
+      font-size: 3rem; /* Reducir aún más */
+      line-height: 1; /* Ajustar interlineado */
+    }
+
+    .title-ampersand {
+      font-size: 1.8rem;
+    }
+
+    .animate-paw-wiggle {
+      font-size: 15rem; /* Reducir aún más */
+    }
+    /* Ocultar la pata trasera en pantallas muy pequeñas */
+    .animate-paw-wiggle.paw-2 {
+        display: none;
+    }
+
+    .rainbow-circle {
+       width: 95vmin; /* Casi todo el ancho */
+       height: 95vmin;
+       padding: 3px;
+    }
+
+     .container-invisible {
+        min-height: 95vmin;
+        padding: 0.5rem; /* Menos padding */
+    }
+
+    .fading-click-text {
+      font-size: 1rem;
+      margin-top: 1rem;
+    }
+
+    #loading-message span {
+        font-size: 1rem;
+    }
+     .yarn-spinner {
+        width: 25px;
+        height: 25px;
+        border-width: 3px;
+    }
+
+     /* Reducir densidad/opacidad de patrones de fondo */
+    body.state-mainmenu-whiskers::before {
+        background-size: 90px 90px;
+        opacity: 0.3;
+    }
+    body.state-mainmenu-whiskers::after {
+        background-size: 100px 100px;
+    }
+
+    .sparkle-instance {
+      width: 25px;
+      height: 25px;
+    }
+}
+
+/* src/styles/mainmenu.css */
+
+/* ... (otras reglas y @keyframes sin cambios) ... */
+
+/* --- Body Styling (Aplicado por GameManager.setBodyStateClass('mainmenu-whiskers')) --- */
+body.state-mainmenu-whiskers {
+    /* ... (sin cambios aquí) ... */
+    font-family: "Geist", sans-serif;
+    /* ... (resto de estilos del body sin cambios) ... */
+    display: flex; /* Asegurar que el contenedor #app se centre */
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 100vw;
+    text-align: center;
+    cursor: pointer; /* Indicar que es clickeable */
+    padding: 0.5rem; /* Añadir un pequeño padding al body para evitar que el contenido toque los bordes extremos */
+    box-sizing: border-box; /* Incluir padding */
+}
+
+/* ... (estilos ::before, ::after, .paw-wrapper sin cambios) ... */
+
+/* --- Background Circle Structure (Simplified) --- */
+.rainbow-circle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    /* Ajuste: Usar vmin para asegurar que quepa en la dimensión más pequeña */
+    width: 80vmin;
+    height: 80vmin;
+    max-width: 95vw; /* Limitar un poco más por si acaso */
+    max-height: 95vh;
+    z-index: -1;
+    border-radius: 50%;
+    padding: 6px;
+    overflow: hidden;
+}
+
+/* ... (estilos .rainbow-circle::before, .circle-content sin cambios) ... */
+
+
+/* --- Invisible Container --- */
+.container-invisible {
+    background: transparent;
+    position: relative; /* Cambiado a relative para el posicionamiento absoluto del '&' */
+    z-index: 1;
+    width: 100%;
+    max-width: 100%; /* Ocupar ancho disponible */
+    padding: 1rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    /* Ajuste: la altura se adaptará al contenido */
+    min-height: auto;
+}
+
+/* --- Title --- */
+.title-container {
+    position: relative; /* <<< Necesario para posicionar el '&' absoluto */
+    display: inline-block;
+    z-index: 1;
+    margin-bottom: 0;
+    text-align: center;
+    line-height: 0.9;
+    width: 100%; /* Asegurar que ocupe el ancho */
+}
+
+.title-shadow {
+    text-shadow: 2px 2px 0px rgba(255, 255, 255, 0.8), 4px 4px 6px rgba(0, 0, 0, 0.1); /* Sombra ligeramente ajustada */
+    /* Ajuste: Usar vmin para tamaño de fuente base responsivo */
+    font-size: clamp(3rem, 16vmin, 11rem); /* Mínimo 3rem, escala con 18% del viewport más pequeño, máximo 11rem */
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    color: #ea580c;
+    display: block;
+    word-break: break-word; /* Asegurar que no desborde */
+}
+
+/* Style for the "&" symbol */
+.title-ampersand {
+    font-size: clamp(1.8rem, 11vmin, 5.4rem); /* Tamaño responsivo */
+    color: #000000;
+    /* Ajuste: Posicionamiento absoluto relativo a .title-container */
+    position: absolute;
+    top: 48.5%; /* Centrar verticalmente respecto al contenedor */
+    left: 50%; /* Centrar horizontalmente respecto al contenedor */
+    /* Ajustar la posición exacta verticalmente con translate */
+    transform: translate(-50%, -50%); /* Centrar exactamente */
+    /* Quitar transform-origin que ya no aplica igual */
+    /* transform-origin: center center; */
+    z-index: 2; /* Encima de los títulos pero debajo del resto */
+    pointer-events: none;
+  /* Quitar animación wiggle por ahora para simplificar */
+    /* Si queremos la animación de nuevo, ajustar @keyframes pawWiggle para position: absolute */
+    /* animation: pawWiggleAbsolute 1.5s ease-in-out infinite; */
+}
+/* Definir animación ajustada si se quiere recuperar */
+
+@keyframes pawWiggleAbsolute {
+    0%, 100% { transform: translate(-50%, -50%) rotate(-5deg) scale(1); }
+    50% { transform: translate(-50%, -50%) rotate(5deg) scale(1.05); }
+}
+*/
+
+
+/* --- Paws Gigantes --- */
+/* Base styles for Giant Animated Background Paws */
+.animate-paw-wiggle {
+    /* ... (sin cambios en la animación o estilos base) ... */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    /* Ajuste: Usar vmin para tamaño responsivo */
+    font-size: clamp(15rem, 60vmin, 30rem);
+    line-height: 1;
+    z-index: 0; /* Detrás del título y el '&' */
+    pointer-events: none;
+}
+/* ... (estilos .paw-1, .paw-2 sin cambios) ... */
+
+/* --- Fading Text Styles --- */
+.fading-click-text {
+    /* Ajuste: Usar tamaño de fuente más adaptable */
+    font-size: clamp(1rem, 4vmin, 1.8rem);
+    font-weight: 700;
+    color: #000000;
+    text-transform: uppercase;
+    margin-top: 1.5rem; /* Reducir espacio */
+    cursor: pointer;
+    animation: fadeInOut 2.5s infinite ease-in-out;
+    position: relative;
+    z-index: 1;
+}
+
+/* --- Loading Message --- */
+#loading-message {
+  /* No necesita cambios aquí, pero asegurar que esté dentro de .container-invisible */
+}
+#loading-message span {
+     font-size: clamp(1rem, 4vmin, 1.5rem); /* Tamaño responsivo */
+     font-weight: 600;
+     color: #c2410c;
+}
+.yarn-spinner {
+    /* Tamaño adaptable */
+    width: clamp(25px, 8vmin, 40px);
+    height: clamp(25px, 8vmin, 40px);
+    border-width: clamp(3px, 1.5vmin, 6px);
+    /* ... (resto de estilos del spinner sin cambios) ... */
+    border-style: dotted;
+    border-color: #f97316;
+    border-radius: 50%;
+    display: inline-block;
+    animation: spin-yarn 1.3s linear infinite;
+}
+
+
+/* --- Sparkle SVG Styles --- */
+.sparkle-instance {
+    position: absolute;
+    /* Ajuste: Tamaño adaptable */
+    width: clamp(25px, 10vmin, 50px);
+    height: clamp(25px, 10vmin, 50px);
+    opacity: 0;
+    transform: scale(0);
+    pointer-events: none;
+    z-index: 2;
+    transition: none;
+    animation: clickSparkle 0.5s ease-out forwards;
+}
+
+/* =========================================== */
+/* ========== MEDIA QUERIES (MÓVIL) ========== */
+/* =========================================== */
+
+/* Ya no necesitamos media queries específicas para tamaño de fuente
+   si usamos clamp() y vmin/vmax correctamente arriba.
+   Mantenemos las de ocultar elementos si es necesario. */
+
+@media (max-width: 480px) {
+    /* Ocultar la pata trasera en pantallas muy pequeñas */
+    .animate-paw-wiggle.paw-2 {
+        display: none;
+    }
+
+    /* Reducir densidad/opacidad de patrones de fondo */
+    body.state-mainmenu-whiskers::before {
+        background-size: 90px 90px;
+        opacity: 0.3;
+    }
+    body.state-mainmenu-whiskers::after {
+        background-size: 100px 100px;
+    }
+}

@@ -1,92 +1,117 @@
 /* src/styles/cat_food.css */
 
-/* Contenedor principal UI comida (IMPORTANTE: debe tener position: relative) */
+/* Contenedor principal UI comida */
 #cat-food-ui-container {
   display: flex;
-  flex-direction: column; /* Mantenlo en columna o cámbialo a 'row' si prefieres todo en una línea */
+  flex-direction: column; /* O row si se prefiere en layout.css */
   align-items: center;
-  gap: 0.5rem;
-  position: relative; /* <<< Necesario para que position: absolute funcione bien en el hijo */
-  width: auto; /* Ajusta si es necesario */
-  height: auto;
-  /* Añade padding si quieres más espacio alrededor del botón/barra */
-  /* padding: 5px; */
-}
-
-/* Botón (asegúrate que tenga z-index mayor que la barra) */
-#cat-food-button {
+  gap: 0;
   position: relative;
-  z-index: 2; /* Botón encima de la barra */
-}
-
-/* En src/styles/cat_food.css */
-
-#cat-food-ui-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem; /* Ajusta si quieres más o menos espacio base */
-  position: relative; /* <<< Necesario para posicionar la barra */
   width: auto;
   height: auto;
-  padding-bottom: 5px; /* Añadir un poco de padding abajo para que la barra no quede pegada al borde */
 }
 
+/* Botón */
 #cat-food-button {
   position: relative;
-  z-index: 2; /* Botón encima de la barra */
+  z-index: 2;
+  -webkit-tap-highlight-color: transparent;
+  /* Considera si necesitas padding-bottom aquí si el z-index de la barra causa problemas */
+  /* padding-bottom: 7px; */ /* Ejemplo, ajusta si es necesario */
 }
 
+/* Barra de progreso de comida - POSICIÓN ABSOLUTA DENTRO DEL BOTÓN */
 #cat-food-bar-container {
   position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  top: 100%;
-  background-color: transparent; /* <<< Hacer transparente el fondo del contenedor */
-  margin-top: -15px;
-  width: 31px;
-  height: 4px;
+  /* <<< TUS VALORES AJUSTADOS >>> */
+  bottom: 35px;
+  left: 6px;
+  width: calc(100% - 12px);
+  height: 5px;
+  z-index: 16;/* <<< Mantenemos z-index 1 para que quede DETRÁS del emoji (z-index 2) >>> */
+                      /* Si el emoji no se ve, prueba z-index: -1 aquí */
+  /* <<< FIN TUS VALORES >>> */
 
-  /* --- Estilos restantes --- */
+  pointer-events: none; /* Que no bloquee clics */
   background-color: #374151;
-  border-radius: 3px;      /* <<<< Radio más pequeño para barra más fina */
   overflow: hidden;
   border: 1px solid #4b5563;
-  z-index: 3;
 }
 
-/* --- REGLA MODIFICADA PARA EL RELLENO (ajustar radio) --- */
+/* Relleno de la barra */
 #cat-food-bar-fill {
   position: absolute;
   top: 0;
   left: 0;
-  min-height: 100%;         /* OK: siempre llena la altura del contenedor */
-  width: 0%;            /* OK: JS controla el ancho */
+  height: 100%;
+  width: 0%; /* Controlado por JS */
   background-image: linear-gradient(to right, #f97316, #fcd34d);
-  border-radius: 3px;     /* <<<< Radio más pequeño para coincidir */
+  border-radius: inherit;
   transition: width 0.3s ease-out;
 }
 
-/* --- NUEVO: Estilo para el botón de comida cuando está activo --- */
+/* Estilo para el botón de comida cuando está activo */
 #cat-food-button.active {
-  background-color: rgba(249, 115, 22, 0.8); /* Naranja (similar a legendario) */
-  border-color: #fb923c; /* Naranja más claro */
-  box-shadow: 0 0 8px rgba(249, 115, 22, 0.5); /* Sombra naranja */
+  background-color: rgba(249, 115, 22, 0.8);
+  border-color: #fb923c;
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.5);
 }
-/* ------------------------------------------------------------- */
-  
-  /* Bolita de Comida (Visual) */
-  .food-pellet {
-    width: 8px;
-    height: 8px;
-    background-color: #A0522D; /* Sienna Brown */
-    border-radius: 50%;
-    position: absolute;
-    z-index: 12;
-    pointer-events: none;
-    box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
-  }
-  
-  /* Clase hidden (asegúrate que esté definida globalmente) */
-  /* .hidden { display: none !important; } */
-  
+/* Añadir estado :active explícito */
+#cat-food-button:active:not(:disabled) {
+    transform: scale(0.95);
+}
+#cat-food-button.active:active:not(:disabled) {
+    background-color: rgba(234, 88, 12, 0.9);
+    transform: scale(0.95);
+}
+
+
+/* Bolita de Comida (Visual) */
+.food-pellet {
+  width: 8px;
+  height: 8px;
+  background-color: #A0522D; /* Sienna Brown */
+  border-radius: 50%;
+  position: absolute;
+  z-index: 12;
+  pointer-events: none;
+  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Clase hidden (asegúrate que esté definida globalmente en base.css) */
+/* .hidden { display: none !important; } */
+
+
+/* =========================================== */
+/* ========== MEDIA QUERIES (MÓVIL) ========== */
+/* =========================================== */
+
+/* Ahora que los valores base están ajustados a tu gusto,
+   podemos eliminar o ajustar las reglas específicas de la barra
+   dentro de las media queries si ya no son necesarias o causan conflicto.
+   Mantendré los ajustes proporcionales como ejemplo, pero si
+   los valores base funcionan bien en todos los tamaños, puedes eliminar
+   estas reglas para #cat-food-bar-container dentro de las media queries.
+*/
+
+@media (max-width: 768px) {
+   #cat-food-bar-container {
+    bottom: 27px;
+    left: 4px;
+    width: calc(100% - 8px);
+    height: 5px;
+    border-radius: 1.5px;
+    z-index: 16;
+}
+}
+
+@media (max-width: 480px) {
+    #cat-food-bar-container {
+      bottom: 27px;
+      left: 4px;
+      width: calc(100% - 8px);
+      height: 5px;
+      border-radius: 1.5px;
+      z-index: 16;
+}
+}

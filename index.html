@@ -4,11 +4,12 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GatoQuiz Interactivo</title> <link rel="preconnect" href="https://fonts.googleapis.com">
+    <title>GatoQuiz Interactivo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    </head>
+  </head>
   <body>
     <canvas id="drawing-canvas"></canvas>
 
@@ -18,22 +19,20 @@
     <div id="cat-container"></div>
 
     <div id="right-controls" class="control-container">
-        <button id="shop-button" class="control-button" title="Abrir Tienda (S)">
-            🛒 </button>
-
         <div id="drawing-buttons-container">
-            <button id="toggle-brush-button" class="control-button" title="Activar/Desactivar Pincel (B)">
-                🖌️ </button>
-            <button id="clear-ink-button" class="control-button" title="Borrar Trazos (C)">
-                🗑️ </button>
+            <button id="toggle-brush-button" class="control-button" title="Activar/Desactivar Pincel (B)">🖌️</button>
+            <button id="clear-ink-button" class="control-button" title="Borrar Trazos (C)">🗑️</button>
         </div>
 
-        <div id="cat-food-ui-container" class="hidden"> <button id="cat-food-button" class="control-button" title="Activar/Desactivar Comida (F)">
-          🍲 </button>
-     <div id="cat-food-bar-container"> <div id="cat-food-bar-fill" style="height: 0%;"></div>
-     </div>
- </div>
+        <div id="cat-food-ui-container" class="hidden">
+             <button id="cat-food-button" class="control-button" title="Activar/Desactivar Comida (F)">🍲</button>
+             <div id="cat-food-bar-container">
+                 <div id="cat-food-bar-fill"></div>
+             </div>
         </div>
+    </div>
+
+    <button id="shop-button" class="control-button shop-button-standalone" title="Abrir Tienda (S)">🛒</button>
 
     <div id="blur-backdrop" class="blur-backdrop"></div>
     <div id="shop-popup" class="overlay shop-overlay">
@@ -41,8 +40,7 @@
             <button id="shop-close-button" class="shop-close-btn" title="Cerrar Tienda (Esc)">&times;</button>
             <h2 id="shop-title" class="shop-title-text">Tienda de Mejoras</h2>
             <p id="shop-player-score" class="shop-score-text">Puntos: 0</p>
-            <div id="shop-items-container" class="shop-items-grid">
-                </div>
+            <div id="shop-items-container" class="shop-items-grid"></div>
             <div id="shop-tooltip" class="shop-tooltip-box">
                 <div id="tooltip-name" class="tooltip-item-name">Pasa el mouse sobre un ítem</div>
                 <div id="tooltip-level" class="tooltip-item-level hidden"></div>
@@ -52,12 +50,14 @@
             </div>
         </div>
     </div>
+
     <div id="explanation-overlay" class="overlay">
       <div class="overlay-content-wrapper">
           <p id="explanation-text-content"></p>
           <p class="overlay-continue-prompt">CLICK O TECLA PARA CONTINUAR</p>
       </div>
     </div>
+
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

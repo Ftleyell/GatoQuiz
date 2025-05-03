@@ -16,9 +16,11 @@
   gap: 0.25rem; /* Espacio entre status y área de tinta */
   min-height: calc(var(--score-font-size) * var(--score-line-height) + 0.5rem); /* Altura base */
   transition: min-height 0.3s ease-out;
+  box-sizing: border-box; /* Añadido */
 }
 .top-ui-container.ink-visible {
-    min-height: calc(var(--score-font-size) * var(--score-line-height) + 15px + 0.25rem + 0.15rem + 0.7rem * 1.2); /* Ajuste GDD Alpha */
+    /* Ajuste GDD Alpha - Se calcula basado en variables CSS, no debería necesitar ajuste directo */
+    min-height: calc(var(--score-font-size) * var(--score-line-height) + 15px + 0.25rem + 0.15rem + 0.7rem * 1.2);
 }
 
 
@@ -32,6 +34,7 @@
   width: auto; /* Permite que el ancho se ajuste al contenido */
   position: relative;
   z-index: 22;
+  flex-wrap: wrap; /* Ajuste Móvil: Permitir que envuelva si no cabe */
 }
 
 /* Contenedor Vidas (asegurar alineación interna) */
@@ -49,95 +52,28 @@
 }
 
 /* Fila de Estado (Vidas y Score) (GDD Alpha) */
-.status-row {
- /* Clases flex/justify/align/gap aplicadas por UIManager (justify-center, gap-6) */
- gap: 1.5rem; /* Asegurar gap como en Alpha si no usa Tailwind */
-}
+/* .status-row ya definido arriba */
 
-/* ... estilos de vidas, score, tinta ... */
-
-/* --- Caja de Pregunta --- */
-.question-box-base, .theme-clean-card, .theme-inverted-card /* Aplicar a estilos base y de tema si es necesario */ {
-  width: 100%;             /* Ocupa el ancho del contenedor padre */
-  box-sizing: border-box;
-  min-height: 6em;         /* Altura mínima */
-  height: auto;            /* <<< PERMITE CRECER EN ALTURA */
-  /* ... otros estilos flex/padding/background ... */
-}
-
-/* Contenido interno de la caja (si aplica) */
-.question-box-base .card__content {
-   width: 100%;
-   flex-grow: 1; /* Permite ocupar espacio vertical */
-   /* ... otros estilos flex ... */
-}
-
-/* Texto de la pregunta */
-.question-text-base {
-  width: 100%;
-  flex-grow: 1;
-  height: auto;             /* <<< PERMITE CRECER EN ALTURA */
-  white-space: normal;      /* <<< PERMITE SALTO DE LÍNEA */
-  overflow-wrap: break-word;/* <<< ROMPE PALABRAS LARGAS */
-  word-wrap: break-word;    /* Soporte antiguo */
-  word-break: break-word;   /* Alternativa/refuerzo para romper palabras */
-  hyphens: auto;            /* Ayuda a dividir palabras */
-  line-height: 1.6;
-  text-align: center;
-  /* !!! ASEGÚRATE que no haya un 'height' o 'max-height' fijo aquí !!! */
-}
-
-/* --- Botones de Opción --- */
-.option-button, .theme-retro-button, .theme-clean-button, .theme-inverted-button {
-  width: 100%;             /* Ocupa el ancho del contenedor padre */
-  box-sizing: border-box;
-  min-height: 3.5rem;      /* Altura mínima */
-  height: auto;            /* <<< PERMITE CRECER EN ALTURA */
-  padding: 0.9rem 1rem;    /* Padding interno */
-  white-space: normal;      /* <<< MUY IMPORTANTE PARA BOTONES */
-  overflow-wrap: break-word;/* <<< ROMPE PALABRAS LARGAS */
-  word-wrap: break-word;
-  word-break: break-word;
-  hyphens: auto;
-  display: flex;           /* Para centrar contenido interno */
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  line-height: 1.4;
-  /* ... otros estilos de botón (background, border, shadow, etc.) ... */
-   /* !!! ASEGÚRATE que no haya un 'height' o 'max-height' fijo aquí !!! */
-}
-
-/* Etiqueta de dificultad */
-.difficulty-label-base {
-  /* ... otros estilos ... */
-  padding: 0.1rem 0.4rem; /* Padding GDD Alpha */
-  margin-bottom: 0.5rem; /* Separación del texto */
-  flex-shrink: 0; /* Evita que se encoja */
-   /* Centrado ya debería estar por align-items del padre */
-}
-
-/* Texto de la Pregunta (GDD Alpha) - Estilo base */
-.question-text-base {
- /* ... otros estilos ... */
- text-align: center; /* ** Asegurar centrado ** */
-}
-
+/* --- Vidas, Score, Tinta --- */
 /* Vidas (Alpha) */
 .quiz-lives {
   /* display: flex; align-items: center; gap: 0.3rem; */ /* Clases aplicadas por UIManager */
 }
 .life-emoji {
-  font-size: 1.5rem; line-height: 1; color: #f43f5e;
+  font-size: 1.3rem; /* Ajuste Móvil: Reducir tamaño */
+  line-height: 1; color: #f43f5e;
   animation: pulseHeart 1.5s infinite ease-in-out;
 }
 #lives-count {
-  font-size: 1.5rem; font-weight: 700; color: #f3f4f6;
+  font-size: 1.3rem; /* Ajuste Móvil: Reducir tamaño */
+  font-weight: 700; color: #f3f4f6;
   min-width: 1ch; text-align: left;
 }
 #shield-icon,
 #hint-icon {
-  font-size: 1.5rem; line-height: 1; margin-left: 0.5rem; display: none;
+  font-size: 1.3rem; /* Ajuste Móvil: Reducir tamaño */
+  line-height: 1; margin-left: 0.3rem; /* Ajuste Móvil: Reducir margen */
+  display: none;
 }
 #shield-icon {
    filter: drop-shadow(0 0 3px rgba(59, 130, 246, 0.7));
@@ -153,12 +89,13 @@
   /* display: flex; justify-content: center; align-items: center; position: relative; */
 }
 .score-emoji {
-  font-size: 1.8rem; line-height: 1; margin-right: 0.5rem;
+  font-size: 1.5rem; /* Ajuste Móvil: Reducir tamaño */
+  line-height: 1; margin-right: 0.3rem; /* Ajuste Móvil: Reducir margen */
 }
 #score {
-  transition: color 0.5s ease, font-weight 0.5s ease, text-shadow 0.6s ease-out;
-  font-size: var(--score-font-size);
-  line-height: var(--score-line-height);
+  transition: color 0.5s ease, font-weight 0.5s ease, text-shadow 0.6s ease-out, font-size 0.4s ease; /* Añadir transición para font-size */
+  font-size: var(--score-font-size, 2rem); /* Ajuste Móvil: Usar variable con fallback más pequeño */
+  line-height: var(--score-line-height, 1.1);
   font-weight: 800;
   text-shadow: var(--flare-shadow);
   color: #f3f4f6;
@@ -175,69 +112,79 @@
 .ink-area {
    display: flex; flex-direction: column; align-items: center;
    margin-top: 0.25rem;
+   width: 100%; /* Asegurar que ocupe el ancho para centrar la barra */
 }
 #ink-label.ink-label-base { /* Usar ID + Clase base */
-   font-size: 0.7rem; font-weight: 600; color: #ec4899; text-transform: uppercase;
-   letter-spacing: 0.05em; margin-bottom: 0.15rem; z-index: 22;
+   font-size: 0.65rem; /* Ajuste Móvil: Ligeramente más pequeño */
+   font-weight: 600; color: #ec4899; text-transform: uppercase;
+   letter-spacing: 0.05em; margin-bottom: 0.1rem; /* Ajuste Móvil: Menos margen */
+   z-index: 22;
    /* display: none; -- Controlado por UIManager con .hidden */
 }
 #ink-bar-container.ink-bar-container-base { /* Usar ID + Clase base */
-   width: 150px; height: 15px; background-color: #374151; border-radius: 7.5px;
+   /* Ajuste Móvil: Hacer la barra más estrecha */
+   width: 120px; /* Antes 150px */
+   height: 12px; /* Antes 15px */
+   border-radius: 6px; /* Ajustar redondeo */
+   background-color: #374151;
    overflow: hidden; position: relative; z-index: 22; border: 1px solid #4b5563;
    /* display: none; -- Controlado por UIManager con .hidden */
+   transition: background-color 0.3s ease-out; /* Transición para el fondo arcoíris */
 }
-#ink-bar-fill.ink-bar-fill-base { /* Usar ID + Clase base */
-   width: var(--ink-percentage); height: 100%;
-   background-image: linear-gradient(to right, #a78bfa, #7c3aed); border-radius: 7.5px;
-   transition: width 0.3s ease-out; box-shadow: inset 0 0 3px rgba(255, 255, 255, 0.3);
-}
-/* La clase .hidden se usa para controlar visibilidad inicial */
+/* Estilo para el segmento visible de la barra (ya definido en ink.css, no duplicar aquí) */
+/* .ink-bar-segment { ... } */
 
 
 /* Combo Counter (GDD Alpha) - Estilos base */
 .combo-counter-base {
-  position: fixed; bottom: 1rem; left: 1rem; transform: none; transform-origin: bottom left;
-  font-size: var(--combo-font-size);
+  position: fixed;
+  /* Ajuste Móvil: Posición inicial (puede ser sobreescrita por media query) */
+  bottom: 1rem;
+  left: 1rem;
+  transform: none; transform-origin: bottom left;
+  font-size: var(--combo-font-size, 2.5rem); /* Ajuste Móvil: Fallback más pequeño */
   font-weight: 900;
-  transition: font-size 0.4s cubic-bezier(0.22, 1, 0.36, 1), color 0.4s ease-out;
+  transition: font-size 0.4s cubic-bezier(0.22, 1, 0.36, 1), color 0.4s ease-out, bottom 0.3s ease, left 0.3s ease; /* Añadir transición para posición */
   text-shadow: 1px 1px 5px rgba(0,0,0,0.5);
-  z-index: 55;
+  z-index: 2;
   white-space: nowrap;
   display: none;
   pointer-events: none;
   /* Color/Gradiente aplicado por JS */
 }
 
-/* Caja de Pregunta (GDD Alpha) - Estilos base */
-.question-box-base, .theme-clean-card, .theme-inverted-card {
-  /* ... otros estilos ... */
+/* --- Caja de Pregunta --- */
+.question-box-base, .theme-clean-card, .theme-inverted-card /* Aplicar a estilos base y de tema si es necesario */ {
+  width: 100%;             /* Ocupa el ancho del contenedor padre */
+  box-sizing: border-box;
+  min-height: 5em;         /* Ajuste Móvil: Reducir altura mínima */
+  height: auto;            /* PERMITE CRECER EN ALTURA */
   display: flex;
   flex-direction: column; /* Apila dificultad y texto verticalmente */
-  align-items: center;    /* <<< ESTO CENTRA LOS HIJOS HORIZONTALMENTE */
-  min-height: 120px; /* O prueba con 7.5em, 8em, etc. hasta que te guste */
-  height: auto;
-  width: 100%;
+  align-items: center;    /* CENTRA LOS HIJOS HORIZONTALMENTE */
   background-color: rgba(17, 24, 39, 0.85);
-  border-radius: 1rem;
-  padding: 1.5rem;
-  gap: 0.5rem;
+  border-radius: 0.75rem; /* Ajuste Móvil: Reducir redondeo */
+  padding: 1rem; /* Ajuste Móvil: Reducir padding */
+  gap: 0.4rem; /* Ajuste Móvil: Reducir gap */
   box-shadow: inset 0 2px 4px rgba(0,0,0,0.4),
               0 0 calc(var(--element-glow-intensity) * 18px) calc(var(--element-glow-intensity) * 4px) hsla(50, 100%, 60%, calc(var(--element-glow-intensity) * 0.6));
   transition: box-shadow 0.5s ease-out;
-  margin-bottom: 1rem;
-  box-sizing: border-box;
+  margin-bottom: 0.75rem; /* Ajuste Móvil: Reducir margen */
 }
 
-/* Etiqueta de Dificultad (GDD Alpha) - Estilos base */
+/* Contenido interno de la caja (si aplica) */
+.question-box-base .card__content { /* Si se usa estructura de card con backdrop */
+   width: 100%;
+   flex-grow: 1; /* Permite ocupar espacio vertical */
+   padding: 0; /* Resetear padding si el padre ya lo tiene */
+   /* ... otros estilos flex ... */
+}
+
+/* Etiqueta de dificultad */
 .difficulty-label-base {
-  /* --- Asegúrate que estas propiedades estén presentes --- */
-  text-align: center; /* Centra el texto dentro de la etiqueta */
-  display: block; /* O inline-block, ayuda a veces con centrado de texto */
-  margin-left: auto; /* Ayuda a centrar si es block/inline-block */
-  margin-right: auto;/* Ayuda a centrar si es block/inline-block */
-  width: fit-content;/* Opcional: ajusta ancho al texto, ayuda a centrar con márgenes auto */
-  /* --- Otros estilos que ya tenías --- */
-  font-size: 0.7rem;
+  text-align: center; display: block; margin-left: auto; margin-right: auto;
+  width: fit-content;
+  font-size: 0.65rem; /* Ajuste Móvil: Reducir tamaño */
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -248,8 +195,9 @@
   text-shadow: 0 0 var(--difficulty-glow-blur) var(--difficulty-glow-color),
                0 0 calc(var(--difficulty-glow-blur) * 1.5) var(--difficulty-glow-color);
   flex-shrink: 0;
-  margin-bottom: 0.5rem; /* Separación del texto de la pregunta */
+  margin-bottom: 0.3rem; /* Ajuste Móvil: Reducir margen */
 }
+/* Clases difficulty-N sin cambios */
 .difficulty-1 { color: #9ca3af; background-color: rgba(107, 114, 128, 0.2); }
 .difficulty-2 { color: #34d399; background-color: rgba(16, 185, 129, 0.2); }
 .difficulty-3 { color: #60a5fa; background-color: rgba(59, 130, 246, 0.2); }
@@ -259,38 +207,50 @@
     animation: difficultyPulse 1.2s infinite ease-in-out;
 }
 
-/* Texto de la Pregunta (GDD Alpha) - Estilo base */
+/* Texto de la Pregunta */
 .question-text-base {
-  font-size: 1.25rem; font-weight: 600; line-height: 1.6; color: #e5e7eb;
-  text-align: center; /* ** Asegurar centrado ** */
-  width: 100%;
-  word-break: break-word;
-  hyphens: auto;
+  font-size: 1.1rem; /* Ajuste Móvil: Reducir tamaño */
+  font-weight: 600; line-height: 1.5; /* Ajustar interlineado */
+  color: #e5e7eb;
+  text-align: center; width: 100%; word-break: break-word; hyphens: auto;
+  flex-grow: 1; /* Permitir que ocupe espacio */
 }
 
-/* Contenedor de Opciones (GDD Alpha) - Estilo base */
+/* Contenedor de Opciones */
 .options-container-base {
-  display: flex; flex-direction: column; gap: 0.75rem;
-  margin-bottom: 1rem;
+  display: flex; flex-direction: column;
+  gap: 0.5rem; /* Ajuste Móvil: Reducir espacio entre botones */
+  margin-bottom: 0.75rem; /* Ajuste Móvil: Reducir margen */
   width: 100%;
 }
 
-/* Botón de Opción (GDD Alpha) - Estilo base */
+/* Botón de Opción */
 .option-button {
   background-image: linear-gradient(to right, #3b82f6, #2563eb);
   color: white; font-weight: 600;
-  padding: 0.9rem 1rem; border-radius: 0.75rem; text-align: center;
+  font-size: 0.95rem; /* Ajuste Móvil: Reducir tamaño fuente */
+  padding: 0.8rem 0.8rem; /* Ajuste Móvil: Ajustar padding */
+  border-radius: 0.6rem; /* Ajuste Móvil: Reducir redondeo */
+  text-align: center;
   transition: background-image 0.3s ease, transform 0.2s ease, box-shadow 0.5s ease-out, opacity 0.3s ease;
-  cursor: pointer; border: none; width: 100%; min-height: 3.2em; display: flex;
-  align-items: center; justify-content: center; line-height: 1.4; word-break: break-word;
+  cursor: pointer; border: none; width: 100%;
+  min-height: 3rem; /* Ajuste Móvil: Reducir altura mínima */
+  height: auto; /* Permitir crecer */
+  display: flex; align-items: center; justify-content: center; line-height: 1.3; /* Ajustar interlineado */
+  word-break: break-word;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2),
               0 0 calc(var(--element-glow-intensity) * 12px) calc(var(--element-glow-intensity) * 3px) hsla(50, 100%, 60%, calc(var(--element-glow-intensity) * 0.5));
   opacity: 1;
+  -webkit-tap-highlight-color: transparent;
 }
 .option-button:hover {
-  background-image: linear-gradient(to right, #60a5fa, #3b82f6); transform: translateY(-3px);
+  background-image: linear-gradient(to right, #60a5fa, #3b82f6); transform: translateY(-2px); /* Mantener hover para escritorio */
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3),
               0 0 calc(var(--element-glow-intensity) * 12px) calc(var(--element-glow-intensity) * 3px) hsla(50, 100%, 60%, calc(var(--element-glow-intensity) * 0.5));
+}
+.option-button:active {
+    transform: scale(0.98); /* Feedback táctil */
+    background-image: linear-gradient(to right, #2563eb, #1d4ed8); /* Oscurecer */
 }
 .option-button:focus {
   outline: none;
@@ -299,7 +259,7 @@
 }
 .option-button:disabled {
   background-image: linear-gradient(to right, #9ca3af, #6b7280); opacity: 0.7; cursor: not-allowed;
-  transform: none;
+  transform: none !important; /* Evitar transform al tocar si está disabled */
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1),
               0 0 calc(var(--element-glow-intensity) * 12px) calc(var(--element-glow-intensity) * 3px) hsla(50, 100%, 60%, calc(var(--element-glow-intensity) * 0.5));
 }
@@ -315,17 +275,63 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2),
               0 0 calc(var(--element-glow-intensity) * 12px) calc(var(--element-glow-intensity) * 3px) hsla(50, 100%, 60%, calc(var(--element-glow-intensity) * 0.5));
 }
+/* Asegurar feedback táctil para hinted */
+.option-hint-disabled:active {
+    transform: scale(0.98);
+}
 
-/* Área de Feedback (GDD Alpha) - Estilo base */
+/* Área de Feedback */
 .feedback-area-base {
-  min-height: 2rem;
+  min-height: 1.5rem; /* Ajuste Móvil: Reducir altura mínima */
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 1rem; /* Ajuste Móvil: Reducir tamaño fuente */
   width: 100%;
   text-align: center;
 }
-/* Clases de color para feedback (GDD Alpha) */
+/* Clases de color para feedback sin cambios */
 .feedback-correct { color: #34d399; }
 .feedback-incorrect { color: #f87171; }
 .feedback-shield { color: #60a5fa; }
 .feedback-info { color: #9ca3af; }
+
+
+/* =========================================== */
+/* ========== MEDIA QUERIES (MÓVIL) ========== */
+/* =========================================== */
+
+@media (max-width: 768px) {
+
+  /* (Opcional) Añadir padding superior para asegurar espacio bajo la barra de herramientas */
+  .top-ui-container {
+      padding-top: 0.5rem; /* O el valor que necesites */
+  }
+
+  /* --- Ajuste Indicador de Combo (SE MANTIENE ABAJO IZQUIERDA) --- */
+  .combo-counter-base {
+    bottom: 0.5rem;
+    left: 0.5rem;
+    top: auto;
+    right: auto;
+    transform: none;
+    transform-origin: bottom left;
+    font-size: var(--combo-font-size, 2rem);
+    z-index: 55;
+  }
+  /* --- Fin Ajuste Indicador de Combo --- */
+
+/* ... (otros ajustes para score, vidas, botones, etc. sin cambios) ... */
+}
+
+@media (max-width: 480px) {
+  /* (Opcional) Ajustar padding superior si es necesario */
+  /* .top-ui-container { padding-top: 0.25rem; } */
+
+  /* ... (otros ajustes para pantallas muy pequeñas sin cambios) ... */
+
+  /* Ajuste posición combo en pantallas muy pequeñas (SE MANTIENE ABAJO IZQUIERDA) */
+  .combo-counter-base {
+    bottom: 0.25rem;
+    left: 0.25rem;
+    font-size: var(--combo-font-size, 1.8rem);
+  }
+}

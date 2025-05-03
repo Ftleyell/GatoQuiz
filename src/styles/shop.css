@@ -4,26 +4,31 @@
 #shop-popup.overlay {
   /* Hereda estilos de .overlay en layout.css */
   /* Podemos añadir estilos específicos aquí si es necesario */
+  /* Asegurar que el popup permita scroll interno en pantallas muy pequeñas */
+  align-items: flex-start; /* Alinear arriba para ver el título primero */
+  padding-top: 5vh; /* Espacio arriba */
+  padding-bottom: 5vh; /* Espacio abajo */
+  overflow-y: auto; /* Permitir scroll del overlay si el content es muy alto */
 }
 
 /* Contenedor del contenido de la tienda */
 #shop-content.shop-content-box {
   background-color: rgba(17, 24, 39, 0.97); /* Fondo muy oscuro, casi opaco */
-  padding: 1.5rem 2rem;
+  padding: 1.5rem 1.5rem; /* Ajuste Móvil: Reducir padding horizontal */
   border-radius: 1rem;
   border: 1px solid #4b5563; /* Borde gris */
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-  max-width: 90%;
-  /* *** CAMBIO: Aumentar ligeramente el ancho *** */
-  width: 430px; /* Antes era 420px, probemos con 430px */
-  /* ******************************************* */
+  /* Ajuste Móvil: Hacer ancho responsivo */
+  width: 90%; /* Usar porcentaje */
+  max-width: 450px; /* Limitar ancho máximo (ligeramente más que el fijo anterior) */
   position: relative;
   color: #e5e7eb; /* Texto claro */
-  max-height: 90vh; /* Limitar altura */
+  max-height: 85vh; /* Limitar altura (un poco menos para dejar espacio) */
   overflow-y: auto; /* Scroll si el contenido excede */
   display: flex;
   flex-direction: column; /* Apilar elementos verticalmente */
-  gap: 1rem; /* Espacio entre secciones principales */
+  gap: 0.75rem; /* Ajuste Móvil: Reducir gap general */
+  box-sizing: border-box; /* Incluir padding en el width */
 }
 
 /* Botón de cierre (X) */
@@ -39,15 +44,21 @@
   transition: color 0.2s ease, transform 0.1s ease;
   padding: 0.25rem;
   z-index: 10; /* Encima del contenido */
+  -webkit-tap-highlight-color: transparent;
 }
 #shop-close-button.shop-close-btn:hover {
   color: #e5e7eb; /* Más claro al hacer hover */
   transform: scale(1.1);
 }
+#shop-close-button.shop-close-btn:active {
+  transform: scale(0.95); /* Feedback táctil */
+}
+
 
 /* Título de la tienda */
 #shop-title.shop-title-text {
-  font-size: 1.75rem;
+  /* Ajuste Móvil: Reducir tamaño fuente */
+  font-size: 1.5rem; /* Antes 1.75rem */
   font-weight: 700;
   margin-bottom: 0.25rem; /* Menos espacio */
   text-align: center;
@@ -55,9 +66,9 @@
 
 /* Puntuación del jugador */
 #shop-player-score.shop-score-text {
-  font-size: 1rem;
+  font-size: 1rem; /* Mantener, parece razonable */
   font-weight: 600;
-  margin-bottom: 1rem; /* Menos espacio */
+  margin-bottom: 0.75rem; /* Ajuste Móvil: Reducir margen inferior */
   text-align: center;
   color: #a5b4fc; /* Azul claro */
 }
@@ -65,18 +76,18 @@
 /* Contenedor general de ítems (donde van las secciones) */
 #shop-items-container {
   /* No necesita estilos específicos ahora, las secciones se añaden dentro */
-  margin-bottom: 1rem; /* Espacio antes del tooltip */
+  margin-bottom: 0.5rem; /* Ajuste Móvil: Reducir margen antes del tooltip */
 }
 
 /* Título de cada sección (Consumibles, Mejorables, etc.) */
 .shop-section-title {
-  font-size: 1.1rem;
+  font-size: 1rem; /* Ajuste Móvil: Reducir tamaño fuente */
   font-weight: 600;
   color: #9ca3af; /* Gris claro */
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-top: 1rem; /* Espacio arriba de cada sección */
-  margin-bottom: 0.75rem;
+  margin-top: 0.75rem; /* Ajuste Móvil: Reducir margen superior */
+  margin-bottom: 0.5rem; /* Ajuste Móvil: Reducir margen inferior */
   padding-bottom: 0.25rem;
   border-bottom: 1px solid #4b5563; /* Línea divisoria */
   text-align: left;
@@ -89,7 +100,7 @@
 .shop-section-items {
   display: flex;
   flex-wrap: wrap; /* Permite que los ítems pasen a la siguiente línea */
-  gap: 1rem; /* Espacio entre ítems */
+  gap: 0.75rem; /* Ajuste Móvil: Reducir espacio entre ítems */
   justify-content: flex-start; /* Alinea ítems al inicio */
 }
 
@@ -98,30 +109,37 @@
   background-color: rgba(55, 65, 81, 0.7); /* Gris oscuro semi-transparente */
   border: 2px solid #4b5563; /* Borde gris */
   border-radius: 0.75rem;
-  padding: 0.75rem;
+  padding: 0.5rem; /* Ajuste Móvil: Reducir padding interno */
   cursor: pointer;
   transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   display: flex;
   justify-content: center;
   align-items: center;
-  /* *** VERIFICAR ESTE ANCHO CON TU CÓDIGO ACTUAL *** */
-  width: 60px; /* O 65px si lo cambiaste antes */
-  height: 60px; /* O 65px */
-  /* *********************************************** */
+  /* Ajuste Móvil: Hacer tamaño ligeramente más pequeño */
+  width: 55px;
+  height: 55px;
   position: relative; /* Para posibles badges/overlays */
   box-shadow: 0 2px 4px rgba(0,0,0,0.3);
   flex-shrink: 0; /* Evitar que los ítems se encojan */
+  -webkit-tap-highlight-color: transparent;
 }
 .shop-item:hover {
+  /* Hover para escritorio */
   background-color: rgba(75, 85, 99, 0.8); /* Más claro al hacer hover */
   border-color: #6b7280;
   transform: translateY(-2px); /* Ligero levantamiento */
   box-shadow: 0 4px 8px rgba(0,0,0,0.4);
 }
+/* Ajuste Móvil: Estado :active */
+.shop-item:active {
+    transform: scale(0.95); /* Encoger al tocar */
+    background-color: rgba(75, 85, 99, 0.9); /* Oscurecer un poco */
+}
+
 
 /* Icono dentro del ítem */
 .shop-item-icon {
-  font-size: 1.8rem; /* Tamaño del emoji/icono */
+  font-size: 1.6rem; /* Ajuste Móvil: Reducir tamaño icono */
   line-height: 1;
 }
 
@@ -130,6 +148,10 @@
   opacity: 0.5;
   cursor: not-allowed;
   border-color: #374151; /* Borde más oscuro */
+}
+/* Ajuste Móvil: Desactivar transform en :active para disabled */
+.shop-item.disabled:active {
+    transform: none;
 }
 .shop-item.disabled:hover { /* Prevenir efectos de hover */
   background-color: rgba(55, 65, 81, 0.7);
@@ -142,6 +164,10 @@
   opacity: 0.7;
   cursor: default; /* No clickeable */
 }
+/* Ajuste Móvil: Desactivar transform en :active para purchased */
+.shop-item.purchased:active {
+    transform: none;
+}
 .shop-item.purchased:hover { /* Prevenir efectos de hover */
   background-color: rgba(55, 65, 81, 0.7);
   border-color: #f59e0b;
@@ -153,6 +179,10 @@
   opacity: 0.8;
   cursor: default;
 }
+/* Ajuste Móvil: Desactivar transform en :active para max-level */
+.shop-item.max-level:active {
+    transform: none;
+}
 .shop-item.max-level:hover { /* Prevenir efectos de hover */
   background-color: rgba(55, 65, 81, 0.7);
   border-color: #34d399;
@@ -162,24 +192,28 @@
 
 /* --- Tooltip de la Tienda --- */
 #shop-tooltip.shop-tooltip-box {
-  /* Posicionado absolutamente por JS o CSS si el contenedor padre es relativo */
-  position: absolute; /* Dentro de #shop-content que es relativo */
-  bottom: 1rem;
-  left: 1rem;
-  right: 1rem;
-  background-color: rgba(17, 24, 39, 0.98); /* Fondo muy oscuro */
+  position: sticky; /* Ajuste Móvil: Hacer sticky para que quede fijo abajo mientras scrolleas ítems */
+  bottom: 0; /* Pegar abajo */
+  left: 0;   /* Ocupar todo el ancho del contenedor padre (#shop-content) */
+  right: 0;
+  width: auto; /* Ancho automático */
+  margin: 1rem -1.5rem -1.5rem -1.5rem; /* Margen negativo para pegarse a los bordes del padding padre */
+  background-color: rgba(31, 41, 55, 0.98); /* Fondo diferente para destacar */
   border: 1px solid #6b7280; /* Borde gris claro */
-  border-radius: 0.5rem;
-  padding: 1rem;
+  /* Ajuste Móvil: Redondear solo esquinas superiores */
+  border-radius: 0 0 0.85rem 0.85rem; /* Heredar redondeo padre abajo */
+  border-top: 1px solid #4b5563; /* Borde superior */
+  padding: 0.75rem 1rem; /* Ajuste Móvil: Reducir padding */
   color: #d1d5db; /* Texto gris claro */
-  font-size: 0.9rem;
+  font-size: 0.85rem; /* Ajuste Móvil: Reducir tamaño fuente base */
   text-align: left;
   z-index: 110; /* Encima de los ítems */
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.2s ease, visibility 0.2s ease;
   pointer-events: none; /* El tooltip no es interactuable */
-  min-height: 80px; /* Altura mínima para consistencia */
+  min-height: auto; /* Ajuste Móvil: Quitar altura mínima */
+  box-shadow: 0 -5px 10px rgba(0,0,0,0.2); /* Sombra superior */
 }
 #shop-tooltip.shop-tooltip-box.visible {
   opacity: 1;
@@ -187,8 +221,61 @@
 }
 
 /* Elementos dentro del Tooltip */
-#tooltip-name.tooltip-item-name { font-size: 1.1rem; font-weight: 600; color: #f9fafb; margin-bottom: 0.25rem; }
-#tooltip-level.tooltip-item-level { font-size: 0.85rem; color: #6ee7b7; margin-bottom: 0.25rem; font-weight: bold; }
-#tooltip-effect.tooltip-item-effect { margin-bottom: 0.5rem; }
-#tooltip-cost.tooltip-item-cost { font-weight: 600; color: #facc15; /* Amarillo */ }
-#tooltip-status.tooltip-item-status { font-style: italic; color: #fca5a5; /* Rojo claro */ margin-top: 0.5rem; }
+/* Ajuste Móvil: Reducir tamaños de fuente en tooltip */
+#tooltip-name.tooltip-item-name { font-size: 1rem; font-weight: 600; color: #f9fafb; margin-bottom: 0.15rem; }
+#tooltip-level.tooltip-item-level { font-size: 0.75rem; color: #6ee7b7; margin-bottom: 0.15rem; font-weight: bold; }
+#tooltip-effect.tooltip-item-effect { margin-bottom: 0.3rem; font-size: 0.8rem; }
+#tooltip-cost.tooltip-item-cost { font-weight: 600; color: #facc15; font-size: 0.85rem; }
+#tooltip-status.tooltip-item-status { font-style: italic; color: #fca5a5; margin-top: 0.3rem; font-size: 0.8rem; }
+
+
+/* =========================================== */
+/* ========== MEDIA QUERIES (MÓVIL) ========== */
+/* =========================================== */
+
+/* La mayoría de los ajustes ya se hicieron arriba para mejorar la base.
+   Podríamos añadir ajustes específicos para pantallas muy pequeñas si es necesario. */
+
+@media (max-width: 480px) {
+  #shop-content.shop-content-box {
+    padding: 1rem 1rem; /* Reducir más el padding */
+    gap: 0.5rem;
+    max-height: 88vh; /* Permitir un poco más de altura */
+  }
+
+  #shop-title.shop-title-text {
+    font-size: 1.3rem;
+  }
+
+  .shop-section-title {
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .shop-section-items {
+    gap: 0.5rem; /* Menor espacio entre ítems */
+  }
+
+  .shop-item {
+    width: 50px; /* Ligeramente más pequeños */
+    height: 50px;
+    padding: 0.4rem;
+  }
+
+  .shop-item-icon {
+    font-size: 1.4rem;
+  }
+
+  #shop-tooltip.shop-tooltip-box {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.8rem;
+    margin: 0.5rem -1rem -1rem -1rem; /* Ajustar margen negativo al nuevo padding */
+  }
+
+  #tooltip-name.tooltip-item-name { font-size: 0.9rem; }
+  #tooltip-level.tooltip-item-level { font-size: 0.7rem; }
+  #tooltip-effect.tooltip-item-effect { font-size: 0.75rem; }
+  #tooltip-cost.tooltip-item-cost { font-size: 0.8rem; }
+  #tooltip-status.tooltip-item-status { font-size: 0.75rem; }
+}

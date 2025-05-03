@@ -1,14 +1,20 @@
 /* src/styles/base.css */
 /* Estilos globales, fuentes, body, variables CSS, animaciones */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&display=swap');
+/* Importar otras fuentes usadas */
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
+/* Importar fuente pixelada si se usa en algún tema y no está en index.html */
+/* @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap'); */
+
 
 :root {
   /* Variables CSS para efectos dinámicos (GDD Alpha) */
   --flare-intensity: 0; /* Controla el brillo/flare del score (0 a 1) */
-  --combo-font-size: 1.5rem; /* Tamaño base del combo (modificado por JS) */
+  --combo-font-size: 2.5rem; /* Tamaño base del combo (modificado por JS y media queries) */
   --element-glow-intensity: 0; /* Controla el glow de qbox/botones (0 a 1) */
-  --ink-percentage: 0%; /* Porcentaje de tinta para la barra */
-  --score-font-size: 2.5rem; /* Tamaño base del score */
+  /* --ink-percentage: 0%; - Variable no usada */
+  --score-font-size: 2.5rem; /* Tamaño base del score (modificado por media queries) */
   --score-line-height: 1.1; /* Altura de línea del score */
   /* Variables para dificultad (GDD Alpha) */
   --difficulty-glow-color: transparent; /* Color del glow de dificultad */
@@ -16,7 +22,6 @@
   --difficulty-glow-spread: 0px; /* Propagación (no usada en Alpha, pero podría añadirse) */
 
   /* Variables CSS para las sombras del flare del score (GDD Alpha) */
-  /* Nota: Estos HSLA usan la variable --flare-intensity para la opacidad */
   --flare-shadow:
     0 0 5px hsla(0, 0%, 100%, calc(var(--flare-intensity) * 0.5)),
     0 0 10px hsla(55, 100%, 70%, calc(var(--flare-intensity) * 0.8)),
@@ -24,25 +29,27 @@
     0 0 20px hsla(10, 100%, 55%, calc(var(--flare-intensity) * 0.4));
   --flare-shadow-pulse: /* Sombra durante la animación de pulso */
     0 0 5px hsla(0, 0%, 100%, calc(var(--flare-intensity) * 0.5)),
-    0 0 12px hsla(50, 100%, 75%, calc(var(--flare-intensity) * 0.7)), /* Ajustado */
-    0 0 18px hsla(35, 100%, 65%, calc(var(--flare-intensity) * 0.5)), /* Ajustado */
-    0 0 24px hsla(5, 100%, 60%, calc(var(--flare-intensity) * 0.3)); /* Ajustado */
+    0 0 12px hsla(50, 100%, 75%, calc(var(--flare-intensity) * 0.7)),
+    0 0 18px hsla(35, 100%, 65%, calc(var(--flare-intensity) * 0.5)),
+    0 0 24px hsla(5, 100%, 60%, calc(var(--flare-intensity) * 0.3));
 }
 
 body {
   margin: 0;
-  font-family: 'Poppins', sans-serif; /* Fuente principal GDD Alpha */
+  /* Ajuste: Usar Geist como fuente principal si se quiere */
+  /* font-family: "Geist", sans-serif; */
+  font-family: 'Poppins', sans-serif; /* Mantener Poppins como principal por ahora */
   position: relative;
   min-height: 100vh;
-  background-color: #111827; /* Fondo oscuro inicial GDD Alpha */
-  color: #e5e7eb; /* Color de texto base GDD Alpha */
-  overflow: hidden; /* Evitar scroll GDD Alpha */
+  background-color: #111827; /* Fondo oscuro inicial */
+  color: #e5e7eb; /* Color de texto base */
+  overflow: hidden; /* Evitar scroll */
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
-  /* Transición suave para el cambio de color de fondo GDD Alpha */
-  transition: background-color 0.8s ease-in-out;
+  -webkit-tap-highlight-color: transparent; /* Quitar highlight azul global */
+  transition: background-color 0.8s ease-in-out; /* Transición de fondo */
 }
 
 #app {
@@ -55,44 +62,37 @@ body {
   z-index: 20; /* Contenedor principal de la aplicación */
 }
 
-/* Utilidad para ocultar elementos */
+/* Utilidad para ocultar elementos (IMPORTANTE PARA JS) */
 .hidden {
   display: none !important;
 }
 
-/* --- Estilos básicos MainMenu/GameOver (Opcional, basado en tu TS) --- */
-/* Puedes ajustar o eliminar esto si tu MainMenuState/GameOverState generan HTML diferente */
-.main-menu-title {
-  font-size: 2.5rem; font-weight: bold; margin-bottom: 2rem; color: #fde047;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
-}
-.play-button {
-  padding: 0.8rem 2rem; font-size: 1.2rem; font-weight: bold; color: white;
-  background-color: #3b82f6; border: none; border-radius: 0.5rem; cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.1s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-}
-.play-button:hover { background-color: #2563eb; }
-.play-button:active { transform: translateY(1px); box-shadow: 0 2px 3px rgba(0,0,0,0.3); }
 
-.game-over-container { /* Clase usada en GameOverState.ts */
+/* Estilos para Game Over (usados por GameOverState.ts) */
+.game-over-container {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  height: 100%; text-align: center; padding: 1rem;
-  /* Background lo aplica el estado del body o el propio overlay */
+  width: 100%; /* Ocupar ancho disponible del overlay */
+  height: auto; /* Adaptar altura al contenido */
+  text-align: center; padding: 1rem; box-sizing: border-box;
   color: white; border-radius: 0.5rem;
+  pointer-events: auto; /* Asegurar que sea clickeable */
+  cursor: pointer; /* Indicar que se puede clickear para reiniciar */
 }
-.game-over-text { /* Clase usada en GameOverState.ts */
+.game-over-text {
     color: #ef4444; font-size: 3rem; font-weight: 900; line-height: 1.2;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.5); margin-bottom: 0.5rem;
+    animation: pulseHeart 1.8s infinite ease-in-out;
 }
-.final-score { /* Clase usada en GameOverState.ts */
+.final-score {
     font-size: 1.5rem; color: #facc15; margin-bottom: 2rem;
 }
-.restart-prompt { /* Clase usada en GameOverState.ts */
+.restart-prompt {
     font-size: 1rem; color: #d1d5db;
+    animation: fadeInOut 2s infinite ease-in-out;
 }
 
 
-/* --- Animaciones Globales (GDD Alpha) --- */
+/* --- Animaciones Globales --- */
 @keyframes pulseHeart {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.15); }
@@ -109,65 +109,69 @@ body {
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.05); opacity: 0.9; }
 }
-/* Animación de flare para el score (GDD Alpha) */
 @keyframes pulseFlare {
   0%, 100% { text-shadow: var(--flare-shadow); opacity: 1; }
   50% { text-shadow: var(--flare-shadow-pulse); opacity: 0.85; }
 }
-/* Clase que activa la animación de flare (añadida/quitada por JS) */
 .score-pulsing {
   animation: pulseFlare 1.5s infinite ease-in-out;
 }
-/* Animación del div #score-pulse (añadida/quitada por JS) */
 @keyframes scorePulseAnim {
   0% { transform: translate(-50%, -50%) scale(0); opacity: 0.7; }
-  100% { transform: translate(-50%, -50%) scale(200); opacity: 0; } /* Aumentado scale */
+  100% { transform: translate(-50%, -50%) scale(200); opacity: 0; }
 }
 #score-pulse.pulsing {
    animation: scorePulseAnim 0.6s ease-out forwards;
 }
+@keyframes fadeInOut {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+}
 
-/* --- Estilos para Estados del Body (Control de visibilidad global) --- */
-/* Ocultar controles laterales por defecto */
-#right-controls {
-  display: none;
-}
-/* Mostrar controles solo en el estado de juego */
-body.state-quizgameplay #right-controls {
-  display: flex;
-}
-/* Ocultar elementos específicos en ciertos estados si es necesario */
-/* body:not(.state-quizgameplay) .game-container { display: none; } */ /* Ejemplo */
-/* --- Animaciones Fade In/Out --- */
+
+/* --- Estilos para Estados del Body (Clase añadida por JS) --- */
+/* Ya NO controlamos la visibilidad de #right-controls o #shop-button aquí */
+/* Mantenemos esto por si se usa para otros estilos específicos de estado */
+/* body.state-quizgameplay { ... } */
+/* body.state-mainmenu-whiskers { ... } (Estilos de mainmenu.css aplican aquí) */
+/* body.state-gameover { ... } */
+/* body.state-loading { ... } */
+/* body.state-results { ... } */
+
+
+/* --- Animaciones Fade In/Out para transiciones de estado --- */
 @keyframes fadeOut {
   from { opacity: 1; }
   to { opacity: 0; }
 }
-
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
-
 /* Clases para aplicar a los contenedores de estado */
-/* Ajusta la duración (0.5s) según prefieras */
 .state-fade-out {
   animation: fadeOut 0.5s ease-out forwards;
-  pointer-events: none; /* Deshabilitar interacción durante el fade */
+  pointer-events: none;
 }
-
 .state-fade-in {
-  /* Empieza invisible para que la animación funcione */
   opacity: 0;
   animation: fadeIn 0.5s ease-in forwards;
-   /* Retraso opcional para permitir que el fade-out termine */
-  /* animation-delay: 0.1s; */
 }
 
-/* Asegurar que #app tenga position relative si sus hijos usan absolute */
-#app {
-  position: relative;
-  /* Añadir transición de opacidad como fallback o para suavizar */
-  /* transition: opacity 0.5s ease-in-out; */
+
+/* =========================================== */
+/* ========== MEDIA QUERIES (MÓVIL) ========== */
+/* =========================================== */
+
+/* Ajustes responsivos para Game Over */
+@media (max-width: 768px) {
+    .game-over-text { font-size: 2.5rem; }
+    .final-score { font-size: 1.3rem; margin-bottom: 1.5rem; }
+    .restart-prompt { font-size: 0.9rem; }
 }
 
+@media (max-width: 480px) {
+     .game-over-text { font-size: 2rem; }
+     .final-score { font-size: 1.1rem; margin-bottom: 1rem; }
+     .restart-prompt { font-size: 0.8rem; }
+}
