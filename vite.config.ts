@@ -9,7 +9,7 @@ export default defineConfig({
     // react() // Descomenta o añade el plugin de tu framework si aplica
   ],
   // Establece la ruta base para el despliegue en GitHub Pages
-  base: '/GatoLearner/',
+  base: '/GatoQuiz/',
   build: {
     // Asegura que la salida de la compilación sea la carpeta 'dist'
     outDir: 'dist',

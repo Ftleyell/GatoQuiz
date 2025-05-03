@@ -71,19 +71,35 @@ export class GameManager {
 
   public async preload(): Promise<void> {
     console.log('GameManager: preload - Cargando assets...');
-    const questionsUrl = '/data/questions.json';
-    const templatesUrl = '/data/cat_templates.json';
-    const shopItemsUrl = '/data/shop_items.json';
-    const themesUrl = '/data/themes.json';
+
+    // --- INICIO DE LA MODIFICACIÓN ---
+    // Obtener la URL base configurada en vite.config.ts (será '/GatoQuiz/' en producción, '/' en dev)
+    const baseUrl = import.meta.env.BASE_URL;
+
+    // Construir las URLs completas usando la baseUrl
+    // Asegurarse de que no haya doble barra si baseUrl ya termina en / y la ruta empieza con /
+    const questionsUrl = `${baseUrl.replace(/\/$/, '')}/data/questions.json`;
+    const templatesUrl = `${baseUrl.replace(/\/$/, '')}/data/cat_templates.json`;
+    const shopItemsUrl = `${baseUrl.replace(/\/$/, '')}/data/shop_items.json`;
+    const themesUrl = `${baseUrl.replace(/\/$/, '')}/data/themes.json`;
+
+    console.log('Base URL detectada:', baseUrl);
+    console.log('Cargando questions desde:', questionsUrl);
+    console.log('Cargando templates desde:', templatesUrl);
+    console.log('Cargando shop items desde:', shopItemsUrl);
+    console.log('Cargando themes desde:', themesUrl);
+    // --- FIN DE LA MODIFICACIÓN ---
 
     try {
+      // Usar las nuevas URLs en los fetch
       const [questionResponse, templateResponse, shopResponse, themeResponse] = await Promise.all([
-        fetch(questionsUrl),
-        fetch(templatesUrl),
-        fetch(shopItemsUrl),
-        fetch(themesUrl)
+        fetch(questionsUrl), // <--- URL Modificada
+        fetch(templatesUrl), // <--- URL Modificada
+        fetch(shopItemsUrl), // <--- URL Modificada
+        fetch(themesUrl)     // <--- URL Modificada
       ]);
 
+      // El resto de la función sigue igual...
       if (!questionResponse.ok) throw new Error(`HTTP ${questionResponse.status} cargando ${questionsUrl}`);
       if (!templateResponse.ok) throw new Error(`HTTP ${templateResponse.status} cargando ${templatesUrl}`);
       if (!shopResponse.ok) throw new Error(`HTTP ${shopResponse.status} cargando ${shopItemsUrl}`);
@@ -110,7 +126,7 @@ export class GameManager {
     } catch (error: any) {
       console.error('GameManager: Error durante preload:', error);
       this.containerElement.innerHTML = `Error al cargar assets: ${error.message}. Revisa la consola.`;
-      throw error;
+      throw error; // Lanzar el error para que se maneje en main.ts
     }
   }
 
