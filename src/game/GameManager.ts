@@ -94,20 +94,22 @@ export class GameManager {
     /** Muestra los controles principales del juego (barra y botón tienda). */
     private showGameControls(): void {
         // console.log("Attempting to SHOW Game Controls..."); // Log opcional
-        let controlsShown = false;
-        let shopShown = false;
+        // --- CORRECCIÓN: Variables eliminadas ---
+        // let controlsShown = false;
+        // let shopShown = false;
+        // --- FIN CORRECCIÓN ---
         // Mostrar contenedor principal de herramientas y botón de tienda
         if (this.controlElements.controlsContainer) {
             this.controlElements.controlsContainer.style.display = 'flex';
-            controlsShown = true;
+            // controlsShown = true; // Eliminado
         }
         if (this.controlElements.shopButton) {
             this.controlElements.shopButton.style.display = 'flex';
-            shopShown = true;
+            // shopShown = true; // Eliminado
         }
         // Actualizar visibilidad de sub-contenedores según unlocks
         this.updateControlVisibilityBasedOnUnlocks();
-        // console.log(`Game Controls Shown: ToolbarContainer=${controlsShown}, ShopBtn=${shopShown}`); // Log opcional
+        // console.log(`Game Controls Shown: ToolbarContainer=${controlsShown}, ShopBtn=${shopShown}`); // Log opcional (eliminado)
     }
 
     /** Oculta los controles principales del juego. */
@@ -118,37 +120,37 @@ export class GameManager {
         // console.log("Game Controls Hidden"); // Log opcional
     }
 
-/** Actualiza la visibilidad de los botones de dibujo y comida según PlayerData. */
-public updateControlVisibilityBasedOnUnlocks(): void {
-    const drawingUnlocked = this.playerData.isDrawingUnlocked;
-    const catFoodUnlocked = this.playerData.isCatFoodUnlocked;
-    // <<< LOGS AÑADIDOS >>>
-    console.log(`[GM.updateVis] Status: DrawingUnlocked=${drawingUnlocked}, CatFoodUnlocked=${catFoodUnlocked}`);
+    /** Actualiza la visibilidad de los botones de dibujo y comida según PlayerData. */
+    public updateControlVisibilityBasedOnUnlocks(): void {
+        const drawingUnlocked = this.playerData.isDrawingUnlocked;
+        const catFoodUnlocked = this.playerData.isCatFoodUnlocked;
+        // <<< LOGS AÑADIDOS >>>
+        console.log(`[GM.updateVis] Status: DrawingUnlocked=${drawingUnlocked}, CatFoodUnlocked=${catFoodUnlocked}`);
 
-    // --- Contenedor Dibujo ---
-    const drawingContainer = this.controlElements.drawingButtonsContainer;
-    if (drawingContainer) {
-        console.log(`[GM.updateVis] #drawing-buttons-container ENCONTRADO. ¿Tiene clase 'hidden' ANTES? ${drawingContainer.classList.contains('hidden')}`);
-        // La lógica es: ocultar si NO está desbloqueado (!drawingUnlocked)
-        const shouldBeHidden = !drawingUnlocked;
-        drawingContainer.classList.toggle('hidden', shouldBeHidden);
-        console.log(`[GM.updateVis] -> ¿Debería estar oculto? ${shouldBeHidden}. ¿Tiene clase 'hidden' DESPUÉS? ${drawingContainer.classList.contains('hidden')}`);
-    } else {
-        console.error("[GM.updateVis] #drawing-buttons-container NO ENCONTRADO."); // << ERROR si no lo encuentra
-    }
+        // --- Contenedor Dibujo ---
+        const drawingContainer = this.controlElements.drawingButtonsContainer;
+        if (drawingContainer) {
+            console.log(`[GM.updateVis] #drawing-buttons-container ENCONTRADO. ¿Tiene clase 'hidden' ANTES? ${drawingContainer.classList.contains('hidden')}`);
+            // La lógica es: ocultar si NO está desbloqueado (!drawingUnlocked)
+            const shouldBeHidden = !drawingUnlocked;
+            drawingContainer.classList.toggle('hidden', shouldBeHidden);
+            console.log(`[GM.updateVis] -> ¿Debería estar oculto? ${shouldBeHidden}. ¿Tiene clase 'hidden' DESPUÉS? ${drawingContainer.classList.contains('hidden')}`);
+        } else {
+            console.error("[GM.updateVis] #drawing-buttons-container NO ENCONTRADO."); // << ERROR si no lo encuentra
+        }
 
-    // --- Contenedor Comida ---
-    const foodContainer = this.controlElements.catFoodUiContainer;
-    if (foodContainer) {
-        // console.log(`[GM.updateVis] #cat-food-ui-container ENCONTRADO. ¿Tiene clase 'hidden' ANTES? ${foodContainer.classList.contains('hidden')}`);
-        const shouldBeHidden = !catFoodUnlocked;
-        foodContainer.classList.toggle('hidden', shouldBeHidden);
-        // console.log(`[GM.updateVis] -> ¿Debería estar oculto (Comida)? ${shouldBeHidden}. ¿Tiene clase 'hidden' DESPUÉS? ${foodContainer.classList.contains('hidden')}`);
-    } else {
-         console.warn("[GM.updateVis] #cat-food-ui-container NO ENCONTRADO.");
+        // --- Contenedor Comida ---
+        const foodContainer = this.controlElements.catFoodUiContainer;
+        if (foodContainer) {
+            // console.log(`[GM.updateVis] #cat-food-ui-container ENCONTRADO. ¿Tiene clase 'hidden' ANTES? ${foodContainer.classList.contains('hidden')}`);
+            const shouldBeHidden = !catFoodUnlocked;
+            foodContainer.classList.toggle('hidden', shouldBeHidden);
+            // console.log(`[GM.updateVis] -> ¿Debería estar oculto (Comida)? ${shouldBeHidden}. ¿Tiene clase 'hidden' DESPUÉS? ${foodContainer.classList.contains('hidden')}`);
+        } else {
+             console.warn("[GM.updateVis] #cat-food-ui-container NO ENCONTRADO.");
+        }
+        // <<< FIN LOGS >>>
     }
-    // <<< FIN LOGS >>>
-}
     // --- FIN Funciones Visibilidad ---
 
 

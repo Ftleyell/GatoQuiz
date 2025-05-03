@@ -44,23 +44,19 @@ export class CatFoodManager {
 
     // Listeners
     private clickListener: ((event: MouseEvent | TouchEvent) => void) | null = null;
-    // Guardar listeners del botón
     private buttonListenerInfo: { click: (e: MouseEvent) => void, touchstart?: (e: TouchEvent) => void } | null = null;
-    // Timestamp para debounce de botones
-    private lastInteractionTime: number = 0; // << Propiedad añadida
-    private readonly DEBOUNCE_THRESHOLD = 300; // ms << Propiedad añadida
+    private lastInteractionTime: number = 0;
+    private readonly DEBOUNCE_THRESHOLD = 300;
 
     constructor(gameManager: GameManager) {
         console.log("CatFoodManager: Constructor iniciado.");
         this.gameManager = gameManager;
     }
 
-    /** Inicializa el manager obteniendo referencias. */
     public init(): void {
         this.isInitializedSuccessfully = false;
         console.log("CatFoodManager: init");
         try {
-            // Obtener referencias
             this.physicsManager = this.gameManager.getPhysicsManager();
             this.playerData = this.gameManager.getPlayerData();
             this.catManager = this.gameManager.getCatManager();
@@ -69,7 +65,6 @@ export class CatFoodManager {
             this.catFoodButton = document.getElementById('cat-food-button');
             this.catFoodContainer = document.getElementById('cat-food-ui-container');
 
-            // Verificar referencias cruciales
             if (!this.physicsManager) throw new Error("PhysicsManager no disponible.");
             if (!this.playerData) throw new Error("PlayerData no disponible.");
             if (!this.catManager) throw new Error("CatManager no disponible.");
@@ -87,10 +82,6 @@ export class CatFoodManager {
         }
     }
 
-    /**
-     * Habilita la funcionalidad (llamado desde GameManager después de comprar).
-     * AÑADE DEBOUNCE AL LISTENER DEL BOTÓN.
-     */
     public enable(): void {
         if (!this.isInitializedSuccessfully) {
             console.error("CatFoodManager: No se puede habilitar, inicialización falló.");
@@ -100,26 +91,23 @@ export class CatFoodManager {
         console.log("CatFoodManager: Habilitando...");
         this.isEnabled = true;
 
-        // Obtener referencias de UI
         if (!this.catFoodButton) this.catFoodButton = document.getElementById('cat-food-button');
         if (!this.catFoodContainer) this.catFoodContainer = document.getElementById('cat-food-ui-container');
 
-        // Añadir listeners al botón con debounce
         if (this.catFoodButton) {
-            this.removeButtonListener(); // Limpiar anterior si existe
+            this.removeButtonListener();
 
             const foodButtonHandler = (event: MouseEvent | TouchEvent) => {
-                const now = Date.now(); // << NUEVO
-                if (now - this.lastInteractionTime < this.DEBOUNCE_THRESHOLD) { // << NUEVO
-                    // console.log("Food interaction debounced"); // Log opcional
-                    return; // << NUEVO: Ignorar si es muy rápido
+                const now = Date.now();
+                if (now - this.lastInteractionTime < this.DEBOUNCE_THRESHOLD) {
+                    return;
                 }
-                this.lastInteractionTime = now; // << NUEVO: Actualizar tiempo
+                this.lastInteractionTime = now;
 
                 if (event.type === 'touchstart') {
                     event.preventDefault();
                 }
-                this.gameManager.activateCatFood(); // Llama a GameManager
+                this.gameManager.activateCatFood();
             };
 
             this.buttonListenerInfo = { click: foodButtonHandler, touchstart: foodButtonHandler };
@@ -129,32 +117,24 @@ export class CatFoodManager {
         } else {
             console.warn("CatFoodManager: Botón de comida no encontrado al habilitar, listener no añadido.");
         }
-
-        // La visibilidad ahora la maneja GameManager
     }
 
-    /** Remueve los listeners del botón de comida. */
     private removeButtonListener(): void {
         if (this.buttonListenerInfo && this.catFoodButton) {
             this.catFoodButton.removeEventListener('click', this.buttonListenerInfo.click);
             if (this.buttonListenerInfo.touchstart) {
                 this.catFoodButton.removeEventListener('touchstart', this.buttonListenerInfo.touchstart);
             }
-            // console.log("CatFoodManager: Listeners del botón de comida removidos."); // Log opcional
         }
         this.buttonListenerInfo = null;
     }
 
-
-    /**
-     * Activa/Desactiva el modo lanzar comida.
-     * @param forceState - (Opcional) Booleano para forzar el estado.
-     */
     public toggleActive(forceState?: boolean): void {
         if (!this.isEnabled || !this.isInitializedSuccessfully) return;
 
         const newState = (forceState !== undefined) ? forceState : !this.isActive;
-        const oldState = this.isActive;
+        // --- CORRECCIÓN: Variable 'oldState' eliminada ---
+        // const oldState = this.isActive;
 
         if (newState === true && (!this.isEnabled || (this.playerData && this.playerData.currentCatFood <= 0))) {
              if (this.isActive) {
@@ -168,10 +148,8 @@ export class CatFoodManager {
         if (newState === this.isActive) return;
 
         this.isActive = newState;
+        this.updateActiveVisuals();
 
-        this.updateActiveVisuals(); // Actualiza clase CSS del botón
-
-        // Añadir o quitar listener de click/touch para lanzar comida
         if (this.isActive) {
             this.addClickListener();
         } else {
@@ -179,24 +157,21 @@ export class CatFoodManager {
         }
     }
 
-    /** Actualiza la clase 'active' del botón. */
     private updateActiveVisuals(): void {
          if (this.catFoodButton) {
              this.catFoodButton.classList.toggle('active', this.isActive);
          }
     }
 
-
-    /** Añade listener de click/touch para lanzar comida. */
     private addClickListener(): void {
         if (this.clickListener || !this.isInitializedSuccessfully) return;
         const listenArea = document.body; if (!listenArea) return;
 
         this.clickListener = (event: MouseEvent | TouchEvent) => {
             const targetElement = event.target as HTMLElement;
-            if (targetElement.closest('.control-button')) return; // Ignorar controles
+            if (targetElement.closest('.control-button')) return;
             if (!this.isActive || !this.isEnabled) return;
-            event.preventDefault(); // Prevenir scroll/zoom
+            event.preventDefault();
 
             if (!this.playerData) { console.error("ClickListener: PlayerData no disponible."); return; }
             if (this.playerData.currentCatFood > 0) {
@@ -217,7 +192,6 @@ export class CatFoodManager {
         listenArea.addEventListener('touchstart', this.clickListener, { passive: false, capture: true });
     }
 
-    /** Remueve listener de click/touch. */
     private removeClickListener(): void {
         if (!this.clickListener) return;
         const listenArea = document.body;
@@ -226,7 +200,6 @@ export class CatFoodManager {
         this.clickListener = null;
     }
 
-    /** Obtiene coordenadas del evento relativas al viewport. */
     private getClickPosition(event: MouseEvent | TouchEvent): { x: number, y: number } {
         let clientX = 0, clientY = 0;
         if (event instanceof MouseEvent) { clientX = event.clientX; clientY = event.clientY; }
@@ -235,7 +208,6 @@ export class CatFoodManager {
         return { x: clientX, y: clientY };
     }
 
-    /** Aplica fuerza de atracción a gatos cercanos. */
     private applyAttractionForce(targetPos: { x: number, y: number }): void {
         if (!this.catManager || !this.physicsManager) return;
         const cats = this.catManager.getAllCats();
@@ -255,7 +227,6 @@ export class CatFoodManager {
         });
     }
 
-    /** Crea una bolita de comida visual y física. */
     public spawnFoodPellet(position: { x: number, y: number }): void {
         if (!this.isInitializedSuccessfully || !this.physicsManager || !this.catContainerElement) { return; }
         const pelletId = `food_${this.nextPelletId++}`;
@@ -274,8 +245,8 @@ export class CatFoodManager {
         this.activePellets.set(pelletId, pelletData);
     }
 
-    /** Actualiza bolitas (posición visual basada en física, expiración). */
-    public update(deltaTime: number): void {
+    // --- CORRECCIÓN: Parámetro 'deltaTime' renombrado a '_deltaTime' ---
+    public update(_deltaTime: number): void {
         if (!this.isEnabled || !this.isInitializedSuccessfully || this.activePellets.size === 0) return;
         const now = performance.now();
         const pelletsToRemove: string[] = [];
@@ -291,8 +262,8 @@ export class CatFoodManager {
         pelletsToRemove.forEach(pelletId => this.removeFoodPellet(pelletId));
     }
 
-    /** Elimina una bolita (visual y física). */
-    public removeFoodPellet(pelletId: string, consumed: boolean = false): void {
+    // --- CORRECCIÓN: Parámetro 'consumed' renombrado a '_consumed' ---
+    public removeFoodPellet(pelletId: string, _consumed: boolean = false): void {
         const pellet = this.activePellets.get(pelletId);
         if (pellet) {
             if (this.physicsManager && pellet.body) {
@@ -303,7 +274,6 @@ export class CatFoodManager {
         }
     }
 
-    /** Procesa colisión gato-comida. */
     public processCatFoodCollision(catBodyId: number, foodBody: Matter.Body): void {
         const pelletId = foodBody.plugin?.pelletId as string | undefined;
         if (!pelletId || !this.activePellets.has(pelletId) || !this.catManager || !this.playerData || !this.audioManager || !this.physicsManager) { return; }
@@ -323,13 +293,10 @@ export class CatFoodManager {
         this.removeFoodPellet(pelletId, true);
     }
 
-
-    /** Limpia listeners y bolitas al destruir. */
     public destroy(): void {
         console.log("CatFoodManager: destroy");
-        this.removeClickListener(); // Limpiar listener de lanzar comida
-        this.removeButtonListener(); // Limpiar listener del botón de activación
-        // Remover pellets activos
+        this.removeClickListener();
+        this.removeButtonListener();
         const currentPelletIds = Array.from(this.activePellets.keys());
         currentPelletIds.forEach(pelletId => this.removeFoodPellet(pelletId));
         this.activePellets.clear();
@@ -337,4 +304,4 @@ export class CatFoodManager {
         this.isActive = false;
     }
 
-} // Fin clase CatFoodManager
+}

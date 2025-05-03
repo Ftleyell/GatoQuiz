@@ -5,11 +5,10 @@ import { GameManager } from '../GameManager';
 
 export class MainMenuState implements IState {
   private gameManager: GameManager;
-  // Ajuste: Cambiar tipo para aceptar ambos listeners
   private startListener: ((event: MouseEvent | TouchEvent) => void) | null = null;
   private containerElement: HTMLElement | null = null;
   private sparkleIntervalId: number | null = null;
-  private hasStarted: boolean = false; // Flag para evitar doble ejecución
+  private hasStarted: boolean = false;
 
   constructor(gameManager: GameManager) {
     this.gameManager = gameManager;
@@ -19,16 +18,14 @@ export class MainMenuState implements IState {
     console.log('MainMenuState: enter (Whiskers & Wisdom Style)', params);
     this.gameManager.setBodyStateClass('mainmenu-whiskers');
     this.containerElement = this.gameManager.getContainerElement();
-    this.hasStarted = false; // Resetear flag al entrar
+    this.hasStarted = false;
 
     if (!this.containerElement) {
         console.error("MainMenuState: Contenedor principal #app no encontrado.");
         return;
     }
 
-    // --- Crear Estructura HTML (Sin cambios aquí) ---
     this.containerElement.innerHTML = '';
-    // ... (resto del código para crear HTML igual que antes) ...
     const pawWrapper = document.createElement('div');
     pawWrapper.className = 'paw-wrapper';
     const rainbowCircle = document.createElement('div');
@@ -55,11 +52,11 @@ export class MainMenuState implements IState {
     const bgPaw2 = document.createElement('span');
     bgPaw2.className = 'animate-paw-wiggle paw-2';
     bgPaw2.textContent = '🐾';
-    titleContainer.append(title1, title2, bgPaw1, bgPaw2); // Añadir ampersand aquí si quieres que esté DENTRO del contenedor relativo
+    titleContainer.append(title1, title2, bgPaw1, bgPaw2);
     const clickText = document.createElement('div');
     clickText.id = 'click-text';
     clickText.className = 'fading-click-text font-poppins';
-    clickText.textContent = '<HAZ CLICK O TOCA>'; // Texto actualizado
+    clickText.textContent = '<HAZ CLICK O TOCA>';
     const loadingMessage = document.createElement('div');
     loadingMessage.id = 'loading-message';
     loadingMessage.className = 'mt-10 flex flex-col items-center';
@@ -70,13 +67,7 @@ export class MainMenuState implements IState {
     loadingText.className = 'font-semibold font-geist';
     loadingText.textContent = 'Desenredando la diversión...';
     loadingMessage.append(yarnSpinner, loadingText);
-
-    // Ajuste: Añadir ampersand DENTRO de containerInvisible si quieres que sea relativo a los títulos
-    // containerInvisible.append(titleContainer, ampersand, clickText, loadingMessage); // Opción 1
-    // pawWrapper.append(rainbowCircle, containerInvisible);
-
-    // O mantener ampersand fuera si el posicionamiento absoluto funciona mejor con los ajustes CSS
-    containerInvisible.append(titleContainer, clickText, loadingMessage); // Opción 2 (como antes)
+    containerInvisible.append(titleContainer, clickText, loadingMessage);
     pawWrapper.append(rainbowCircle, containerInvisible);
 
     const sparkleContainer = document.createElement('div');
@@ -86,7 +77,7 @@ export class MainMenuState implements IState {
     sparkleContainer.style.width = '100%'; sparkleContainer.style.height = '100%';
     sparkleContainer.style.pointerEvents = 'none'; sparkleContainer.style.zIndex = '2';
 
-    this.containerElement.append(pawWrapper, ampersand, sparkleContainer); // Añadir ampersand aquí si es opción 2
+    this.containerElement.append(pawWrapper, ampersand, sparkleContainer);
     this.containerElement.insertAdjacentHTML('beforeend', `
         <svg id="sparkle-svg-template" style="display: none;" width="50px" height="50px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <defs><style>.cls-sparkle{fill:none;stroke-miterlimit:10; stroke: #fff845; stroke-width: 2px;}</style></defs>
@@ -94,21 +85,16 @@ export class MainMenuState implements IState {
         </svg>
     `);
 
-    // --- Lógica de Inicio y Chispas ---
-    // Ajuste: Definir función de inicio separada y usar flag
-    const startGameLogic = (event: MouseEvent | TouchEvent) => {
-        // Prevenir doble ejecución si ambos eventos (click y touchstart) se disparan rápido
+    // --- CORRECCIÓN: Parámetro 'event' renombrado a '_event' ---
+    const startGameLogic = (_event: MouseEvent | TouchEvent) => {
         if (this.hasStarted) return;
         this.hasStarted = true;
-
-        // Detener la propagación puede ser útil para evitar que otros listeners (como el de audio) se activen también
-        // event.stopPropagation();
-        // event.preventDefault(); // Prevenir acciones por defecto como zoom al doble tap
+        // _event.stopPropagation(); // Opcional
+        // _event.preventDefault(); // Opcional
 
         console.log("Starting Whiskers & Wisdom - Meow!");
         this.gameManager.getAudioManager().playSound('ui_confirm');
 
-        // Ocultar elementos del menú
         if (titleContainer) titleContainer.style.display = 'none';
         if (rainbowCircle) rainbowCircle.style.display = 'none';
         if (clickText) clickText.style.display = 'none';
@@ -117,46 +103,34 @@ export class MainMenuState implements IState {
         if (bgPaw2) bgPaw2.style.display = 'none';
         if (loadingMessage) loadingMessage.style.display = 'flex';
 
-        // Detener chispas
         if (this.sparkleIntervalId) { clearTimeout(this.sparkleIntervalId); this.sparkleIntervalId = null; }
-
-        // Limpiar listeners inmediatamente después de usarlos (aunque {once: true} ayuda)
         this.removeStartListeners();
-
-        // Cambiar al estado del juego
         this.gameManager.getStateMachine().changeState('QuizGameplay');
     };
 
-    // Listener de clic y touch en todo el contenedor
-    this.startListener = startGameLogic; // Guardar referencia a la función
-    this.containerElement.style.cursor = 'pointer'; // Mantener cursor
-
-    // Ajuste: Añadir ambos listeners
+    this.startListener = startGameLogic;
+    this.containerElement.style.cursor = 'pointer';
     this.containerElement.addEventListener('click', this.startListener, { once: true, passive: false });
-    this.containerElement.addEventListener('touchstart', this.startListener, { once: true, passive: false }); // Escuchar touchstart también
+    this.containerElement.addEventListener('touchstart', this.startListener, { once: true, passive: false });
     console.log("MainMenuState: Listeners 'click' y 'touchstart' añadidos a #app.");
 
     this.startSparkleEffect();
     this.ensureFontsLoaded();
   }
 
-  // Ajuste: Método para remover ambos listeners
   private removeStartListeners(): void {
     if (this.containerElement && this.startListener) {
         this.containerElement.removeEventListener('click', this.startListener);
         this.containerElement.removeEventListener('touchstart', this.startListener);
         console.log("MainMenuState: Listeners 'click' y 'touchstart' removidos.");
     }
-    this.startListener = null; // Limpiar referencia
+    this.startListener = null;
   }
 
   exit(): void {
     console.log('MainMenuState: exit (Whiskers & Wisdom Style)');
-    // Detener chispas
     if (this.sparkleIntervalId) { clearTimeout(this.sparkleIntervalId); this.sparkleIntervalId = null; }
-    // Limpiar listeners si no se dispararon (por si acaso)
     this.removeStartListeners();
-    // Limpiar HTML y estilos
     if (this.containerElement) {
         this.containerElement.innerHTML = '';
         this.containerElement.style.cursor = '';
@@ -166,7 +140,6 @@ export class MainMenuState implements IState {
 
   update(_deltaTime: number): void { /* No action needed */ }
 
-  // --- Funciones Helper (startSparkleEffect, ensureFontsLoaded sin cambios) ---
   private startSparkleEffect(): void {
       const showSparkle = () => {
           const sparkleTemplate = document.getElementById('sparkle-svg-template') as unknown as SVGElement | null;
@@ -178,7 +151,7 @@ export class MainMenuState implements IState {
           sparkleClone.classList.add('sparkle-instance');
           const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
           const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
-          const sparkleWidth = parseFloat(sparkleClone.style.width || '50'); // Usar tamaño base del CSS
+          const sparkleWidth = parseFloat(sparkleClone.style.width || '50');
           const sparkleHeight = parseFloat(sparkleClone.style.height || '50');
           const randomTop = Math.random() * (vh - sparkleHeight);
           const randomLeft = Math.random() * (vw - sparkleWidth);
@@ -190,7 +163,7 @@ export class MainMenuState implements IState {
               if (sparkleClone.parentNode === sparkleContainer) {
                    sparkleContainer.removeChild(sparkleClone);
               }
-          }, 500); // Duración de la animación
+          }, 500);
       };
       const randomSparkleInterval = () => {
           showSparkle();
@@ -214,4 +187,4 @@ export class MainMenuState implements IState {
       }
   }
 
-} // Fin MainMenuState
+}

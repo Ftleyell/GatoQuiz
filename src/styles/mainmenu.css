@@ -579,7 +579,6 @@ body.state-mainmenu-whiskers {
     0%, 100% { transform: translate(-50%, -50%) rotate(-5deg) scale(1); }
     50% { transform: translate(-50%, -50%) rotate(5deg) scale(1.05); }
 }
-*/
 
 
 /* --- Paws Gigantes --- */
@@ -609,11 +608,6 @@ body.state-mainmenu-whiskers {
     animation: fadeInOut 2.5s infinite ease-in-out;
     position: relative;
     z-index: 1;
-}
-
-/* --- Loading Message --- */
-#loading-message {
-  /* No necesita cambios aquí, pero asegurar que esté dentro de .container-invisible */
 }
 #loading-message span {
      font-size: clamp(1rem, 4vmin, 1.5rem); /* Tamaño responsivo */

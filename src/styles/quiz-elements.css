@@ -315,7 +315,6 @@
     transform: none;
     transform-origin: bottom left;
     font-size: var(--combo-font-size, 2rem);
-    z-index: 55;
   }
   /* --- Fin Ajuste Indicador de Combo --- */
 

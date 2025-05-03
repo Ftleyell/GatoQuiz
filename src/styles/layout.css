@@ -257,7 +257,7 @@
 
 @media (max-width: 480px) {
   /* Ajustes adicionales para móviles muy pequeños */
-  .game-container { margin-top: -24vh; padding: 0 0.25rem; }
+  .game-container { margin-top: -20vh; padding: 0 0.25rem; }
   #explanation-text-content { font-size: 0.9rem; padding: 0.6rem 0.8rem; } /* Más pequeño */
   #right-controls { top: 0; padding-top: 0.25rem; gap: 0.3rem; }
   #shop-button { top: 0.25rem; right: 0.25rem; }

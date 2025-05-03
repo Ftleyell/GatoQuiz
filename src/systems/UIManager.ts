@@ -83,10 +83,12 @@ type UIElementsMap = {
 }
 
 // Ajuste: Tipo para almacenar listeners
+// --- CORRECCIÓN: Cambiar firma de 'click' ---
 type ButtonListenerInfo = {
-    click: () => void;
-    touchstart?: (event: TouchEvent) => void; // Hacer touchstart opcional por si acaso
+    click: (event: MouseEvent | TouchEvent) => void; // <-- Cambiado aquí
+    touchstart?: (event: TouchEvent) => void;
 };
+// --- FIN CORRECCIÓN ---
 
 export class UIManager {
     private gameManager: GameManager;
@@ -275,7 +277,7 @@ export class UIManager {
 
                  // Guardar referencias a los listeners para poder removerlos
                  const listeners: ButtonListenerInfo = {
-                     click: handleInteraction,
+                     click: handleInteraction, // <--- Ahora acepta el evento
                      touchstart: handleInteraction // Llama a la misma función
                  };
                  this.optionListeners.set(button, listeners);
