@@ -25,9 +25,8 @@ export class QuizGameplayState implements IState {
   public consecutiveCorrectAnswers: number = 0;
   private hintAppliedToQuestionId: number | string | null = null;
   private isWaitingForExplanationConfirm: boolean = false;
-  private lastAnswerResultType: 'correct' | 'incorrect' | 'shield' | null = null; // <--- AÑADIDO: Almacenar el resultado
 
-  private readonly BASE_POINTS_PER_CORRECT = 15;
+  private readonly BASE_POINTS_PER_CORRECT = 15; // <-- Valor ajustado
   private readonly DIFFICULTY_BONUS: { [key: string]: number } = {
       "easy": 10,
       "1": 10,
@@ -37,7 +36,10 @@ export class QuizGameplayState implements IState {
       "hard": 45,
       "4": 45,
       "5": 65
-  };
+  }; // <-- Valores ajustados
+
+  // ELIMINADO: FADE_DURATION no se usaba
+  // private readonly FADE_DURATION = 500;
 
   constructor(gameManager: GameManager) {
     this.gameManager = gameManager;
@@ -78,7 +80,6 @@ export class QuizGameplayState implements IState {
     this.consecutiveCorrectAnswers = 0;
     this.hintAppliedToQuestionId = null;
     this.isWaitingForExplanationConfirm = false;
-    this.lastAnswerResultType = null; // Resetear al entrar
 
     this.displayNextQuestion();
 
@@ -99,8 +100,8 @@ export class QuizGameplayState implements IState {
         this.nextQuestionTimeoutId = null;
     }
 
-    this.uiManager.updateComboVisuals(0); // Resetear efectos visuales de combo
-    document.body.style.backgroundColor = '#111827'; // Resetear color de fondo
+    this.uiManager.updateComboVisuals(0);
+    document.body.style.backgroundColor = '#111827';
     const root = document.documentElement;
     root.style.setProperty('--element-glow-intensity', '0');
     root.style.setProperty('--flare-intensity', '0');
@@ -110,7 +111,6 @@ export class QuizGameplayState implements IState {
     this.isWaitingForExplanationConfirm = false;
     this.hintAppliedToQuestionId = null;
     this.currentQuestion = null;
-    this.lastAnswerResultType = null; // Limpiar al salir
 
   }
 
@@ -128,7 +128,6 @@ export class QuizGameplayState implements IState {
   }
 
   private handleCorrectAnswer(difficulty: string | number): void {
-    this.lastAnswerResultType = 'correct'; // <--- GUARDAR RESULTADO
     const scoreBreakdown = this.calculateScore(difficulty, this.consecutiveCorrectAnswers);
     this.consecutiveCorrectAnswers++;
     this.gameManager.getPlayerData().score += scoreBreakdown.totalPoints;
@@ -138,14 +137,12 @@ export class QuizGameplayState implements IState {
     this.uiManager.updateComboVisuals(this.consecutiveCorrectAnswers);
     this.uiManager.updateInkBar();
 
-    // Mantenemos el feedback detallado aquí por ahora
-    let feedbackMessage = `¡+${scoreBreakdown.totalPoints} Pts!`;
+    let feedbackMessage = `¡Correcto! +${scoreBreakdown.totalPoints} Pts`;
     let details = `(Base: ${scoreBreakdown.basePoints}, Dif: +${scoreBreakdown.difficultyBonus}`;
     const actualComboMultiplier = this.gameManager.getPlayerData().getCurrentComboMultiplier();
     if (scoreBreakdown.comboBonus > 0) { details += `, Combo x${actualComboMultiplier.toFixed(1)}: +${scoreBreakdown.comboBonus}`; }
     details += ')';
     feedbackMessage += ` ${details}`;
-    // Actualizamos el feedback existente con los detalles del puntaje
     this.uiManager.updateFeedback(feedbackMessage, 'correct');
 
     try { this.gameManager.getAudioManager().playSound('correct'); }
@@ -170,26 +167,28 @@ export class QuizGameplayState implements IState {
         }
     }
 
-    this.proceedToNextStep(); // Llama a proceedToNextStep
+    this.proceedToNextStep();
   }
 
   private handleIncorrectAnswer(): void {
-    this.lastAnswerResultType = 'incorrect'; // <--- GUARDAR RESULTADO
     const playerData = this.gameManager.getPlayerData();
     let gameOver = false;
+    // ELIMINADO: hintWasActiveForThisQuestion no se usaba
+    // const hintWasActiveForThisQuestion = this.hintAppliedToQuestionId === this.currentQuestion?.id;
+    // ELIMINADO: shieldSaved no se usaba
+    // let shieldSaved = false;
 
     if (playerData.hasShield) {
+        // shieldSaved = true; // Ya no es necesaria la variable
         playerData.hasShield = false;
-        this.uiManager.updateFeedback('¡Escudo Roto!', 'shield'); // Usamos feedback para escudo
+        this.uiManager.updateFeedback('¡Escudo Roto!', 'shield');
         this.uiManager.updateShieldIcon(false);
         this.gameManager.getAudioManager().playSound('shield_break');
-        this.lastAnswerResultType = 'shield'; // <- Actualizamos si el escudo lo salvó
     } else {
         this.consecutiveCorrectAnswers = 0;
         this.gameManager.decrementLives();
         this.uiManager.updateComboVisuals(this.consecutiveCorrectAnswers);
-        // COMENTADO: Ya no mostramos "Incorrecto." aquí
-        // this.uiManager.updateFeedback('Incorrecto.', 'incorrect');
+        this.uiManager.updateFeedback('Incorrecto.', 'incorrect');
         this.gameManager.getAudioManager().playSound('incorrect');
 
         if (playerData.hintCharges > 0) {
@@ -206,45 +205,36 @@ export class QuizGameplayState implements IState {
     this.hintAppliedToQuestionId = null;
 
     if (gameOver) {
-        this.uiManager.updateFeedback('¡Has perdido!', 'incorrect'); // Usamos feedback para Game Over
+        this.uiManager.updateFeedback('¡Has perdido!', 'incorrect');
         if (this.nextQuestionTimeoutId) { clearTimeout(this.nextQuestionTimeoutId); this.nextQuestionTimeoutId = null; }
         setTimeout(() => {
-            // Verificar que aún estemos en este estado antes de cambiar
             if (this.gameManager.getStateMachine().getCurrentStateName() === 'QuizGameplay') {
-                 this.gameManager.getStateMachine().changeState('GameOver', { finalScore: playerData.score });
+                this.gameManager.getStateMachine().changeState('GameOver', { finalScore: playerData.score });
             }
         }, 1500);
     } else {
-        this.proceedToNextStep(); // Llama a proceedToNextStep
+        this.proceedToNextStep();
     }
   }
 
   private proceedToNextStep(): void {
       const explanation = this.currentQuestion?.explanation;
-      // Si hay explicación y no estamos esperando ya, mostrarla
       if (explanation && !this.isWaitingForExplanationConfirm) {
           this.isWaitingForExplanationConfirm = true;
-          // Pasamos el resultado guardado (correct/incorrect/shield)
           this.uiManager.showExplanation(explanation, () => {
               this.isWaitingForExplanationConfirm = false;
-              this.lastAnswerResultType = null; // Limpiar resultado después de confirmar
-              this.scheduleNextQuestion(500); // Programar siguiente pregunta
-          }, this.lastAnswerResultType); // <--- PASAR EL RESULTADO
-      }
-      // Si no hay explicación o ya estamos esperando, simplemente programar la siguiente
-      else if (!this.isWaitingForExplanationConfirm) {
-          this.lastAnswerResultType = null; // Limpiar resultado si no hay explicación
-          this.scheduleNextQuestion(1500); // Programar siguiente (mayor delay si no hubo explicación)
+              this.scheduleNextQuestion(500);
+          });
+      } else if (!this.isWaitingForExplanationConfirm) {
+          this.scheduleNextQuestion(1500);
       }
   }
 
   private scheduleNextQuestion(delay: number): void {
     if (this.nextQuestionTimeoutId) clearTimeout(this.nextQuestionTimeoutId);
-    // Verificar que aún estemos en este estado antes de programar
     if (this.gameManager.getStateMachine().getCurrentStateName() === 'QuizGameplay') {
         this.nextQuestionTimeoutId = window.setTimeout(() => {
             this.nextQuestionTimeoutId = null;
-            // Verificar de nuevo antes de mostrar la siguiente pregunta
             if (this.gameManager.getStateMachine().getCurrentStateName() === 'QuizGameplay') {
                 requestAnimationFrame(() => this.displayNextQuestion());
             }
@@ -265,16 +255,10 @@ export class QuizGameplayState implements IState {
     if (!this.currentQuestion) {
         console.log("No quedan más preguntas disponibles.");
         this.uiManager.updateFeedback("¡Has completado todas las preguntas!", 'correct');
-         // Podríamos ir a un estado de "Resultados" o "Fin de Ronda" aquí
-        setTimeout(() => {
-             if (this.gameManager.getStateMachine().getCurrentStateName() === 'QuizGameplay') {
-                this.gameManager.getStateMachine().changeState('Results', { finalScore: this.gameManager.getPlayerData().score });
-             }
-        }, 1500);
         return;
     }
 
-    this.hintAppliedToQuestionId = null; // Resetear pista para la nueva pregunta
+    this.hintAppliedToQuestionId = null;
 
     const appContainer = this.gameManager.getContainerElement();
     if (!appContainer) {
@@ -290,10 +274,9 @@ export class QuizGameplayState implements IState {
             this.consecutiveCorrectAnswers
         );
 
-        // Si hay una pista activa en PlayerData, aplicarla visualmente
         if (this.gameManager.getPlayerData().hintCharges > 0 && this.currentQuestion) {
              this.uiManager.applyHintVisuals(this.currentQuestion.correctAnswerKey);
-             this.hintAppliedToQuestionId = this.currentQuestion.id; // Marcar que se aplicó a esta pregunta
+             this.hintAppliedToQuestionId = this.currentQuestion.id;
         }
 
     } catch (error) {
@@ -303,42 +286,34 @@ export class QuizGameplayState implements IState {
   }
 
   public handleOptionClick(selectedKey: string): void {
-    // Ignorar clicks si estamos mostrando la explicación o si ya hay un timeout para la siguiente pregunta
-    if (this.isWaitingForExplanationConfirm || !this.currentQuestion || this.nextQuestionTimeoutId !== null) {
-         console.log(`handleOptionClick ignorado: isWaiting=${this.isWaitingForExplanationConfirm}, no currentQ=${!this.currentQuestion}, nextQTimeout=${this.nextQuestionTimeoutId}`);
-         return;
-    }
+    if (this.isWaitingForExplanationConfirm) return;
+    if (!this.currentQuestion || this.nextQuestionTimeoutId !== null) return;
 
-
-    this.uiManager.disableOptions(); // Deshabilitar botones para evitar doble click
+    this.uiManager.disableOptions();
 
     const quizSystem = this.gameManager.getQuizSystem();
     const isCorrect = quizSystem.validateAnswer(this.currentQuestion.id, selectedKey);
     const playerData = this.gameManager.getPlayerData();
 
-    // Si se usó una pista en esta pregunta, descontar la carga
     if (this.hintAppliedToQuestionId === this.currentQuestion.id) {
         if (playerData.hintCharges > 0) {
             playerData.hintCharges--;
             this.uiManager.updateHintIcon(playerData.hintCharges);
         }
-         this.hintAppliedToQuestionId = null; // Resetear la marca de pista usada
+         this.hintAppliedToQuestionId = null;
     }
 
-    // Procesar resultado
     if (isCorrect === true) {
         this.handleCorrectAnswer(this.currentQuestion.difficulty);
     } else if (isCorrect === false) {
         this.handleIncorrectAnswer();
     } else {
-        // Caso de error (pregunta no encontrada, etc.)
         this.uiManager.updateFeedback("Error al validar la respuesta.", 'info');
-        this.hintAppliedToQuestionId = null; // Asegurar que se limpie
-        this.proceedToNextStep(); // Continuar el flujo aunque haya error
+        this.hintAppliedToQuestionId = null;
+        this.proceedToNextStep();
     }
   }
 
-  // Para refrescar la UI si cambia el tema
   public rebuildInterface(): void {
       const appContainer = this.gameManager.getContainerElement();
       if (this.currentQuestion && appContainer) {
@@ -348,7 +323,6 @@ export class QuizGameplayState implements IState {
               this.handleOptionClick.bind(this),
               this.consecutiveCorrectAnswers
           );
-          // Re-aplicar pista visual si corresponde
           if (this.hintAppliedToQuestionId === this.currentQuestion.id) {
                this.uiManager.applyHintVisuals(this.currentQuestion.correctAnswerKey);
           }
@@ -357,4 +331,4 @@ export class QuizGameplayState implements IState {
       }
   }
 
-} // Fin clase QuizGameplayState
+}
