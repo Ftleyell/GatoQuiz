@@ -47,48 +47,72 @@ if (!appElement) {
   document.body.addEventListener('touchstart', initializeAudioOnInteraction, { once: true, capture: true, passive: false }); // Passive false por si acaso
 
   // --- Listener específico y dual para el botón de tienda CON VERIFICACIÓN Y DEBOUNCE ---
-  if (shopButtonElement) {
-      // <<< LOG AÑADIDO >>>
-      console.log("[main.ts] Botón Tienda (#shop-button) ENCONTRADO. Añadiendo listeners...");
+if (shopButtonElement) {
+  console.log("[main.ts] Botón Tienda (#shop-button) ENCONTRADO. Añadiendo listeners...");
 
-      let lastShopInteractionTime = 0; // Timestamp local para este botón
-      const SHOP_DEBOUNCE_THRESHOLD = 300; // ms
+  let lastShopInteractionTime = 0;
+  const SHOP_DEBOUNCE_THRESHOLD = 350; // Aumentar ligeramente el debounce
+  let isProcessingShopClick = false; // Flag para evitar reentrada
 
-      // Handler unificado para el botón de tienda
-      const handleShopButtonInteraction = (event: MouseEvent | TouchEvent) => {
-          // <<< LOG AÑADIDO >>>
-          console.log(`[main.ts] INTERACCIÓN con Botón Tienda detectada! Tipo: ${event.type}`);
+  // Handler unificado
+  const handleShopButtonInteraction = (event: MouseEvent | TouchEvent) => {
+      // Prevenir comportamiento por defecto en touchstart
+      if (event.type === 'touchstart') {
+          event.preventDefault();
+      }
+      // Prevenir que el evento se propague y cause otros listeners (como el de audio)
+      event.stopPropagation();
 
-          const now = Date.now();
-          if (now - lastShopInteractionTime < SHOP_DEBOUNCE_THRESHOLD) {
-               // <<< LOG AÑADIDO >>>
-               console.log("[main.ts] Interacción tienda debounced.");
-              return;
-          }
-          lastShopInteractionTime = now;
+      const now = Date.now();
+      // Verificar debounce Y flag de procesamiento
+      if (isProcessingShopClick || (now - lastShopInteractionTime < SHOP_DEBOUNCE_THRESHOLD)) {
+          console.log("[main.ts] Interacción tienda ignorada (debounce/processing).");
+          return;
+      }
 
-          console.log(`[main.ts] Procesando interacción botón tienda (Tipo: ${event.type}).`); // Log para saber que pasó el debounce
+      isProcessingShopClick = true; // Marcar como procesando
+      lastShopInteractionTime = now;
+      console.log(`[main.ts] Procesando interacción botón tienda (Tipo: ${event.type}).`);
 
-          if (event.type === 'touchstart') {
-              event.preventDefault();
-          }
-          // Asegurar que audio esté inicializado
-          if (!gameManager.getAudioManager().isReady()) {
-              console.log("[main.ts] Inicializando audio desde listener tienda..."); // Log extra
-              gameManager.getAudioManager().init();
-          }
-          // Abrir la tienda
+      // Asegurar que gameManager exista
+      if (!gameManager) {
+          console.error("[main.ts] ERROR: gameManager no está definido al intentar abrir la tienda.");
+          isProcessingShopClick = false; // Liberar flag
+          return;
+      }
+
+      // Asegurar que audio esté inicializado
+      const audioManager = gameManager.getAudioManager();
+      if (!audioManager.isReady()) {
+          console.log("[main.ts] Inicializando audio desde listener tienda...");
+          audioManager.init();
+      }
+
+      // Llamar a openShop
+      try {
           gameManager.openShop();
-      };
+      } catch (error) {
+          console.error("[main.ts] Error llamando a gameManager.openShop():", error);
+      } finally {
+          // Liberar el flag después de un pequeño delay para asegurar que no haya reentrada inmediata
+          setTimeout(() => {
+              isProcessingShopClick = false;
+          }, 50);
+      }
+  };
 
-      shopButtonElement.addEventListener('click', handleShopButtonInteraction);
-      shopButtonElement.addEventListener('touchstart', handleShopButtonInteraction, { passive: false });
+  // Limpiar listeners anteriores por si acaso (buena práctica)
+  shopButtonElement.removeEventListener('click', handleShopButtonInteraction);
+  shopButtonElement.removeEventListener('touchstart', handleShopButtonInteraction);
 
-  } else {
-      // <<< LOG AÑADIDO >>>
-      console.error("[main.ts] Botón Tienda (#shop-button) NO ENCONTRADO. Listeners no añadidos.");
-  }
-  // --- Fin Listener Tienda ---
+  // Añadir nuevos listeners
+  shopButtonElement.addEventListener('click', handleShopButtonInteraction);
+  shopButtonElement.addEventListener('touchstart', handleShopButtonInteraction, { passive: false }); // Mantener passive: false
+
+} else {
+  console.error("[main.ts] Botón Tienda (#shop-button) NO ENCONTRADO. Listeners no añadidos.");
+}
+// --- Fin Listener Tienda ---
 
   // Iniciar el juego (sin cambios)
   gameManager.init()

@@ -1,132 +1,90 @@
 // src/game/states/GameOverState.ts
 
 import { IState } from '../StateMachine';
-import { GameManager } from '../GameManager'; // Asegúrate que la ruta sea correcta
+import { GameManager } from '../GameManager';
+// <<< CAMBIO: Importar el componente Lit >>>
+import '../components/ui/game-over-screen.ts';
+import type { GameOverScreen } from '../components/ui/game-over-screen';
+// <<< FIN CAMBIO >>>
 
-/**
- * Estado que se muestra cuando el jugador pierde todas sus vidas.
- * Muestra el puntaje final y ofrece reiniciar.
- */
 export class GameOverState implements IState {
-  private gameManager: GameManager;
-  private gameOverContainer: HTMLDivElement | null = null;
-  private restartListener: (() => void) | null = null;
-  private keydownListener: ((event: KeyboardEvent) => void) | null = null;
+    private gameManager: GameManager;
+    private finalScore: number = 0;
+    private isNewHighScore: boolean = false;
+    // <<< CAMBIO: Referencia al componente Lit y a los handlers >>>
+    private gameOverScreenElement: GameOverScreen | null = null;
+    private restartHandler: (() => void) | null = null;
+    private menuHandler: (() => void) | null = null;
+    // <<< FIN CAMBIO >>>
 
-  constructor(gameManager: GameManager) {
-    this.gameManager = gameManager;
-  }
-
-  /**
-   * Se ejecuta al entrar en el estado GameOver.
-   * Limpia gatos, muestra mensaje, puntaje final y botón/prompt de reinicio.
-   * @param params - Parámetros opcionales, se espera { finalScore: number }.
-   */
-  enter(params?: any): void {
-    console.log('GameOverState: enter', params);
-    this.gameManager.setBodyStateClass('gameover'); // <-- AÑADIR ESTA LÍNEA
-    const finalScore = params?.finalScore ?? 0; // Capturar score
-
-    // *** CORRECCIÓN: Limpiar gatos al entrar a Game Over ***
-    try {
-        console.log("GameOverState: Limpiando gatos de la partida anterior...");
-        this.gameManager.getCatManager().removeAllCats();
-    } catch (error) {
-        console.error("GameOverState: Error al limpiar gatos:", error);
+    constructor(gameManager: GameManager) {
+        this.gameManager = gameManager;
     }
-    // ******************************************************
 
-    const appContainer = this.gameManager.getContainerElement();
-    appContainer.innerHTML = ''; // Limpiar cualquier UI anterior (del quiz)
+    enter(params?: { score: number, isNewHighScore?: boolean }): void {
+        console.log('GameOverState: enter', params);
+        this.finalScore = params?.score ?? 0;
+        this.isNewHighScore = params?.isNewHighScore ?? false;
+        this.gameManager.setBodyStateClass('gameover'); // Aplicar clase al body
 
-    // Crear contenedor para la UI de Game Over
-    this.gameOverContainer = document.createElement('div');
-    this.gameOverContainer.className = 'game-over-container flex flex-col items-center justify-center h-full text-center p-4 bg-gray-900 bg-opacity-90 text-white rounded-lg';
-    this.gameOverContainer.tabIndex = -1; // Para eventos de teclado
-
-    // Texto "A ESTUDIAR!!"
-    const gameOverText = document.createElement('p');
-    gameOverText.textContent = 'A ESTUDIAR!!';
-    gameOverText.className = 'game-over-text text-5xl md:text-6xl font-black text-red-500 mb-4 animate-pulse';
-
-    // Puntaje Final
-    const finalScoreText = document.createElement('p');
-    finalScoreText.textContent = `Puntaje Final: ${finalScore}`;
-    finalScoreText.className = 'final-score text-2xl text-yellow-400 mb-8';
-
-    // Prompt para Reiniciar
-    const restartText = document.createElement('p');
-    restartText.textContent = 'CLICK O TECLA PARA REINICIAR';
-    restartText.className = 'restart-prompt text-lg text-gray-300';
-
-    // Añadir elementos al contenedor
-    this.gameOverContainer.appendChild(gameOverText);
-    this.gameOverContainer.appendChild(finalScoreText);
-    this.gameOverContainer.appendChild(restartText);
-
-    // Añadir contenedor al DOM
-    appContainer.appendChild(this.gameOverContainer);
-
-    // Enfocar para teclado
-    this.gameOverContainer.focus();
-
-    // Reproducir sonido de Game Over
-    this.gameManager.getAudioManager().playSound('game_over');
-
-    // Listeners para reiniciar
-    this.restartListener = () => this.triggerRestart();
-    // Corrección: Añadir guion bajo a 'event'
-    this.keydownListener = (_event: KeyboardEvent) => {
-        // Reiniciar con cualquier tecla (o filtrar por Enter/Space si prefieres)
-        this.triggerRestart();
-    };
-
-    // Añadir listeners al contenedor
-    this.gameOverContainer.addEventListener('click', this.restartListener);
-    this.gameOverContainer.addEventListener('keydown', this.keydownListener);
-  }
-
-  /**
-   * Lógica centralizada para iniciar el proceso de reinicio.
-   */
-  private triggerRestart(): void {
-      console.log('Restarting game from GameOver...');
-      // No es necesario remover listeners aquí, se hace en exit()
-      this.gameManager.getStateMachine().changeState('MainMenu'); // Volver al menú
-  }
-
-  /**
-   * Se ejecuta al salir del estado GameOver.
-   * Limpia la UI y remueve los listeners.
-   */
-  exit(): void {
-    console.log('GameOverState: exit');
-    // Limpiar UI y remover listeners
-    if (this.gameOverContainer) {
-        if (this.restartListener) {
-            this.gameOverContainer.removeEventListener('click', this.restartListener);
-            this.restartListener = null;
+        const container = this.gameManager.getContainerElement();
+        if (!container) {
+            console.error("GameOverState: Contenedor principal no encontrado.");
+            return;
         }
-        if (this.keydownListener) {
-            this.gameOverContainer.removeEventListener('keydown', this.keydownListener);
-            this.keydownListener = null;
-        }
-        // Remover el contenedor del DOM de forma segura
-        if (this.gameOverContainer.parentNode) {
-            this.gameOverContainer.parentNode.removeChild(this.gameOverContainer);
-        }
-        this.gameOverContainer = null; // Limpiar referencia
+
+        // <<< CAMBIO: Crear e insertar el componente Lit >>>
+        container.innerHTML = ''; // Limpiar contenedor
+        this.gameOverScreenElement = document.createElement('game-over-screen') as GameOverScreen;
+
+        // Pasar propiedades
+        this.gameOverScreenElement.finalScore = this.finalScore;
+        this.gameOverScreenElement.isNewHighScore = this.isNewHighScore;
+
+        // Añadir listeners para los eventos personalizados
+        this.restartHandler = () => {
+            console.log("GameOverState: Evento 'restart-game-requested' recibido.");
+            this.gameManager.getAudioManager().playSound('ui_confirm');
+            this.gameManager.getStateMachine().changeState('QuizGameplay'); // Reiniciar el juego
+        };
+        this.menuHandler = () => {
+            console.log("GameOverState: Evento 'main-menu-requested' recibido.");
+            this.gameManager.getAudioManager().playSound('ui_cancel'); // Sonido diferente para volver al menú
+            this.gameManager.create(); // Volver al menú principal (reinicia estado)
+        };
+
+        this.gameOverScreenElement.addEventListener('restart-game-requested', this.restartHandler);
+        this.gameOverScreenElement.addEventListener('main-menu-requested', this.menuHandler);
+
+        container.appendChild(this.gameOverScreenElement);
+        // <<< FIN CAMBIO >>>
+
+        // Lógica adicional (ej. sonido de game over)
+        this.gameManager.getAudioManager().playSound('game_over');
     }
-     // Limpiar contenedor principal por si acaso (no debería ser necesario si exit se llama correctamente)
-     // this.gameManager.getContainerElement().innerHTML = '';
-  }
 
-  /**
-   * Se ejecuta en cada frame (sin uso aquí).
-   * @param _deltaTime - Tiempo desde el último frame (prefijo _ indica no usado).
-   */
-  // Corrección: Añadir guion bajo a 'deltaTime'
-  update(_deltaTime: number): void {
-    // No se necesita update para este estado simple
-  }
-} // Fin clase GameOverState
+    exit(): void {
+        console.log('GameOverState: exit');
+        // <<< CAMBIO: Limpiar listeners del componente Lit >>>
+        if (this.gameOverScreenElement) {
+            if (this.restartHandler) {
+                this.gameOverScreenElement.removeEventListener('restart-game-requested', this.restartHandler);
+            }
+            if (this.menuHandler) {
+                this.gameOverScreenElement.removeEventListener('main-menu-requested', this.menuHandler);
+            }
+        }
+        this.gameOverScreenElement = null; // Limpiar referencia
+        this.restartHandler = null;
+        this.menuHandler = null;
+        // <<< FIN CAMBIO >>>
+
+        // Limpiar contenedor (opcional, buildQuizInterface ya lo hace)
+        // const container = this.gameManager.getContainerElement();
+        // if (container) container.innerHTML = '';
+    }
+
+    update(_deltaTime: number): void {
+        // No se necesita acción por frame en este estado
+    }
+}

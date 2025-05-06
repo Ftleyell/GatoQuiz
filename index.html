@@ -8,10 +8,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-  </head>
-  <body>
-    <body>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@400;600;700;900&display=swap" rel="stylesheet">
+    </head>
+  <body> <canvas id="drawing-canvas"></canvas>
 
     <div id="app">
       </div>
@@ -20,12 +19,30 @@
 
     <div id="right-controls" class="control-container">
         <div id="drawing-buttons-container">
-            <button id="toggle-brush-button" class="control-button" title="Activar/Desactivar Pincel (B)">🖌️</button>
-            <button id="clear-ink-button" class="control-button" title="Borrar Trazos (C)">🗑️</button>
+            <tool-button
+              toolId="brush"
+              icon="🖌️"
+              titleText="Activar/Desactivar Pincel (B)"
+              id="toggle-brush-button"
+              class="control-button">
+            </tool-button>
+            <tool-button
+              toolId="clear-ink"
+              icon="🗑️"
+              titleText="Borrar Trazos (C)"
+              id="clear-ink-button"
+              class="control-button"
+              disabled> </tool-button>
         </div>
 
         <div id="cat-food-ui-container" class="hidden">
-             <button id="cat-food-button" class="control-button" title="Activar/Desactivar Comida (F)">🍲</button>
+             <tool-button
+               toolId="cat-food"
+               icon="🍲"
+               titleText="Activar/Desactivar Comida (F)"
+               id="cat-food-button"
+               class="control-button">
+             </tool-button>
              <div id="cat-food-bar-container">
                  <div id="cat-food-bar-fill"></div>
              </div>
@@ -35,23 +52,10 @@
     <button id="shop-button" class="control-button shop-button-standalone" title="Abrir Tienda (S)">🛒</button>
 
     <div id="blur-backdrop" class="blur-backdrop"></div>
-    <div id="shop-popup" class="overlay shop-overlay">
-        <div id="shop-content" class="shop-content-box">
-            <button id="shop-close-button" class="shop-close-btn" title="Cerrar Tienda (Esc)">&times;</button>
-            <h2 id="shop-title" class="shop-title-text">Tienda de Mejoras</h2>
-            <p id="shop-player-score" class="shop-score-text">Puntos: 0</p>
-            <div id="shop-items-container" class="shop-items-grid"></div>
-            <div id="shop-tooltip" class="shop-tooltip-box">
-              <div id="tooltip-name" class="tooltip-item-name">...</div>
-              <div id="tooltip-level" class="tooltip-item-level hidden"></div>
-              <div id="tooltip-effect" class="tooltip-item-effect"></div>
-              <div id="tooltip-cost" class="tooltip-item-cost"></div>
-              <div id="tooltip-status" class="tooltip-item-status hidden"></div>
-              <button id="tooltip-buy-button" class="tooltip-buy-btn hidden">💰</button>
-          </div>
-        </div>
-    </div>
-    <span id="combo-counter" class="combo-counter-base"></span>
+
+    <shop-popup id="shop-popup" class="overlay shop-overlay">
+        </shop-popup>
+
     <div id="explanation-overlay" class="overlay">
       <div class="overlay-content-wrapper">
           <p id="explanation-text-content"></p>
