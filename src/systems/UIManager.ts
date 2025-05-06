@@ -8,34 +8,35 @@ import { LitElement } from 'lit'; // Importar LitElement para instanceof check
 // <<< CAMBIO: Importar los componentes Lit >>>
 import '../game/components/ui/quiz-option-button.ts';
 import type { QuizOptionButton } from '../game/components/ui/quiz-option-button';
-import '../game/components/ui/score-display.ts'; // Importar para registrar <score-display>
-import type { ScoreDisplay } from '../game/components/ui/score-display'; // Importar el tipo
+import '../game/components/ui/score-display.ts';
+import type { ScoreDisplay } from '../game/components/ui/score-display';
+import '../game/components/ui/lives-display.ts'; // Importar para registrar <lives-display>
+import type { LivesDisplay } from '../game/components/ui/lives-display'; // Importar el tipo
 
 // Tipos locales (sin cambios)
 interface QuestionOption { key: string; text: string; }
 interface Question { id: number | string; text: string; options: QuestionOption[]; correctAnswerKey: string; difficulty: string | number; explanation?: string; }
 
 // --- CONSTANTES --- (Sin cambios)
-// ... (FLARE_START_STREAK, FLARE_MAX_STREAK, etc.)
 const FLARE_START_STREAK = 1; const FLARE_MAX_STREAK = 10; const ELEMENT_GLOW_START_STREAK = 2; const ELEMENT_GLOW_MAX_STREAK = 10; const BG_COLOR_START_STREAK = 1; const BG_COLOR_MAX_STREAK = 20; const COMBO_BASE_FONT_SIZE_REM = 3.0; const COMBO_FONT_INCREMENT_REM = 0.5; const COMBO_HUE_INCREMENT = 35; const RAINBOW_INK_COLORS = ['#a78bfa', '#7c3aed', '#2563eb', '#34d399', '#facc15', '#f97316', '#ef4444']; const DEFAULT_INK_BAR_BG_COLOR = '#374151';
 const DIFFICULTY_LEVELS_CONFIG: { [key: number | string]: { name: string; class: string; glowColor?: string; glowBlur?: string; pulse?: boolean } } = { 1: { name: "COMÚN", class: "difficulty-1" }, 2: { name: "POCO COMÚN", class: "difficulty-2" }, 3: { name: "RARA", class: "difficulty-3" }, 4: { name: "ÉPICA", class: "difficulty-4", glowColor: "rgba(167, 139, 250, 0.7)", glowBlur: "8px" }, 5: { name: "LEGENDARIA", class: "difficulty-5", glowColor: "rgba(245, 158, 11, 0.7)", glowBlur: "10px", pulse: true }, "easy": { name: "FÁCIL", class: "difficulty-2", glowColor: "rgba(52, 211, 153, 0.6)", glowBlur: "6px" }, "medium": { name: "MEDIO", class: "difficulty-3", glowColor: "rgba(96, 165, 250, 0.7)", glowBlur: "8px" }, "hard": { name: "DIFÍCIL", class: "difficulty-4", glowColor: "rgba(248, 113, 113, 0.7)", glowBlur: "10px", pulse: true }, };
 
 
-// <<< CAMBIO: Actualizar tipo UIElementsMap >>>
+// <<< CAMBIO: Actualizar tipo UIElementsMap para livesDisplay >>>
 type UIElementsMap = {
     quizWrapper: HTMLElement | null; quizScrollableContent: HTMLElement | null;
     topUIContainer: HTMLElement | null; statusRow: HTMLElement | null;
-    livesDisplay: HTMLElement | null; livesDisplayCount: HTMLElement | null;
-    shieldIcon: HTMLElement | null; hintIcon: HTMLElement | null;
-    // scoreDisplay ahora es el componente Lit, no necesitamos refs internas
+    // livesDisplay ahora es el componente Lit
+    livesDisplay: LivesDisplay | null;
+    // livesDisplayCount: HTMLElement | null; // Eliminado
+    // shieldIcon: HTMLElement | null; // Eliminado
+    // hintIcon: HTMLElement | null; // Eliminado
     scoreDisplay: ScoreDisplay | null;
-    // scoreDisplayText: HTMLElement | null; // Eliminado
-    // scorePulse: HTMLElement | null; // Eliminado
     inkArea: HTMLElement | null; inkLabel: HTMLElement | null; inkBarContainer: HTMLElement | null;
     questionBox: HTMLElement | null; questionBoxContent: HTMLElement | null; questionBoxBackdrop: HTMLElement | null;
     difficultyLabel: HTMLElement | null; questionText: HTMLElement | null;
     optionsContainer: HTMLElement | null;
-    optionButtons: QuizOptionButton[]; // Array de componentes Lit
+    optionButtons: QuizOptionButton[];
     feedbackArea: HTMLElement | null;
     explanationOverlay: HTMLElement | null; explanationText: HTMLElement | null; explanationStatusText: HTMLElement | null;
     blurBackdrop: HTMLElement | null;
@@ -57,7 +58,7 @@ export class UIManager {
     }
 
     /**
-     * Construye la interfaz principal del quiz. Usa <quiz-option-button> y <score-display>.
+     * Construye la interfaz principal del quiz. Usa componentes Lit.
      */
     public buildQuizInterface(question: Question, containerElement: HTMLElement, onOptionClick: (key: string) => void, currentCombo: number): void {
         if (!question) { console.error("UIManager: Intento de construir UI sin pregunta."); return; }
@@ -76,29 +77,31 @@ export class UIManager {
             // 2. Área Superior (Score, Vidas, Tinta)
             const scoreArea = document.createElement('div'); scoreArea.id = 'score-area'; scoreArea.className = 'top-ui-container'; gameContainer.appendChild(scoreArea); elementsMap.topUIContainer = scoreArea;
             const statusWrapper = document.createElement('div'); statusWrapper.id = 'status-wrapper'; statusWrapper.className = 'status-row'; scoreArea.appendChild(statusWrapper); elementsMap.statusRow = statusWrapper;
-            // Vidas (Sin cambios en creación)
-            const livesContainer = document.createElement('div'); livesContainer.id = 'lives-container'; livesContainer.className = 'quiz-lives'; statusWrapper.appendChild(livesContainer); elementsMap.livesDisplay = livesContainer;
-                const heartIcon = document.createElement('span'); heartIcon.className = 'life-emoji'; heartIcon.textContent = '❤️'; livesContainer.appendChild(heartIcon);
-                const livesCountSpan = document.createElement('span'); livesCountSpan.id = 'lives-count'; livesCountSpan.textContent = '0'; livesContainer.appendChild(livesCountSpan); elementsMap.livesDisplayCount = livesCountSpan;
-                const shieldIcon = document.createElement('span'); shieldIcon.id = 'shield-icon'; shieldIcon.textContent = '🛡️'; shieldIcon.style.display = 'none'; livesContainer.appendChild(shieldIcon); elementsMap.shieldIcon = shieldIcon;
-                const hintIcon = document.createElement('span'); hintIcon.id = 'hint-icon'; hintIcon.textContent = '💡'; hintIcon.style.display = 'none'; livesContainer.appendChild(hintIcon); elementsMap.hintIcon = hintIcon;
 
-            // <<< CAMBIO: Crear componente <score-display> >>>
-            const scoreDisplayElement = document.createElement('score-display') as ScoreDisplay;
-            scoreDisplayElement.score = playerData.score; // Valor inicial
-            scoreDisplayElement.combo = currentCombo; // Combo inicial
-            statusWrapper.appendChild(scoreDisplayElement);
-            elementsMap.scoreDisplay = scoreDisplayElement; // Guardar referencia al componente
+            // <<< CAMBIO: Crear componente <lives-display> >>>
+            const livesDisplayElement = document.createElement('lives-display') as LivesDisplay;
+            // Asignar valores iniciales (se actualizarán después si es necesario)
+            livesDisplayElement.lives = this.gameManager.getLives();
+            livesDisplayElement.hasShield = playerData.hasShield;
+            livesDisplayElement.hintCharges = playerData.hintCharges;
+            statusWrapper.appendChild(livesDisplayElement); // Añadir al mismo contenedor padre
+            elementsMap.livesDisplay = livesDisplayElement; // Guardar referencia al componente Lit
             // <<< FIN CAMBIO >>>
+
+            // Crear componente <score-display> (Sin cambios respecto a la versión anterior)
+            const scoreDisplayElement = document.createElement('score-display') as ScoreDisplay;
+            scoreDisplayElement.score = playerData.score;
+            scoreDisplayElement.combo = currentCombo;
+            statusWrapper.appendChild(scoreDisplayElement);
+            elementsMap.scoreDisplay = scoreDisplayElement;
 
             // Tinta (Sin cambios en creación)
             const inkAreaContainer = document.createElement('div'); inkAreaContainer.id = 'ink-area'; inkAreaContainer.className = 'ink-area'; scoreArea.appendChild(inkAreaContainer); elementsMap.inkArea = inkAreaContainer;
                 const inkLabel = document.createElement('div'); inkLabel.id = 'ink-label'; inkLabel.className = 'ink-label-base hidden'; inkLabel.textContent = "Tinta"; inkAreaContainer.appendChild(inkLabel); elementsMap.inkLabel = inkLabel;
                 const inkBarContainer = document.createElement('div'); inkBarContainer.id = 'ink-bar-container'; inkBarContainer.className = 'ink-bar-container-base relative hidden'; inkAreaContainer.appendChild(inkBarContainer); elementsMap.inkBarContainer = inkBarContainer;
 
-            // 3. Wrapper Scrolleable (Sin cambios)
+            // 3. Wrapper Scrolleable y Contenido (Sin cambios)
             const quizContentWrapper = document.createElement('div'); quizContentWrapper.className = 'quiz-content-wrapper'; gameContainer.appendChild(quizContentWrapper);
-            // 4. Contenedor Scrolleable (Sin cambios)
             const quizScrollableContent = document.createElement('div'); quizScrollableContent.className = 'quiz-scrollable-content'; quizContentWrapper.appendChild(quizScrollableContent); elementsMap.quizScrollableContent = quizScrollableContent;
 
             // 5. Contenido DENTRO de quizScrollableContent
@@ -146,15 +149,15 @@ export class UIManager {
         // --- Actualizaciones Iniciales ---
         this.currentUIElements = elementsMap as UIElementsMap;
 
-        // <<< CAMBIO: Llamar a updateScoreDisplay que ahora actualiza la propiedad del componente >>>
+        // <<< CAMBIO: Los métodos ahora actualizan las propiedades del componente Lit >>>
         this.updateScoreDisplay(playerData.score);
         this.updateLivesDisplay(this.gameManager.getLives());
         this.updateShieldIcon(playerData.hasShield);
         this.updateHintIcon(playerData.hintCharges);
+        // --- FIN CAMBIO ---
         this.updateInkBar();
         this.updateInkVisibility(playerData.isDrawingUnlocked);
         this.updateDifficultyLabel(question.difficulty);
-        // <<< CAMBIO: Llamar a updateComboVisuals que ahora actualiza la propiedad del componente score-display >>>
         this.updateComboVisuals(currentCombo);
         this.updateCatFoodBar(playerData.currentCatFood, playerData.getMaxCatFood());
         this.toggleCatFoodUIVisibility(playerData.isCatFoodUnlocked);
@@ -167,29 +170,29 @@ export class UIManager {
     /**
      * Aplica/remueve clases de tema de forma segura.
      * Pasa la propiedad 'theme' a los componentes <quiz-option-button>.
-     * Ya no necesita manejar estilos específicos para el score display.
+     * Ya no necesita manejar estilos para scoreDisplay o livesDisplay.
      */
     private applyThemeStyles(themeElements: Partial<Theme['elements']> | null): void {
         console.log("UIManager: Aplicando/Reseteando estilos de tema (safe)...");
         const allKnownThemeClasses = [ 'theme-retro', 'theme-clean', 'theme-inverted', 'theme-retro-card', 'theme-clean-card', 'theme-inverted-card' ];
-        const defaultBaseClasses: { [k in keyof UIElementsMap]?: string } = { quizWrapper: 'quiz-wrapper game-container text-center', topUIContainer: 'top-ui-container', statusRow: 'status-row', livesDisplay: 'quiz-lives', /* scoreDisplay: 'quiz-score', // Removido */ inkArea: 'ink-area', inkLabel: 'ink-label-base', inkBarContainer: 'ink-bar-container-base', questionBox: 'question-box-base card', optionsContainer: 'options-container-base', feedbackArea: 'feedback-area-base' };
+        // <<< CAMBIO: Quitar livesDisplay y scoreDisplay de defaultBaseClasses >>>
+        const defaultBaseClasses: { [k in keyof UIElementsMap]?: string } = { quizWrapper: 'quiz-wrapper game-container text-center', topUIContainer: 'top-ui-container', statusRow: 'status-row', /* livesDisplay: 'quiz-lives', scoreDisplay: 'quiz-score', */ inkArea: 'ink-area', inkLabel: 'ink-label-base', inkBarContainer: 'ink-bar-container-base', questionBox: 'question-box-base card', optionsContainer: 'options-container-base', feedbackArea: 'feedback-area-base' };
         const themeId = this.gameManager.getThemeManager().getActiveThemeId() || 'clean';
 
         for (const key in this.currentUIElements) {
             const mapKey = key as keyof UIElementsMap;
 
-            // Procesar optionButtons por separado para pasar la propiedad theme
+            // Procesar optionButtons por separado
             if (mapKey === 'optionButtons') {
                 this.currentUIElements.optionButtons?.forEach(button => {
                     if (button instanceof LitElement) { button.theme = themeId; }
                 });
                 continue;
             }
-            // <<< CAMBIO: Saltar scoreDisplay ya que se auto-gestiona >>>
-            if (mapKey === 'scoreDisplay') {
+            // Saltar componentes Lit que gestionan su propio estilo
+            if (mapKey === 'scoreDisplay' || mapKey === 'livesDisplay') {
                 continue;
             }
-            // <<< FIN CAMBIO >>>
 
             const elementOrArray = this.currentUIElements[mapKey];
             const themeDef = themeElements ? themeElements[mapKey] : null;
@@ -222,7 +225,7 @@ export class UIManager {
     public clearQuizInterface(containerElement: HTMLElement): void {
         this.removeExplanationListener();
         this.clearExplanationStatus();
-        this.currentUIElements = {}; // Limpiar referencias cacheadas
+        this.currentUIElements = {};
         this.optionClickCallback = null;
         containerElement.innerHTML = '';
     }
@@ -233,7 +236,6 @@ export class UIManager {
     public updateComboVisuals(combo: number): void {
         const root = document.documentElement;
         const comboDisplay = document.getElementById('combo-counter') as HTMLElement | null;
-        // <<< CAMBIO: Obtener el componente score-display >>>
         const scoreDisplayElement = this.currentUIElements?.scoreDisplay;
 
         if (!root) { console.error("updateComboVisuals: Root element not found"); return; }
@@ -254,11 +256,10 @@ export class UIManager {
         // Actualizar color de fondo (sin cambios)
         const bgStreakRatio = Math.min(Math.max(0, combo - BG_COLOR_START_STREAK) / (BG_COLOR_MAX_STREAK - BG_COLOR_START_STREAK), 1); const bgIntensity = bgStreakRatio * bgStreakRatio; const baseHue = 220; const targetHue = (baseHue + (combo * 10)) % 360; const saturation = 30 + bgIntensity * 50; const lightness = 10 + bgIntensity * 15; document.body.style.backgroundColor = `hsl(${targetHue.toFixed(0)}, ${saturation.toFixed(0)}%, ${lightness.toFixed(0)}%)`;
 
-        // <<< CAMBIO: Actualizar la propiedad combo del componente score-display >>>
+        // Actualizar la propiedad combo del componente score-display
         if (scoreDisplayElement) {
-            scoreDisplayElement.combo = combo; // El componente se encarga de sus efectos internos
+            scoreDisplayElement.combo = combo;
         }
-        // <<< FIN CAMBIO >>>
     }
 
     /**
@@ -267,21 +268,45 @@ export class UIManager {
     public updateScoreDisplay(score: number): void {
         const scoreDisplayElement = this.currentUIElements?.scoreDisplay;
         if (scoreDisplayElement) {
-            scoreDisplayElement.score = score; // Actualizar la propiedad
-            // La animación de pulso ahora se maneja dentro del componente <score-display>
+            scoreDisplayElement.score = score;
         }
     }
 
-    // --- Métodos de actualización de estado (Vidas, Shield, Hint, Ink, Difficulty, Feedback) --- (Sin cambios)
-    public updateLivesDisplay(lives: number): void { const livesCountElement = this.currentUIElements?.livesDisplayCount; if (livesCountElement) { livesCountElement.textContent = lives.toString(); }}
-    public updateShieldIcon(isActive: boolean): void { const shieldIconElement = this.currentUIElements?.shieldIcon; if (shieldIconElement) { shieldIconElement.style.display = isActive ? 'inline' : 'none'; }}
-    public updateHintIcon(charges: number): void { const hintIconElement = this.currentUIElements?.hintIcon; if (hintIconElement) { hintIconElement.style.display = charges > 0 ? 'inline' : 'none'; }}
+    /**
+     * Actualiza la propiedad 'lives' del componente <lives-display>.
+     */
+    public updateLivesDisplay(lives: number): void {
+        const livesDisplayElement = this.currentUIElements?.livesDisplay;
+        if (livesDisplayElement) {
+            livesDisplayElement.lives = lives;
+        }
+    }
+
+    /**
+     * Actualiza la propiedad 'hasShield' del componente <lives-display>.
+     */
+    public updateShieldIcon(isActive: boolean): void {
+        const livesDisplayElement = this.currentUIElements?.livesDisplay;
+        if (livesDisplayElement) {
+            livesDisplayElement.hasShield = isActive;
+        }
+    }
+
+    /**
+     * Actualiza la propiedad 'hintCharges' del componente <lives-display>.
+     */
+    public updateHintIcon(charges: number): void {
+        const livesDisplayElement = this.currentUIElements?.livesDisplay;
+        if (livesDisplayElement) {
+            livesDisplayElement.hintCharges = charges;
+        }
+    }
+
+    // --- Métodos de Ink, Difficulty, Feedback, Options (sin cambios respecto a la versión anterior) ---
     public updateInkBar(): void { const inkBarContainer = this.currentUIElements?.inkBarContainer ?? document.getElementById('ink-bar-container'); if (!inkBarContainer) return; const playerData = this.gameManager.getPlayerData(); const currentInk = playerData.currentInk; const barCapacity = playerData.INK_BAR_CAPACITY; inkBarContainer.innerHTML = ''; const fullBars = Math.floor(currentInk / barCapacity); const currentBarInk = currentInk % barCapacity; const currentBarPercentage = (currentInk === 0 && fullBars === 0) ? 0 : (currentBarInk === 0 && fullBars > 0) ? 100 : (currentBarInk / barCapacity) * 100; let backgroundColor = DEFAULT_INK_BAR_BG_COLOR; if (fullBars > 0) { const previousColorIndex = (fullBars - 1) % RAINBOW_INK_COLORS.length; backgroundColor = RAINBOW_INK_COLORS[previousColorIndex]; } inkBarContainer.style.backgroundColor = backgroundColor; const currentColorIndex = fullBars % RAINBOW_INK_COLORS.length; const currentBarColor = RAINBOW_INK_COLORS[currentColorIndex]; if (currentBarPercentage >= 0) { const currentBarSegment = document.createElement('div'); currentBarSegment.className = 'ink-bar-segment'; currentBarSegment.style.backgroundColor = currentBarColor; currentBarSegment.style.width = `${currentBarPercentage}%`; currentBarSegment.style.transition = 'width 0.3s ease-out, background-color 0.3s ease-out'; inkBarContainer.appendChild(currentBarSegment); } }
     public updateInkVisibility(isUnlocked: boolean): void { const scoreArea = this.currentUIElements?.topUIContainer ?? document.getElementById('score-area'); const inkLabel = this.currentUIElements?.inkLabel ?? document.getElementById('ink-label'); const inkBarContainer = this.currentUIElements?.inkBarContainer ?? document.getElementById('ink-bar-container'); if (inkLabel) { inkLabel.classList.toggle('hidden', !isUnlocked); } if (inkBarContainer) { inkBarContainer.classList.toggle('hidden', !isUnlocked); } if (scoreArea) { scoreArea.classList.toggle('ink-visible', isUnlocked); }}
     public updateDifficultyLabel(difficultyValue: string | number): void { const labelElement = this.currentUIElements?.difficultyLabel; if (!labelElement) return; let config = DIFFICULTY_LEVELS_CONFIG[Number(difficultyValue)] || DIFFICULTY_LEVELS_CONFIG[difficultyValue] || DIFFICULTY_LEVELS_CONFIG[1]; labelElement.textContent = `Pregunta: ${config.name}`; Object.values(DIFFICULTY_LEVELS_CONFIG).forEach(c => { if (c.class) labelElement.classList.remove(c.class); }); if (config.class) labelElement.classList.add(config.class); const root = document.documentElement; root.style.setProperty('--difficulty-glow-color', config.glowColor || 'transparent'); root.style.setProperty('--difficulty-glow-blur', config.glowBlur || '0px'); labelElement.classList.toggle('difficulty-pulse', !!config.pulse); }
     public updateFeedback(message: string, type: 'correct' | 'incorrect' | 'shield' | 'info'): void { const feedbackAreaElement = this.currentUIElements?.feedbackArea; if (feedbackAreaElement) { feedbackAreaElement.textContent = message; feedbackAreaElement.className = 'feedback-area-base mt-4 h-8 text-center font-bold'; const colorClassMap = { correct: 'text-green-400 feedback-correct', incorrect: 'text-red-400 feedback-incorrect', shield: 'text-blue-400 feedback-shield', info: 'text-gray-400 feedback-info' }; feedbackAreaElement.classList.add(...colorClassMap[type].split(' ')); }}
-
-    // --- Métodos para interactuar con los botones Lit (Sin cambios respecto a la versión anterior) ---
     public disableOptions(): void { this.currentUIElements.optionButtons?.forEach(btn => { if (btn) { btn.disabled = true; } }); }
     public enableOptions(): void { this.currentUIElements.optionButtons?.forEach(btn => { if (btn) { if (!btn.hinted) { btn.disabled = false; } else { btn.disabled = true; } } }); }
     public applyHintVisuals(correctKey: string): void { let incorrectOptionsHinted = 0; const optionsToHint = 1; const buttons = this.currentUIElements.optionButtons; if (!buttons || buttons.length <= 1) return; const shuffledButtons = [...buttons].sort(() => 0.5 - Math.random()); shuffledButtons.forEach(btn => { if (incorrectOptionsHinted >= optionsToHint) return; if (btn && btn.optionKey !== correctKey && !btn.hinted) { btn.hinted = true; incorrectOptionsHinted++; } }); }
