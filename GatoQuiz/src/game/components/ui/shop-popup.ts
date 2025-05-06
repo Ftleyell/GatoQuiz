@@ -27,7 +27,6 @@ export class ShopPopup extends LitElement {
   // --- Propiedades (Inputs) ---
   @property({ type: Array }) items: ShopItemJsonData[] = [];
   @property({ type: Object }) playerDataSnapshot: PlayerData | null = null;
-  // <<< CORRECCIÓN: Especificar nombre del atributo en minúscula >>>
   @property({ type: Boolean, reflect: true, attribute: 'visible' }) isVisible = false;
 
   // --- Estado Interno ---
@@ -38,32 +37,35 @@ export class ShopPopup extends LitElement {
   // --- Estilos Encapsulados ---
   static styles: CSSResultGroup = css`
     :host {
-      /* Estilos del overlay base */
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      display: flex;
+      /* --- REVERTIDO: Volver a display: flex y visibility: hidden --- */
+      display: flex; /* Define el layout base */
       opacity: 0;
       visibility: hidden;
+      pointer-events: none; /* Asegura que no sea interactuable por defecto */
+      /* -------------------------------------------------------------- */
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
       justify-content: center;
       align-items: flex-start; /* Alinear arriba por defecto */
       text-align: center;
-      transition: opacity 0.4s ease-in-out, visibility 0s linear 0.4s;
+      /* Transición solo para opacidad */
+      transition: opacity 0.4s ease-in-out;
       z-index: 101;
       padding: 5vh 1rem;
       box-sizing: border-box;
-      pointer-events: none;
-      overflow-y: auto;
+      overflow-y: auto; /* Scroll interno del host */
     }
 
-    /* Selector CSS correcto que ahora coincidirá con el atributo */
     :host([visible]) {
-      opacity: 1 !important; /* <-- AÑADIR !important */
-      visibility: visible !important; /* <-- AÑADIR !important */
-      transition: opacity 0.4s ease-in-out, visibility 0s linear 0s;
-      pointer-events: auto;
+      /* --- REVERTIDO: Solo cambiar opacity, visibility, pointer-events --- */
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto; /* Hacer interactuable cuando es visible */
+       /* Ya no necesitamos !important */
+      /* -------------------------------------------------------------- */
     }
-      
-    /* ... (Resto de los estilos sin cambios) ... */
+
+    /* --- RESTO DE ESTILOS INTERNOS SIN CAMBIOS --- */
     .shop-content-box {
       background-color: rgba(17, 24, 39, 0.97);
       border-radius: 1rem; /* --shop-border-radius */
@@ -78,7 +80,7 @@ export class ShopPopup extends LitElement {
       flex-direction: column;
       box-sizing: border-box;
       overflow: hidden; /* Ocultar overflow interno, el scroll es del host */
-      pointer-events: auto; /* El contenido sí es interactuable */
+      pointer-events: auto; /* El contenido SÍ debe ser interactuable cuando el :host es visible */
       margin: auto; /* Centrar horizontalmente si el host es flex */
     }
     .shop-close-btn {
@@ -129,15 +131,15 @@ export class ShopPopup extends LitElement {
     }
   `;
 
-  // --- Ciclo de Vida ---
+  // --- Ciclo de Vida, Lógica Interna, Manejadores, Template HTML, Helpers (SIN CAMBIOS) ---
   connectedCallback(): void {
     super.connectedCallback();
-    this.addEventListener('click', this._handleBackdropClick);
+    this.addEventListener('click', this._handleBackdropClick); // <-- RE-AÑADIDO BACKDROP CLICK
   }
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
-    this.removeEventListener('click', this._handleBackdropClick);
+     this.removeEventListener('click', this._handleBackdropClick); // <-- RE-AÑADIDO LIMPIEZA
   }
 
   protected updated(changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
@@ -148,15 +150,9 @@ export class ShopPopup extends LitElement {
     if (changedProperties.has('_selectedItemId') || changedProperties.has('playerDataSnapshot')) {
       this._updateTooltipData();
     }
-    // <<< CORRECCIÓN: No necesitamos llamar a toggleAttribute manualmente si usamos reflect: true >>>
-    // if (changedProperties.has('isVisible')) {
-    //   // console.log(`[ShopPopup.updated] isVisible cambió a: ${this.isVisible}. Toggleando atributo 'visible'.`);
-    //   this.toggleAttribute('visible', this.isVisible);
-    // }
   }
 
-  // --- Lógica Interna ---
-  private _groupItemsByCategory() { /* ... (sin cambios) ... */
+  private _groupItemsByCategory() {
     const grouped: ItemsByCategory = {};
     this.items.forEach(item => {
       const category = item.category || 'general';
@@ -168,39 +164,41 @@ export class ShopPopup extends LitElement {
     }
     this._itemsByCategory = grouped;
   }
-  private _updateTooltipData() { /* ... (sin cambios) ... */
+  private _updateTooltipData() {
     this._selectedItemData = this._selectedItemId ? this.items.find(item => item.id === this._selectedItemId) ?? null : null;
     const tooltip = this.shadowRoot?.querySelector('shop-tooltip');
     if (tooltip) {
+        // Forzar actualización del tooltip pasándole la visibilidad explícitamente
+        tooltip.isVisible = !!this._selectedItemId;
         tooltip.itemData = this._selectedItemData;
         tooltip.playerDataSnapshot = this.playerDataSnapshot;
     }
   }
 
-  // --- Manejadores de Eventos ---
-  private _handleItemSelection(event: CustomEvent) { /* ... (sin cambios) ... */
+  private _handleItemSelection(event: CustomEvent) {
     const itemId = event.detail?.itemId;
     if (this._selectedItemId === itemId) { this._selectedItemId = null; }
     else { this._selectedItemId = itemId; }
+     this._updateTooltipData(); // <<< AÑADIDO: Forzar actualización tooltip al seleccionar/deseleccionar
   }
-  private _handleBuyRequest(event: CustomEvent) { /* ... (sin cambios) ... */
+  private _handleBuyRequest(event: CustomEvent) {
     const itemId = event.detail?.itemId;
     if (itemId) {
       this.dispatchEvent(new CustomEvent('buy-item-requested', { detail: { itemId: itemId }, bubbles: true, composed: true }));
     }
   }
-  private _handleCloseClick() { /* ... (sin cambios) ... */
+  private _handleCloseClick() {
     this.dispatchEvent(new CustomEvent('close-requested'));
   }
-  private _handleBackdropClick(event: MouseEvent) { /* ... (sin cambios) ... */
-    if (event.target === this) { this.dispatchEvent(new CustomEvent('close-requested')); }
+  private _handleBackdropClick(event: MouseEvent) { // <-- RE-AÑADIDO
+      // Cierra solo si se hace clic directamente en el host (el fondo)
+      if (event.target === this) {
+          this.dispatchEvent(new CustomEvent('close-requested'));
+      }
   }
 
-  // --- Template HTML ---
   render() {
-    // <<< CORRECCIÓN: No necesitamos retornar nothing, CSS maneja la visibilidad >>>
-    // if (!this.isVisible) { return nothing; }
-
+    // El return es el mismo
     return html`
       <div class="shop-content-box" @click=${(e: Event) => e.stopPropagation()}>
         <button class="shop-close-btn" @click=${this._handleCloseClick} title="Cerrar Tienda (Esc)">&times;</button>
@@ -212,7 +210,6 @@ export class ShopPopup extends LitElement {
             <h3 class="shop-section-title">${CATEGORY_TITLES[category] || category}</h3>
             <div class="shop-section-items">
               ${this._itemsByCategory[category].map(item => {
-                // Calcular estados (sin cambios)
                 const cost = this._calculateItemCost(item, this.playerDataSnapshot!);
                 const isAffordable = this.playerDataSnapshot!.score >= cost;
                 const isPurchased = this._checkItemIsPurchased(item, this.playerDataSnapshot!);
@@ -240,7 +237,7 @@ export class ShopPopup extends LitElement {
         <shop-tooltip
           .itemData=${this._selectedItemData}
           .playerDataSnapshot=${this.playerDataSnapshot}
-          ?isVisible=${!!this._selectedItemId}
+          ?isVisible=${!!this._selectedItemId} /* La visibilidad del tooltip sigue dependiendo de si hay item seleccionado */
           @buy-item-requested=${this._handleBuyRequest}
         ></shop-tooltip>
 
@@ -248,7 +245,6 @@ export class ShopPopup extends LitElement {
     `;
   }
 
-   // --- Métodos Helper (sin cambios) ---
    private _calculateItemCost(itemData: ShopItemJsonData, playerData: PlayerData): number { /* ... */ const costParams = itemData.cost; let cost = costParams.base; if (itemData.isLeveled) { const levelRef = itemData.levelRef; const currentLevel = levelRef ? (playerData as any)[levelRef] ?? 0 : 0; if (costParams.type === 'exponential' && typeof costParams.multiplier === 'number') { cost = costParams.base * Math.pow(costParams.multiplier, currentLevel); } else { cost = costParams.base + (costParams.perLevel ?? 0) * currentLevel; } } else if (costParams.levelRef && typeof costParams.perLevel === 'number') { const linkedLevel = (playerData as any)[costParams.levelRef] ?? 0; cost = costParams.base + costParams.perLevel * linkedLevel; } return Math.round(cost); }
    private _checkItemIsPurchased(itemData: ShopItemJsonData, playerData: PlayerData): boolean { /* ... */ if (!itemData.isPurchasedCheck) return false; const check = itemData.isPurchasedCheck; const valueRef = check.valueRef; const currentValue = (playerData as any)[valueRef]; if (typeof currentValue === 'undefined') return false; switch (check.condition) { case 'isTrue': return currentValue === true; case 'isFalse': return currentValue === false; case 'greaterThan': return typeof currentValue === 'number' && typeof check.limit === 'number' && currentValue > check.limit; default: return false; } }
    private _checkItemCanPurchase(itemData: ShopItemJsonData, playerData: PlayerData): boolean { /* ... */ if (!itemData.purchaseCheck) return true; const check = itemData.purchaseCheck; const valueRef = check.valueRef; const currentValue = (playerData as any)[valueRef]; if (typeof currentValue === 'undefined') { return false; } switch (check.condition) { case 'lessThan': return typeof currentValue === 'number' && typeof check.limit === 'number' && currentValue < check.limit; case 'lessThanOrEqual': return typeof currentValue === 'number' && typeof check.limit === 'number' && currentValue <= check.limit; case 'isFalse': return currentValue === false; case 'isTrue': return currentValue === true; case 'greaterThan': return typeof currentValue === 'number' && typeof check.limit === 'number' && currentValue > check.limit; case 'greaterThanOrEqual': return typeof currentValue === 'number' && typeof check.limit === 'number' && currentValue >= check.limit; default: return false; } }
