@@ -47,29 +47,25 @@ export interface ThemeElementDefinition {
    * Define la estructura completa de un tema.
    */
   export interface Theme {
-    /** Identificador único del tema. */
     id: string;
-    /** Nombre legible del tema. */
     name: string;
-    /** Descripción breve del tema. */
     description: string;
-    /** Objeto que mapea nombres lógicos de elementos a sus definiciones de estilo. */
-    elements: {
-      quizWrapper: ThemeElementDefinition;
-      topUIContainer: ThemeElementDefinition;
-      statusRow: ThemeElementDefinition;
-      livesDisplay: ThemeElementDefinition;
-      scoreDisplay: ThemeElementDefinition;
-      comboDisplay: ThemeElementDefinition;
-      inkArea: ThemeElementDefinition;
-      inkLabel: ThemeElementDefinition;
-      inkBarContainer: ThemeElementDefinition;
-      inkBarFill: ThemeElementDefinition;
-      questionBox: ThemeElementDefinition;
-      optionsContainer: ThemeElementDefinition;
-      optionButton: ThemeElementDefinition; // Definición base para *cada* botón
-      feedbackArea: ThemeElementDefinition;
-      // Añadir más elementos lógicos si son necesarios
+
+    /**
+     * (Opcional) Clases CSS para aplicar a elementos HTML estándar (no-Lit)
+     * o como una clase global al wrapper principal del tema.
+     */
+    elements?: {
+        quizWrapper?: ThemeElementDefinition; // Ejemplo: para una clase global en <body>
+        // ... otras definiciones si son necesarias para elementos no Lit ...
+    };
+
+    /**
+     * (Obligatorio) Definiciones de variables CSS para este tema.
+     * Estas variables serán aplicadas globalmente y usadas por los componentes Lit.
+     */
+    cssVariables: {
+        [key: string]: string; // Ejemplo: { "--gq-text-color": "#FFFFFF", "--gq-primary-bg": "blue" }
     };
   }
   

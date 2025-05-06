@@ -5,10 +5,15 @@ import { Theme } from '../types/Theme'; // Asegúrate que la ruta sea correcta
 export class ThemeManager {
     private themes: Theme[] = [];
     private activeThemeIndex: number = 0;
-    private defaultThemeId: string = 'retro'; // O el ID del tema por defecto que prefieras
+    private defaultThemeId: string = 'default-clean'; // Asumimos un ID para el tema base
     private isLoading: boolean = false;
     private lastError: string | null = null;
-    private rootElement: HTMLElement = document.body; // Elemento donde se aplicará la clase de tema
+    private rootElement: HTMLElement = document.body;
+
+    // Lista maestra de todas las variables CSS que el sistema puede tematizar.
+    // Idealmente, se podría generar dinámicamente al cargar el tema "default".
+    // Por ahora, la inicializamos vacía y la poblaremos al cargar el primer tema.
+    private masterCssVariableList: string[] = [];
 
     constructor(rootElementSelector: string = 'body') {
         console.log("ThemeManager Creado.");
@@ -21,12 +26,7 @@ export class ThemeManager {
         }
     }
 
-    /**
-     * Procesa los datos de temas ya cargados (ej. desde GameManager.preload).
-     * @param data - Array de objetos Theme.
-     * @returns true si la carga fue exitosa, false en caso contrario.
-     */
-    public async loadThemesData(data: any[]): Promise<boolean> {
+    public async loadThemesData(data: Theme[]): Promise<boolean> {
         if (this.isLoading) {
             console.warn('ThemeManager: Ya hay una carga en progreso.');
             return false;
@@ -37,19 +37,41 @@ export class ThemeManager {
         this.themes = [];
 
         try {
-            if (!Array.isArray(data)) {
-                throw new Error('Los datos de temas proporcionados no son un array válido.');
+            if (!Array.isArray(data) || data.length === 0) {
+                throw new Error('Los datos de temas proporcionados no son un array válido o están vacíos.');
             }
-            // TODO: Validación más profunda de cada objeto Theme si es necesario
 
-            this.themes = data as Theme[]; // Usar type assertion
-            console.log(`ThemeManager: ${this.themes.length} temas procesados exitosamente.`);
+            for (const theme of data) {
+                if (!theme.id || !theme.name || !theme.cssVariables || typeof theme.cssVariables !== 'object') {
+                    console.warn(`ThemeManager: Tema inválido o sin cssVariables, omitiendo:`, theme);
+                    continue;
+                }
+                this.themes.push(theme);
+            }
 
-            // Establecer índice inicial basado en el defaultThemeId
+            if (this.themes.length === 0) {
+                throw new Error('No se cargaron temas válidos (todos carecían de cssVariables).');
+            }
+            
+            // Poblar la lista maestra de variables del primer tema cargado (o el default si existe)
+            const firstValidTheme = this.themes.find(t => t.id === this.defaultThemeId) || this.themes[0];
+            if (firstValidTheme?.cssVariables) {
+                this.masterCssVariableList = Object.keys(firstValidTheme.cssVariables);
+                console.log(`ThemeManager: Lista maestra de ${this.masterCssVariableList.length} variables CSS generada desde el tema '${firstValidTheme.id}'.`);
+            } else {
+                console.warn("ThemeManager: No se pudo generar la lista maestra de variables CSS (primer tema válido sin cssVariables).");
+            }
+
+
             this.activeThemeIndex = Math.max(0, this.themes.findIndex(t => t.id === this.defaultThemeId));
-
+            if (this.themes.findIndex(t => t.id === this.defaultThemeId) === -1 && this.themes.length > 0) {
+                console.warn(`ThemeManager: Tema por defecto '${this.defaultThemeId}' no encontrado. Usando el primer tema de la lista.`);
+                this.activeThemeIndex = 0;
+            }
+            
+            console.log(`ThemeManager: ${this.themes.length} temas procesados exitosamente.`);
             this.isLoading = false;
-            this.applyActiveThemeClass(); // Aplicar clase del tema inicial
+            this.applyActiveTheme();
             return true;
 
         } catch (error) {
@@ -62,75 +84,88 @@ export class ThemeManager {
         }
     }
 
-     /**
-      * Aplica la clase CSS del tema activo al elemento raíz.
-      */
-     private applyActiveThemeClass(): void {
-        if (!this.rootElement) return;
-
-        // Remover clases de temas anteriores
-        this.themes.forEach(theme => {
-            if (theme.elements?.quizWrapper?.themeClass) {
-                 this.rootElement.classList.remove(theme.elements.quizWrapper.themeClass);
-            }
-         });
-
-        // Añadir clase del tema activo
+    private applyActiveTheme(): void {
         const activeTheme = this.getActiveTheme();
-        if (activeTheme?.elements?.quizWrapper?.themeClass) {
-            const themeClass = activeTheme.elements.quizWrapper.themeClass;
-            this.rootElement.classList.add(themeClass);
-            console.log(`ThemeManager: Clase de tema '${themeClass}' aplicada a ${this.rootElement.tagName}.`);
+        this._applyThemeCssVariables(activeTheme);
+        this._applyRootThemeClass(activeTheme);
+        this._dispatchThemeChangedEvent(activeTheme);
+    }
+
+    private _applyThemeCssVariables(theme: Theme | null): void {
+        // Limpiar todas las variables conocidas de la lista maestra antes de aplicar nuevas
+        for (const varName of this.masterCssVariableList) {
+            this.rootElement.style.removeProperty(varName);
+        }
+
+        if (theme?.cssVariables) {
+            console.log(`ThemeManager: Aplicando ${Object.keys(theme.cssVariables).length} variables CSS para el tema '${theme.id}'.`);
+            for (const [key, value] of Object.entries(theme.cssVariables)) {
+                // Opcional: Verificar si la variable está en la lista maestra si quisiéramos ser estrictos
+                // if (this.masterCssVariableList.includes(key)) {
+                this.rootElement.style.setProperty(key, value);
+                // } else {
+                //     console.warn(`ThemeManager: Variable '${key}' del tema '${theme.id}' no está en la lista maestra y no se aplicará.`);
+                // }
+            }
         } else {
-            console.warn("ThemeManager: Tema activo o su themeClass no definidos.");
+            console.log("ThemeManager: No hay variables CSS para aplicar (tema null o sin cssVariables), se usarán fallbacks de componentes.");
+        }
+    }
+    
+    private _applyRootThemeClass(theme: Theme | null): void {
+        // Remover todas las clases de tema que podrían haber sido añadidas por temas anteriores
+        // Esto asume que las clases de tema global siguen un patrón como 'theme-id-*'
+        // o que tenemos una lista de todas las posibles clases de quizWrapper.
+        this.rootElement.className.split(' ').forEach(cls => {
+            if (cls.startsWith('theme-id-')) { // Asumiendo un prefijo 'theme-id-'
+                this.rootElement.classList.remove(cls);
+            }
+        });
+
+        const themeClass = theme?.elements?.quizWrapper?.themeClass;
+        if (themeClass) {
+            this.rootElement.classList.add(themeClass);
+            console.log(`ThemeManager: Clase de tema global '${themeClass}' aplicada a ${this.rootElement.tagName}.`);
         }
     }
 
-    /**
-     * Obtiene el objeto del tema actualmente activo.
-     * @returns El objeto Theme activo o null si no hay temas cargados.
-     */
+    private _dispatchThemeChangedEvent(theme: Theme | null): void {
+        const event = new CustomEvent('theme-changed', {
+            detail: {
+                themeId: theme?.id,
+                theme: theme 
+            },
+            bubbles: true,
+            composed: true
+        });
+        document.dispatchEvent(event);
+        console.log(`ThemeManager: Evento 'theme-changed' despachado para el tema '${theme?.id ?? 'null'}'.`);
+    }
+
     public getActiveTheme(): Theme | null {
-        if (this.themes.length === 0) {
-            return null;
-        }
+        if (this.themes.length === 0) return null;
         return this.themes[this.activeThemeIndex] ?? null;
     }
 
-    /**
-     * Obtiene el ID del tema actualmente activo.
-     * @returns El ID del tema activo o null.
-     */
     public getActiveThemeId(): string | null {
         return this.getActiveTheme()?.id ?? null;
     }
 
-    /**
-     * Cambia al siguiente tema disponible en la lista.
-     */
     public cycleTheme(): void {
-        if (this.themes.length <= 1) return; // No hay a dónde ciclar
+        if (this.themes.length <= 1) return;
 
         this.activeThemeIndex = (this.activeThemeIndex + 1) % this.themes.length;
-        this.applyActiveThemeClass(); // Aplicar la nueva clase de tema
+        this.applyActiveTheme();
         const newTheme = this.getActiveTheme();
         console.log(`ThemeManager: Tema ciclado a '${newTheme?.name ?? 'N/A'}' (ID: ${newTheme?.id ?? 'N/A'})`);
-
-        // Aquí podrías emitir un evento si otros sistemas necesitan reaccionar
-        // al cambio de tema de forma más compleja que solo con CSS.
-        // Ejemplo: document.dispatchEvent(new CustomEvent('themeChanged', { detail: newTheme }));
     }
 
-    /**
-     * Establece un tema específico como activo por su ID.
-     * @param themeId - El ID del tema a activar.
-     * @returns true si el tema se encontró y activó, false en caso contrario.
-     */
     public setActiveTheme(themeId: string): boolean {
         const index = this.themes.findIndex(t => t.id === themeId);
         if (index !== -1) {
+            if (this.activeThemeIndex === index) return true; // Ya es el tema activo
             this.activeThemeIndex = index;
-            this.applyActiveThemeClass();
+            this.applyActiveTheme();
             console.log(`ThemeManager: Tema establecido a '${this.getActiveTheme()?.name}' (ID: ${themeId})`);
             return true;
         } else {
@@ -139,27 +174,15 @@ export class ThemeManager {
         }
     }
 
-    /**
-      * Obtiene la lista de todos los temas cargados.
-      * @returns Un array de objetos Theme.
-      */
     public getThemes(): Theme[] {
-        return [...this.themes]; // Devolver una copia
+        return [...this.themes];
     }
 
-     /**
-      * Obtiene el último error ocurrido durante la carga/procesamiento.
-      * @returns El mensaje de error o null.
-      */
-     public getLastError(): string | null {
-         return this.lastError;
-     }
+    public getLastError(): string | null {
+        return this.lastError;
+    }
 
-     /**
-      * Verifica si el sistema está actualmente cargando/procesando temas.
-      * @returns true si está cargando, false en caso contrario.
-      */
-     public isLoadingThemes(): boolean {
-         return this.isLoading;
-     }
+    public isLoadingThemes(): boolean {
+        return this.isLoading;
+    }
 }

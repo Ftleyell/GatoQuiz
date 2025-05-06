@@ -5,106 +5,89 @@ import { customElement, property } from 'lit/decorators.js';
 @customElement('lives-display')
 export class LivesDisplay extends LitElement {
 
-  // --- Propiedades (Inputs) ---
   @property({ type: Number }) lives = 3;
   @property({ type: Boolean }) hasShield = false;
   @property({ type: Number }) hintCharges = 0;
 
-  // --- Estilos Encapsulados ---
   static styles: CSSResultGroup = css`
     :host {
-      display: inline-flex; /* Ajustar al contenido */
+      display: inline-flex;
       align-items: center;
-      gap: 0.3rem; /* Espacio entre elementos (corazón, número, iconos) */
-      font-family: 'Poppins', sans-serif; /* Fuente base */
-      color: #f3f4f6; /* Color de texto base (para el número) */
+      gap: var(--gq-livesdisp-gap, 0.3rem);
+      font-family: var(--gq-livesdisp-font-family, var(--gq-font-primary, 'Poppins', sans-serif));
+      color: var(--gq-livesdisp-text-color, #f3f4f6);
       user-select: none;
     }
 
-    /* Estilos y animación para el corazón */
     .life-emoji {
-      font-size: 1.3rem;
+      font-size: var(--gq-livesdisp-icon-size, 1.3rem);
       line-height: 1;
-      color: #f43f5e; /* Rojo */
+      color: var(--gq-livesdisp-heart-color, #f43f5e);
       animation: pulseHeart 1.5s infinite ease-in-out;
       user-select: none;
     }
 
-    @keyframes pulseHeart {
+    @keyframes pulseHeart { /* Mantenemos keyframes locales si son específicos */
       0%, 100% { transform: scale(1); }
       50% { transform: scale(1.15); }
     }
 
-    /* Estilo para el contador de vidas */
     #lives-count-internal {
-      font-size: 1.3rem;
-      font-weight: 700;
-      min-width: 1ch; /* Evita saltos con números de un dígito */
+      font-size: var(--gq-livesdisp-count-font-size, 1.3rem);
+      font-weight: var(--gq-livesdisp-count-font-weight, 700);
+      min-width: 1ch;
       text-align: left;
     }
 
-    /* Estilos base y animación para iconos de escudo y pista */
     .status-icon {
-      font-size: 1.3rem;
+      font-size: var(--gq-livesdisp-icon-size, 1.3rem);
       line-height: 1;
-      margin-left: 0.3rem; /* Pequeño espacio si ambos están visibles */
-      display: inline-block; /* Para que hidden funcione */
+      margin-left: var(--gq-livesdisp-status-icon-margin-left, 0.3rem);
+      display: inline-block;
       user-select: none;
     }
 
     .shield-icon {
-      filter: drop-shadow(0 0 3px rgba(59, 130, 246, 0.7));
+      filter: drop-shadow(0 0 3px var(--gq-livesdisp-shield-icon-shadow-color, rgba(59, 130, 246, 0.7)));
       animation: shieldPulse 2s infinite ease-in-out;
     }
 
     .hint-icon {
-      filter: drop-shadow(0 0 3px rgba(250, 204, 21, 0.7));
+      filter: drop-shadow(0 0 3px var(--gq-livesdisp-hint-icon-shadow-color, rgba(250, 204, 21, 0.7)));
       animation: hintPulse 1.8s infinite ease-in-out;
     }
 
-    /* Animaciones de pulso para iconos */
-    @keyframes shieldPulse {
+    @keyframes shieldPulse { /* Mantenemos keyframes locales */
       0%, 100% { transform: scale(1); opacity: 0.9; }
       50% { transform: scale(1.1); opacity: 1; }
     }
-
-    @keyframes hintPulse {
+    @keyframes hintPulse { /* Mantenemos keyframes locales */
       0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.85; }
       50% { transform: scale(1.08) rotate(5deg); opacity: 1; }
     }
 
-    /* Ocultar elementos con el atributo hidden */
-    [hidden] {
-      display: none !important;
-    }
+    [hidden] { display: none !important; }
 
-    /* Media Queries (Ajustes responsivos si son necesarios) */
     @media (max-width: 768px) {
-      .life-emoji,
-      #lives-count-internal,
-      .status-icon {
-        font-size: 1.1rem; /* Ligeramente más pequeño en tablet */
+      .life-emoji, #lives-count-internal, .status-icon {
+        font-size: var(--gq-livesdisp-icon-tablet-size, var(--gq-livesdisp-icon-size, 1.1rem));
       }
       :host {
-         gap: 0.2rem;
+         gap: var(--gq-livesdisp-tablet-gap, var(--gq-livesdisp-gap, 0.2rem));
       }
        .status-icon {
-         margin-left: 0.2rem;
+         margin-left: var(--gq-livesdisp-status-icon-tablet-margin-left, var(--gq-livesdisp-status-icon-margin-left, 0.2rem));
       }
     }
-     @media (max-width: 480px) {
-      .life-emoji,
-      #lives-count-internal,
-      .status-icon {
-        font-size: 1rem; /* Aún más pequeño en móvil */
+    @media (max-width: 480px) {
+      .life-emoji, #lives-count-internal, .status-icon {
+        font-size: var(--gq-livesdisp-icon-mobile-size, var(--gq-livesdisp-icon-tablet-size, 1rem));
       }
     }
   `;
 
-  // --- Template HTML ---
   render() {
     const showHintIcon = this.hintCharges > 0;
-
     return html`
       <span class="life-emoji" part="heart-icon">❤️</span>
       <span id="lives-count-internal" part="count">${this.lives}</span>
@@ -124,10 +107,8 @@ export class LivesDisplay extends LitElement {
   }
 }
 
-// Declaración global
 declare global {
   interface HTMLElementTagNameMap {
     'lives-display': LivesDisplay;
   }
 }
-// Fin del archivo
