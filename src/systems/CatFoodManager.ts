@@ -129,27 +129,39 @@ export class CatFoodManager {
         this.buttonListenerInfo = null;
     }
 
+    /**
+     * Cambia el estado activo/inactivo de la herramienta de comida.
+     * @param forceState - (Opcional) Booleano para forzar un estado específico.
+     */
     public toggleActive(forceState?: boolean): void {
         if (!this.isEnabled || !this.isInitializedSuccessfully) return;
 
         const newState = (forceState !== undefined) ? forceState : !this.isActive;
-        // --- CORRECCIÓN: Variable 'oldState' eliminada ---
-        // const oldState = this.isActive;
 
+        // Previene activación si no hay comida (pero permite desactivar si estaba activo)
         if (newState === true && (!this.isEnabled || (this.playerData && this.playerData.currentCatFood <= 0))) {
-             if (this.isActive) {
+             if (this.isActive) { // Solo desactivar si estaba activo
                  this.isActive = false;
-                 this.updateActiveVisuals();
-                 this.removeClickListener();
+                 this.updateActiveVisuals(); // Actualiza visuales específicos de este manager (si los hay)
+                 this.removeClickListener(); // Quita listener para soltar comida
+                 this.gameManager.updateToolButtonStates(); // Notifica a GameManager (actualización inmediata)
              }
-             return;
+             return; // Sale porque no se puede activar
         }
 
+        // Si el estado no cambia, no hace nada
         if (newState === this.isActive) return;
 
+        // Actualiza el estado interno
         this.isActive = newState;
+        // Actualiza visuales específicos de este manager (si los hay)
         this.updateActiveVisuals();
+        // Notifica a GameManager para que actualice TODOS los botones (actualización inmediata)
+        this.gameManager.updateToolButtonStates();
 
+        // --- LLAMADA EXTRA CON setTimeout ELIMINADA ---
+
+        // Añade o remueve el listener para soltar comida
         if (this.isActive) {
             this.addClickListener();
         } else {
@@ -158,9 +170,8 @@ export class CatFoodManager {
     }
 
     private updateActiveVisuals(): void {
-         if (this.catFoodButton) {
-             this.catFoodButton.classList.toggle('active', this.isActive);
-         }
+         // Ya no maneja la clase 'active' del botón, GameManager lo hace.
+         console.log(`[CatFoodManager] updateActiveVisuals (isActive: ${this.isActive}) - No cambia clases directamente.`);
     }
 
     private addClickListener(): void {
@@ -169,7 +180,8 @@ export class CatFoodManager {
 
         this.clickListener = (event: MouseEvent | TouchEvent) => {
             const targetElement = event.target as HTMLElement;
-            if (targetElement.closest('.control-button')) return;
+            // Ignora clics en CUALQUIER tool-button o botón de tienda
+            if (targetElement.closest('tool-button, #shop-button')) return;
             if (!this.isActive || !this.isEnabled) return;
             event.preventDefault();
 
@@ -179,13 +191,13 @@ export class CatFoodManager {
                 this.spawnFoodPellet(pos);
                 this.applyAttractionForce(pos);
                 if (this.playerData.spendCatFoodUnit()) {
-                     this.gameManager.updateCatFoodUI();
+                     this.gameManager.updateCatFoodUI(); // Llama a updateToolButtonStates
                 } else {
                      console.warn("[CatFood Interaction Listener] spendCatFoodUnit falló.");
-                     this.toggleActive(false);
+                     this.toggleActive(false); // Llama a updateToolButtonStates
                 }
             } else {
-                this.toggleActive(false);
+                this.toggleActive(false); // Llama a updateToolButtonStates
             }
         };
         listenArea.addEventListener('mousedown', this.clickListener, { capture: true });
@@ -245,7 +257,6 @@ export class CatFoodManager {
         this.activePellets.set(pelletId, pelletData);
     }
 
-    // --- CORRECCIÓN: Parámetro 'deltaTime' renombrado a '_deltaTime' ---
     public update(_deltaTime: number): void {
         if (!this.isEnabled || !this.isInitializedSuccessfully || this.activePellets.size === 0) return;
         const now = performance.now();
@@ -262,7 +273,6 @@ export class CatFoodManager {
         pelletsToRemove.forEach(pelletId => this.removeFoodPellet(pelletId));
     }
 
-    // --- CORRECCIÓN: Parámetro 'consumed' renombrado a '_consumed' ---
     public removeFoodPellet(pelletId: string, _consumed: boolean = false): void {
         const pellet = this.activePellets.get(pelletId);
         if (pellet) {
@@ -304,4 +314,4 @@ export class CatFoodManager {
         this.isActive = false;
     }
 
-}
+} // Fin clase CatFoodManager

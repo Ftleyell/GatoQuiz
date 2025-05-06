@@ -12,109 +12,105 @@ export class ToolButton extends LitElement {
   @property({ type: Boolean, reflect: true }) disabled = false;
   @property({ type: Boolean, reflect: true }) active = false;
 
+  // --- Estado Interno para Debounce por Frame ---
+  private _isProcessingInteraction = false;
+
   // --- Estilos Encapsulados ---
   static styles: CSSResultGroup = css`
+    /* Estilos base del host */
     :host {
-      display: block; /* O inline-block si se prefiere */
-      width: 3rem;  /* Ancho base (móvil) */
-      height: 3rem; /* Alto base (móvil) */
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    /* Estilo base del botón interno */
-    .tool-button-internal {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 0.5rem; /* Padding interno */
-      box-sizing: border-box;
-
-      background-color: rgba(17, 24, 39, 0.8); /* Fondo oscuro semi-transparente */
-      color: #e5e7eb; /* Color icono base */
-      border: 2px solid #4b5563; /* Borde gris */
-      border-radius: 0.5rem; /* Redondeado */
-      cursor: pointer;
-      font-size: 1.1rem; /* Tamaño icono base (móvil) */
-      line-height: 1;
+      display: inline-flex; justify-content: center; align-items: center;
+      width: 3rem; height: 3rem; box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent; cursor: pointer;
+      background-color: rgba(17, 24, 39, 0.8); color: #e5e7eb;
+      border: 2px solid #4b5563; border-radius: 0.5rem;
+      padding: 0.5rem; font-size: 1.1rem; line-height: 1;
       transition: background-color 0.2s ease, border-color 0.2s ease,
                   box-shadow 0.2s ease, transform 0.1s ease,
                   opacity 0.2s ease;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-      appearance: none; /* Quitar estilos por defecto del navegador */
-      -webkit-appearance: none;
-      margin: 0; /* Resetear margen */
-      outline: none; /* Quitar outline */
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3); position: relative; overflow: hidden;
     }
-
-    .tool-button-internal:hover:not([disabled]) {
+    /* Botón interno para accesibilidad y reseteo */
+    .tool-button-internal {
+      appearance: none; -webkit-appearance: none; -moz-appearance: none;
+      background: transparent; border: none; padding: 0; margin: 0;
+      font: inherit; color: inherit; cursor: inherit; outline: none;
+      width: 100%; height: 100%; display: flex;
+      justify-content: center; align-items: center;
+    }
+    /* Hover general */
+    :host(:hover) {
       background-color: rgba(31, 41, 55, 0.9);
       border-color: #6b7280;
-      transform: scale(1.05);
     }
-
-    .tool-button-internal:active:not([disabled]) {
+    /* Active general (presionado) */
+    :host(:active) {
       transform: scale(0.95);
       background-color: rgba(55, 65, 81, 0.9);
     }
+    /* Estado deshabilitado */
+    :host([disabled]) {
+      opacity: 0.5; cursor: not-allowed; transform: none !important;
+      background-color: rgba(17, 24, 39, 0.8); border-color: #4b5563;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+     :host([disabled]:hover) {
+       background-color: rgba(17, 24, 39, 0.8); border-color: #4b5563; transform: none;
+     }
+     :host([disabled]:active) {
+       transform: none;
+     }
 
-    /* Estado Deshabilitado */
-    .tool-button-internal[disabled] {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none !important;
-      background-color: rgba(17, 24, 39, 0.8);
-      border-color: #4b5563;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3); /* Mantener sombra base */
+    /* --- ESTILOS DE ESTADO ACTIVO --- */
+
+    /* Estilo activo por defecto (si no hay uno específico por toolId) */
+    /* Este se aplicará si no hay uno más específico que coincida */
+    :host([active]) {
+      border-color: #a78bfa; /* Violeta/Púrpura */
+      box-shadow: 0 0 8px rgba(167, 139, 250, 0.5);
+      background-color: rgba(167, 139, 250, 0.3);
     }
 
-    /* Estado Activo */
-    :host([active]) .tool-button-internal {
-      /* Aplicar estilos específicos cuando el host tiene el atributo 'active' */
-      border-color: #a78bfa; /* Ejemplo: Borde violeta */
-      box-shadow: 0 0 8px rgba(167, 139, 250, 0.5); /* Ejemplo: Glow violeta */
-      background-color: rgba(167, 139, 250, 0.3); /* Fondo violeta claro */
+    /* Estilo específico para PINCEL ACTIVO */
+    :host([toolId="brush"][active]) {
+        border-color: #a78bfa; /* Violeta/Púrpura */
+        box-shadow: 0 0 8px rgba(167, 139, 250, 0.5);
+        background-color: rgba(167, 139, 250, 0.3);
     }
-    /* Sobrescribir active:active para que no pierda el estilo activo */
-     :host([active]) .tool-button-internal:active:not([disabled]) {
-        background-color: rgba(140, 110, 240, 0.5); /* Un poco más oscuro al presionar */
+
+     /* --- MEJORA: Estilo específico para COMIDA ACTIVA (igual que pincel) --- */
+     :host([toolId="cat-food"][active]) {
+             border-color:rgb(245, 99, 31); /* Violeta/Púrpura */
+        background-color: rgba(245, 136, 63, 0.8); /* Violeta más oscuro (igual que pincel) */
+        box-shadow: 0 0 8px rgba(223, 167, 12, 0.5); /* (igual que pincel) */
+     }
+     /* --- FIN MEJORA --- */
+
+     /* Estilos para estado presionado MIENTRAS está activo (fallback) */
+     :host([active]:active) {
+       background-color: rgba(140, 110, 240, 0.5); /* Violeta más oscuro */
+       transform: scale(0.95);
+     }
+      /* --- MEJORA: Estilo presionado para COMIDA ACTIVA (igual que pincel) --- */
+      :host([toolId="cat-food"][active]:active) {
+        background-color: rgba(245, 136, 63, 0.8); /* Violeta más oscuro (igual que pincel) */
         transform: scale(0.95);
-     }
-
-     /* Estilos específicos por toolId si fueran necesarios */
-     /* Ejemplo: Hacer el botón de comida naranja cuando está activo */
-     :host([toolId="cat-food"][active]) .tool-button-internal {
-        border-color: #fb923c;
-        box-shadow: 0 0 8px rgba(249, 115, 22, 0.5);
-        background-color: rgba(249, 115, 22, 0.3);
-     }
-      :host([toolId="cat-food"][active]) .tool-button-internal:active:not([disabled]) {
-         background-color: rgba(234, 88, 12, 0.5);
       }
-      /* Ejemplo: Botón de borrar podría tener otro color activo */
-       :host([toolId="clear-ink"][active]) .tool-button-internal {
-          /* ... estilos para borrar activo ... */
-       }
+      /* --- FIN MEJORA --- */
+      /* Estilo presionado para PINCEL ACTIVO */
+      :host([toolId="brush"][active]:active) {
+        background-color: rgba(140, 110, 240, 0.5); /* Violeta más oscuro */
+        transform: scale(0.95);
+      }
 
+    /* --- FIN ESTILOS DE ESTADO ACTIVO --- */
 
-    /* Media Queries */
+    /* Media Queries para ajustar tamaño en desktop */
     @media (min-width: 768px) {
       :host {
-        width: 3.5rem; /* Más grande en desktop */
-        height: 3.5rem;
+        width: 3.5rem; height: 3.5rem; font-size: 1.2rem; padding: 0.6rem;
       }
-      .tool-button-internal {
-        font-size: 1.2rem;
-        padding: 0.6rem;
-      }
-      .tool-button-internal:hover:not([disabled]) {
-         transform: scale(1.05); /* Mantener hover en desktop */
-      }
-       .tool-button-internal:active:not([disabled]) {
-         transform: scale(0.95);
-      }
+       :host(:active) { transform: scale(0.95); }
     }
   `;
 
@@ -128,35 +124,35 @@ export class ToolButton extends LitElement {
         @click=${this._handleClick}
         @touchstart=${this._handleClick}
         part="button"
+        aria-label=${this.titleText || this.toolId}
+        tabindex="-1" /* Evita que el botón interno reciba foco directo */
       >
-        ${this.icon /* Podríamos usar html\`<slot></slot>\` si quisiéramos pasar HTML */}
+        ${this.icon}
       </button>
     `;
   }
 
-  // --- Manejador de Eventos ---
+  // --- Manejador de Eventos (con Debounce por Frame) ---
   constructor() {
     super();
-    // No añadimos listeners aquí porque el botón interno ya los tiene
   }
 
   private _handleClick(event: MouseEvent | TouchEvent) {
-    // Prevenir comportamiento default solo en touch
     if (event.type === 'touchstart') {
-        event.preventDefault();
+      event.preventDefault();
     }
-
-    // No emitir si está deshabilitado
-    if (this.disabled) {
+    if (this._isProcessingInteraction || this.disabled) {
       return;
     }
-
-    // console.log(`ToolButton: Clicked! Emitting tool-activated with ID: ${this.toolId}`); // Log opcional
+    this._isProcessingInteraction = true;
     this.dispatchEvent(new CustomEvent('tool-activated', {
       detail: { toolId: this.toolId },
       bubbles: true,
       composed: true
     }));
+    requestAnimationFrame(() => {
+      this._isProcessingInteraction = false;
+    });
   }
 }
 

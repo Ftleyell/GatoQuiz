@@ -13,7 +13,7 @@ import { InkManager } from '../systems/InkManager';
 import { UIManager } from '../systems/UIManager';
 import { ThemeManager } from '../systems/ThemeManager';
 import { Theme } from '../types/Theme';
-import { CatFoodManager } from '../systems/CatFoodManager';
+import { CatFoodManager } from '../systems/CatFoodManager'; // Corregido: Ruta
 
 // Importaciones de Estados
 import { LoadingState } from './states/LoadingState';
@@ -25,13 +25,14 @@ import { GameOverState } from './states/GameOverState';
 // Importar componente ToolButton y su tipo
 import '../game/components/ui/tool-button.ts';
 import type { ToolButton } from '../game/components/ui/tool-button';
-// <<< CAMBIO: Importar combo-counter para asegurar registro >>>
+// Importar combo-counter para asegurar registro
 import '../game/components/ui/combo-counter.ts';
-// <<< FIN CAMBIO >>>
 
 
 // Constante Global
 const SHOP_POPUP_ID = 'shop-popup';
+// Constante para Debounce
+const TOOL_TOGGLE_DEBOUNCE_MS = 300; // Milisegundos para ignorar activaciones/desactivaciones rápidas
 
 // Tipos locales
 type ControlElements = {
@@ -63,10 +64,14 @@ export class GameManager {
     private keydownListener: ((event: KeyboardEvent) => void) | null = null;
     private controlElements: ControlElements;
 
+    // Propiedades para Debounce
+    private _lastToolToggleTime: number = 0;
+    private readonly TOOL_TOGGLE_DEBOUNCE_MS = 300; // ms
+
     constructor(container: HTMLElement) {
         this.containerElement = container;
         console.log("GameManager: Constructor iniciado.");
-        // Crear instancias (sin cambios)
+        // Crear instancias
         this.audioManager = new AudioManager();
         this.quizSystem = new QuizSystem();
         this.playerData = new PlayerData();
@@ -79,11 +84,11 @@ export class GameManager {
         this.physicsManager = new PhysicsManager(this.catManager, this.catFoodManager);
         this.stateMachine = new StateMachine();
 
-        // Inyección de dependencias (sin cambios)
+        // Inyección de dependencias
         this.catManager.setPhysicsManager(this.physicsManager);
         this.inkManager.setPhysicsManager(this.physicsManager);
 
-        // Obtener referencias a controles y botones Lit (sin cambios)
+        // Obtener referencias a controles y botones Lit
         this.controlElements = {
             controlsContainer: document.getElementById('right-controls'),
             shopButton: document.getElementById('shop-button'),
@@ -93,44 +98,42 @@ export class GameManager {
             clearInkToolButton: document.querySelector('tool-button[toolId="clear-ink"]'),
             catFoodToolButton: document.querySelector('tool-button[toolId="cat-food"]'),
         };
-        // Verificar elementos principales (sin cambios)
+        // Verificar elementos principales
         if (!this.controlElements.controlsContainer) console.warn("GameManager: #right-controls no encontrado.");
-        // ... (otras verificaciones) ...
+        if (!this.controlElements.shopButton) console.warn("GameManager: #shop-button no encontrado.");
+        if (!this.controlElements.brushToolButton) console.warn("GameManager: Botón Pincel (toolId='brush') no encontrado.");
+        if (!this.controlElements.clearInkToolButton) console.warn("GameManager: Botón Borrar Tinta (toolId='clear-ink') no encontrado.");
+        if (!this.controlElements.catFoodToolButton) console.warn("GameManager: Botón Comida (toolId='cat-food') no encontrado.");
+
 
         this.setupStates();
         console.log("GameManager: Constructor finalizado.");
     }
 
-    // --- Funciones para controlar visibilidad de controles (sin cambios) ---
-    private showGameControls(): void { /* ... */
-        if (this.controlElements.controlsContainer) {
-            this.controlElements.controlsContainer.style.display = 'flex';
-        }
-        if (this.controlElements.shopButton) {
-            this.controlElements.shopButton.style.display = 'flex';
-        }
-        this.updateControlVisibilityBasedOnUnlocks();
-        this.updateToolButtonStates();
-    }
-    private hideGameControls(): void { /* ... */
+    // --- Funciones para controlar visibilidad de controles ---
+    private showGameControls(): void {
+        if (this.controlElements.controlsContainer) { this.controlElements.controlsContainer.style.display = 'flex'; }
+        if (this.controlElements.shopButton) { this.controlElements.shopButton.style.display = 'flex'; }
+        this.updateControlVisibilityBasedOnUnlocks(); // Llama a la función que actualiza botones
+     }
+    private hideGameControls(): void {
         if (this.controlElements.controlsContainer) this.controlElements.controlsContainer.style.display = 'none';
         if (this.controlElements.shopButton) this.controlElements.shopButton.style.display = 'none';
     }
-    public updateControlVisibilityBasedOnUnlocks(): void { /* ... */
+    // Esta función ahora solo controla la visibilidad de los *contenedores*
+    public updateControlVisibilityBasedOnUnlocks(): void {
         const drawingUnlocked = this.playerData.isDrawingUnlocked;
         const catFoodUnlocked = this.playerData.isCatFoodUnlocked;
         if (this.controlElements.drawingButtonsContainer) { this.controlElements.drawingButtonsContainer.classList.toggle('hidden', !drawingUnlocked); }
         if (this.controlElements.catFoodUiContainer) { this.controlElements.catFoodUiContainer.classList.toggle('hidden', !catFoodUnlocked); }
-        if (this.controlElements.brushToolButton) { this.controlElements.brushToolButton.disabled = !drawingUnlocked; }
-        if (this.controlElements.clearInkToolButton) { this.controlElements.clearInkToolButton.disabled = !drawingUnlocked; }
-        if (this.controlElements.catFoodToolButton) { this.controlElements.catFoodToolButton.disabled = !catFoodUnlocked; }
+        // Llamar siempre a updateToolButtonStates para asegurar estado correcto de botones
         this.updateToolButtonStates();
     }
     // --- FIN Funciones Visibilidad ---
 
 
     /** Inicializa el juego, carga assets y configura listeners. */
-    public async init(): Promise<void> { /* ... (código sin cambios) ... */
+    public async init(): Promise<void> {
         console.log('GameManager: init');
         this.playerData.reset();
         this.physicsManager.init(document.body);
@@ -138,20 +141,37 @@ export class GameManager {
         this.addKeyboardListener();
         this.hideGameControls();
         await this.preload();
-        this.setupToolButtonListeners();
+        this.setupToolButtonListeners(); // Configurar listeners de botones Lit aquí
         console.log("GameManager init completado.");
     }
 
     /** Configura los listeners para los eventos 'tool-activated' de los botones Lit. */
-    private setupToolButtonListeners(): void { /* ... (código sin cambios) ... */
-        console.log("GameManager: Configurando listeners para tool-button...");
-        this.controlElements.brushToolButton?.addEventListener('tool-activated', () => this.activateBrush());
-        this.controlElements.clearInkToolButton?.addEventListener('tool-activated', () => { if (this.playerData.isDrawingUnlocked && this.playerData.inkSpentSinceLastClear > 0) { this.inkManager.clearInkLines(); this.updateToolButtonStates(); } });
-        this.controlElements.catFoodToolButton?.addEventListener('tool-activated', () => this.activateCatFood());
+    private setupToolButtonListeners(): void {
+        console.log("[GM LOG] Configurando listeners para tool-button...");
+
+        this.controlElements.brushToolButton?.addEventListener('tool-activated', () => {
+            console.log("[GM LOG] 'tool-activated' recibido para Pincel. Llamando a activateBrush()...");
+            this.activateBrush();
+        });
+
+        this.controlElements.clearInkToolButton?.addEventListener('tool-activated', () => {
+             console.log("[GM LOG] 'tool-activated' recibido para Borrar Tinta.");
+            if (this.playerData.isDrawingUnlocked && this.playerData.inkSpentSinceLastClear > 0) {
+                console.log("[GM LOG] Llamando a inkManager.clearInkLines()...");
+                this.inkManager.clearInkLines(); // clearInkLines llama a updateInkUI -> updateToolButtonStates
+            } else {
+                console.log("[GM LOG] Borrar Tinta no ejecutado (condición no cumplida).");
+            }
+        });
+
+        this.controlElements.catFoodToolButton?.addEventListener('tool-activated', () => {
+             console.log("[GM LOG] 'tool-activated' recibido para Comida. Llamando a activateCatFood()...");
+            this.activateCatFood();
+        });
     }
 
     /** Carga los datos externos necesarios. */
-    public async preload(): Promise<void> { /* ... (código sin cambios) ... */
+    public async preload(): Promise<void> {
         console.log('GameManager: preload - Cargando assets...');
         const baseUrl = import.meta.env.BASE_URL;
         const cleanBaseUrl = baseUrl.replace(/\/$/, '');
@@ -159,6 +179,8 @@ export class GameManager {
         const templatesUrl = `${cleanBaseUrl}/data/cat_templates.json`;
         const shopItemsUrl = `${cleanBaseUrl}/data/shop_items.json`;
         const themesUrl = `${cleanBaseUrl}/data/themes.json`;
+        console.log('Base URL:', baseUrl);
+        console.log('Loading from:', questionsUrl, templatesUrl, shopItemsUrl, themesUrl);
 
         try {
             const [questionResponse, templateResponse, shopResponse, themeResponse] = await Promise.all([
@@ -179,7 +201,7 @@ export class GameManager {
             const questionsLoaded = await this.quizSystem.loadQuestionsData(questionData);
             if (!questionsLoaded) throw new Error("Failed to process questions.");
             this.catManager.loadTemplates(templateData);
-            this.shopManager.init(shopItemJsonData);
+            this.shopManager.init(shopItemJsonData); // Llama a init con los datos correctos
             const themesLoaded = await this.themeManager.loadThemesData(themeData);
             if (!themesLoaded) throw new Error("Failed to process themes.");
 
@@ -197,21 +219,16 @@ export class GameManager {
         this.quizSystem.resetAvailableQuestions();
         this.catManager.removeAllCats();
         this.hideGameControls();
-
-        // <<< CAMBIO: Añadir <combo-counter> al body si no existe >>>
         if (!document.querySelector('combo-counter')) {
             const comboCounterElement = document.createElement('combo-counter');
-            // No necesita ID si siempre hay solo uno y lo buscamos por tag name
             document.body.appendChild(comboCounterElement);
             console.log("GameManager: <combo-counter> añadido al body.");
         }
-        // <<< FIN CAMBIO >>>
-
         this.stateMachine.changeState('MainMenu');
     }
 
     /** Configura la máquina de estados. */
-    private setupStates(): void { /* ... (código sin cambios) ... */
+    private setupStates(): void {
         const loadingState = new LoadingState(this);
         const mainMenuState = new MainMenuState(this);
         const quizGameplayState = new QuizGameplayState(this);
@@ -221,16 +238,24 @@ export class GameManager {
         const wrapEnter = (state: IState, showControls: boolean) => {
             const originalEnter = state.enter.bind(state);
             return (params?: any) => {
+                console.log(`Entering state: ${state.constructor.name}, Controls should be: ${showControls ? 'Shown' : 'Hidden'}`);
                 if (showControls) this.showGameControls(); else this.hideGameControls();
                 try { originalEnter(params); }
                 catch (e) { console.error(`Error in original enter for ${state.constructor.name}:`, e); }
-                if (showControls && state instanceof QuizGameplayState) { this.updateCatFoodUI(); }
-                 if (showControls && state instanceof QuizGameplayState) { this.updateControlVisibilityBasedOnUnlocks(); }
+                // Asegurar que los botones estén actualizados al entrar a un estado relevante
+                if (showControls) {
+                    this.updateToolButtonStates();
+                    if (state instanceof QuizGameplayState) {
+                         this.updateCatFoodUI(); // Actualizar barra de comida
+                         // updateControlVisibilityBasedOnUnlocks ya se llama en showGameControls
+                    }
+                }
             };
         };
         const wrapExit = (state: IState, hideControlsOnExit: boolean = true) => {
              const originalExit = state.exit.bind(state);
              return () => {
+                 console.log(`Exiting state: ${state.constructor.name}, Hiding controls: ${hideControlsOnExit}`);
                  try { originalExit(); }
                  catch (e) { console.error(`Error in original exit for ${state.constructor.name}:`, e); }
                  if (hideControlsOnExit) this.hideGameControls();
@@ -252,21 +277,22 @@ export class GameManager {
      }
 
     /** Añade la clase CSS correspondiente al estado actual al body. */
-    public setBodyStateClass(stateName: string | null): void { /* ... (código sin cambios) ... */
+    public setBodyStateClass(stateName: string | null): void {
         const body = document.body;
         body.className.split(' ').forEach(cls => { if (cls.startsWith('state-')) { body.classList.remove(cls); } });
         if (stateName) { const newStateClass = `state-${stateName.toLowerCase()}`; body.classList.add(newStateClass); }
+        else { console.log("Body state class cleared."); }
      }
 
     /** Inicia/Detiene el bucle principal del juego. */
-    public start(): void { /* ... (código sin cambios) ... */ if (this.isRunning) return; this.isRunning = true; this.lastTimestamp = performance.now(); this.physicsManager.start(); this.gameLoopRequestId = requestAnimationFrame(this.gameLoop.bind(this)); }
-    public stop(): void { /* ... (código sin cambios) ... */ if (!this.isRunning) return; this.isRunning = false; if (this.gameLoopRequestId) cancelAnimationFrame(this.gameLoopRequestId); this.gameLoopRequestId = undefined; this.physicsManager.stop(); }
+    public start(): void { if (this.isRunning) return; console.log('GameManager: Starting game loop...'); this.isRunning = true; this.lastTimestamp = performance.now(); this.physicsManager.start(); this.gameLoopRequestId = requestAnimationFrame(this.gameLoop.bind(this)); }
+    public stop(): void { if (!this.isRunning) return; console.log('GameManager: Stopping game loop...'); this.isRunning = false; if (this.gameLoopRequestId) cancelAnimationFrame(this.gameLoopRequestId); this.gameLoopRequestId = undefined; this.physicsManager.stop(); }
     /** Bucle principal del juego. */
-    private gameLoop(timestamp: number): void { /* ... (código sin cambios) ... */ if (!this.isRunning) return; const deltaTime = (timestamp - this.lastTimestamp) / 1000.0; this.lastTimestamp = timestamp; const clampedDeltaTime = Math.min(deltaTime, 0.1); this.update(clampedDeltaTime); this.gameLoopRequestId = requestAnimationFrame(this.gameLoop.bind(this)); }
+    private gameLoop(timestamp: number): void { if (!this.isRunning) return; const deltaTime = (timestamp - this.lastTimestamp) / 1000.0; this.lastTimestamp = timestamp; const clampedDeltaTime = Math.min(deltaTime, 0.1); this.update(clampedDeltaTime); this.gameLoopRequestId = requestAnimationFrame(this.gameLoop.bind(this)); }
     /** Actualiza los sistemas en cada frame. */
-    public update(deltaTime: number): void { /* ... (código sin cambios) ... */ try { this.stateMachine.update(deltaTime); this.catManager.updateCats(deltaTime); this.catFoodManager.update(deltaTime); } catch (error) { console.error("Error during game update loop:", error); this.stop(); } }
+    public update(deltaTime: number): void { try { this.stateMachine.update(deltaTime); this.catManager.updateCats(deltaTime); this.catFoodManager.update(deltaTime); } catch (error) { console.error("Error during game update loop:", error); this.stop(); } }
     /** Limpia recursos y detiene el juego. */
-    public shutdown(): void { /* ... (código sin cambios) ... */
+    public shutdown(): void {
         console.log('GameManager: shutdown');
         this.stop();
         this.hideGameControls();
@@ -274,8 +300,7 @@ export class GameManager {
         this.physicsManager.shutdown();
         const currentStateName = this.stateMachine.getCurrentStateName();
         if (currentStateName && currentStateName !== '__shutdown__') {
-            try { this.stateMachine.getCurrentState()?.exit(); } catch (e) { /* Ignorar */ }
-        }
+            try { const currentState = this.stateMachine.getCurrentState(); currentState?.exit(); } catch (e) { console.warn("Error in state exit() during shutdown:", e) } }
         this.stateMachine.changeState('__shutdown__');
         this.catManager.removeAllCats();
         this.inkManager.destroy();
@@ -283,97 +308,173 @@ export class GameManager {
         this.catFoodManager.destroy();
         this.containerElement.innerHTML = '';
         this.setBodyStateClass(null);
-        // <<< CAMBIO: Eliminar combo-counter del body al apagar >>>
         document.querySelector('combo-counter')?.remove();
-        // <<< FIN CAMBIO >>>
         console.log("GameManager: Shutdown complete.");
      }
 
     /** Configura/Remueve el listener de teclado. */
-    private addKeyboardListener(): void { /* ... (código sin cambios, llama a los mismos métodos) ... */
+    private addKeyboardListener(): void {
         if (this.keydownListener) return;
         this.keydownListener = (event: KeyboardEvent) => {
             if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
             const currentStateName = this.stateMachine.getCurrentStateName();
-            const isShopOpen = document.getElementById(SHOP_POPUP_ID)?.classList.contains('visible');
+            const isShopOpen = document.getElementById(SHOP_POPUP_ID)?.hasAttribute('visible'); // Chequear atributo del componente Lit
             const isExplanationOpen = document.getElementById('explanation-overlay')?.classList.contains('visible');
-            if (event.key === 'Escape') { if (isShopOpen) { this.closeShop(); return; } if (isExplanationOpen) { return; } }
+            if (event.key === 'Escape') { if (isShopOpen) { this.closeShop(); return; } if (isExplanationOpen) { /* UI Manager debería manejar */ return; } }
             if (currentStateName === 'QuizGameplay') {
                 if (event.key.toLowerCase() === 'p') {
                     this.themeManager.cycleTheme();
                     const currentState = this.stateMachine.getCurrentState();
-                    if (currentState instanceof QuizGameplayState) { currentState.rebuildInterface(); }
+                    if (currentState instanceof QuizGameplayState) {
+                        currentState.rebuildInterface();
+                    }
                 }
-                else if (event.key.toLowerCase() === 'b') { if (!isShopOpen && !isExplanationOpen && this.playerData.isDrawingUnlocked) { this.activateBrush(); } }
-                else if (event.key.toLowerCase() === 'f') { if (!isShopOpen && !isExplanationOpen && this.playerData.isCatFoodUnlocked) { this.activateCatFood(); } }
+                // --- USAR activateBrush / activateCatFood (ya tienen debounce) ---
+                else if (event.key.toLowerCase() === 'b') {
+                    if (!isShopOpen && !isExplanationOpen && this.playerData.isDrawingUnlocked) {
+                        this.activateBrush(); // Llamar a la función con debounce
+                    }
+                }
+                else if (event.key.toLowerCase() === 'f') {
+                    if (!isShopOpen && !isExplanationOpen && this.playerData.isCatFoodUnlocked) {
+                        this.activateCatFood(); // Llamar a la función con debounce
+                    }
+                }
+                // --- FIN USO activateBrush / activateCatFood ---
                 else if (event.key.toLowerCase() === 'c') {
+                    // La acción de borrar no es un toggle, no necesita el mismo debounce
                     if (!isShopOpen && !isExplanationOpen && this.playerData.isDrawingUnlocked && this.playerData.inkSpentSinceLastClear > 0) {
-                        this.inkManager.clearInkLines();
-                        this.updateToolButtonStates();
+                        this.inkManager.clearInkLines(); // Llama a updateToolButtonStates internamente
                     }
                 }
                 else if (event.key.toLowerCase() === 's') { if (!isExplanationOpen) { isShopOpen ? this.closeShop() : this.openShop(); } }
             }
         };
         window.addEventListener('keydown', this.keydownListener);
+        console.log("GameManager: Keyboard listener added.");
      }
-    private removeKeyboardListener(): void { /* ... (código sin cambios) ... */ if (this.keydownListener) { window.removeEventListener('keydown', this.keydownListener); this.keydownListener = null; } }
+    private removeKeyboardListener(): void { if (this.keydownListener) { window.removeEventListener('keydown', this.keydownListener); this.keydownListener = null; console.log("GameManager: Keyboard listener removed."); } }
 
-    // --- Métodos de interacción (sin cambios) ---
+    // --- Métodos para interacción desde Estados u otros Managers ---
     public getLives(): number { return this.playerData.lives; }
     public decrementLives(): void { if (this.playerData.lives > 0) { this.playerData.lives--; this.updateExternalLivesUI(); } }
     public incrementLives(): void { this.playerData.lives++; this.updateExternalLivesUI(); }
-    public openShop(): void { this.shopManager.openShop(); }
-    public closeShop(): void { this.shopManager.closeShop(); }
+    public openShop(): void { console.log("[GameManager] openShop llamado"); this.shopManager.openShop(); }
+    public closeShop(): void { console.log("[GameManager] closeShop llamado"); this.shopManager.closeShop(); }
     public enableDrawingFeature(): boolean { try { this.inkManager.init(); this.updateInkUI(); this.updateControlVisibilityBasedOnUnlocks(); return true; } catch(e) { console.error("Error habilitando dibujo:", e); return false; } }
     public enableCatFoodFeature(): void { try { this.catFoodManager.enable(); this.updateCatFoodUI(); this.updateControlVisibilityBasedOnUnlocks(); } catch(e) { console.error("Error habilitando comida:", e); } }
 
-    // --- Actualizar UIs externas (sin cambios) ---
-    public updateInkUI(): void { this.inkManager.updateInkUI(); this.updateToolButtonStates(); }
+    // Actualizar UIs externas
+    public updateInkUI(): void { this.inkManager.updateInkUI(); /* updateToolButtonStates se llama dentro */ }
     public updateExternalLivesUI(): void { this.uiManager.updateLivesDisplay(this.playerData.lives); }
     public updateExternalShieldUI(isActive: boolean): void { this.uiManager.updateShieldIcon(isActive); }
     public updateExternalHintUI(charges: number): void { this.uiManager.updateHintIcon(charges); }
     public updateExternalScoreUI(): void { this.uiManager.updateScoreDisplay(this.playerData.score); }
     public updateCatFoodUI(): void { this.uiManager.updateCatFoodBar(this.playerData.currentCatFood, this.playerData.getMaxCatFood()); this.updateToolButtonStates(); }
 
-    // --- Acciones de activación exclusiva (Modificado para llamar updateToolButtonStates) ---
+    // --- Acciones de activación exclusiva (CON DEBOUNCE) ---
     public activateBrush(): void {
-        if (!this.playerData.isDrawingUnlocked) return;
-        if (this.catFoodManager.isActive) { this.catFoodManager.toggleActive(false); }
-        this.inkManager.toggleBrush();
-        this.updateToolButtonStates(); // Actualizar estado visual de botones
+        const now = Date.now();
+        if (now - this._lastToolToggleTime < this.TOOL_TOGGLE_DEBOUNCE_MS) {
+            console.log("[GM LOG] activateBrush DEBOUNCED (too soon)");
+            return;
+        }
+        this._lastToolToggleTime = now;
+
+        console.log("[GM LOG] INTENTO activateBrush (post-debounce)");
+        if (!this.playerData.isDrawingUnlocked) {
+             console.log("[GM LOG] -> Ignorado (Dibujo no desbloqueado)");
+             return;
+        }
+        if (this.catFoodManager.isActive) {
+            console.log("[GM LOG] -> Desactivando comida...");
+            this.catFoodManager.toggleActive(false); // Llama a updateToolButtonStates internamente
+        }
+        console.log("[GM LOG] -> Llamando a inkManager.toggleBrush()");
+        this.inkManager.toggleBrush(); // Llama a updateToolButtonStates internamente
     }
+
     public activateCatFood(): void {
-        if (!this.playerData.isCatFoodUnlocked) return;
-        if (this.inkManager.isBrushActive) { this.inkManager.toggleBrush(false); }
-        this.catFoodManager.toggleActive();
-        this.updateToolButtonStates(); // Actualizar estado visual de botones
+        const now = Date.now();
+        if (now - this._lastToolToggleTime < this.TOOL_TOGGLE_DEBOUNCE_MS) {
+            console.log("[GM LOG] activateCatFood DEBOUNCED (too soon)");
+            return;
+        }
+        this._lastToolToggleTime = now;
+
+        console.log("[GM LOG] INTENTO activateCatFood (post-debounce)");
+        if (!this.playerData.isCatFoodUnlocked) {
+            console.log("[GM LOG] -> Ignorado (Comida no desbloqueada)");
+            return;
+        }
+        if (this.inkManager.isBrushActive) {
+            console.log("[GM LOG] -> Desactivando pincel...");
+            this.inkManager.toggleBrush(false); // Llama a updateToolButtonStates internamente
+        }
+        console.log("[GM LOG] -> Llamando a catFoodManager.toggleActive()");
+        this.catFoodManager.toggleActive(); // Llama a updateToolButtonStates internamente
     }
-    // --- FIN Acciones de activación ---
+    // --- FIN Acciones de activación con Debounce ---
+
 
     /** Actualiza los estados 'disabled' y 'active' de los botones de herramienta Lit. */
-    public updateToolButtonStates(): void { /* ... (código sin cambios) ... */
+    public updateToolButtonStates(): void {
+        // --- setTimeout ELIMINADO ---
+        console.log("--- [GM LOG] updateToolButtonStates START ---");
         const isDrawingUnlocked = this.playerData.isDrawingUnlocked;
         const isCatFoodUnlocked = this.playerData.isCatFoodUnlocked;
-        const canUseBrush = isDrawingUnlocked && this.playerData.currentInk > 0;
         const canClearInk = isDrawingUnlocked && this.playerData.inkSpentSinceLastClear > 0;
-        const canUseFood = isCatFoodUnlocked && this.playerData.currentCatFood > 0;
 
-        if (this.controlElements.brushToolButton) {
-            this.controlElements.brushToolButton.disabled = !isDrawingUnlocked || (!canUseBrush && !this.inkManager.isBrushActive);
-            this.controlElements.brushToolButton.active = this.inkManager.isBrushActive;
+        // Estado Pincel
+        const brushButton = this.controlElements.brushToolButton;
+        if (brushButton) {
+            const isDisabled = !isDrawingUnlocked;
+            const isActive = this.inkManager.isBrushActive; // Leer estado actual
+            console.log(`[GM LOG] -> Pincel Check: isBrushActive=${isActive}`);
+            console.log(`[GM LOG] -> Pincel SETTING: disabled=${isDisabled}, active=${isActive}`);
+            brushButton.disabled = isDisabled;
+            brushButton.active = isActive; // Asignar propiedad
+            // Log asíncrono para verificar atributo (se mantiene por ahora)
+            setTimeout(() => {
+                const hasActiveAttr = brushButton.hasAttribute('active');
+                console.log(`[GM LOG] -> Pincel DOM Check (async): Has 'active' attribute? ${hasActiveAttr}. Expected: ${isActive}`);
+            }, 0);
+        } else {
+            console.warn("[GM LOG] -> Brush button element not found.");
         }
-        if (this.controlElements.clearInkToolButton) {
-            this.controlElements.clearInkToolButton.disabled = !isDrawingUnlocked || !canClearInk;
-            this.controlElements.clearInkToolButton.active = false;
+
+        // Estado Borrar Tinta
+        const clearInkButton = this.controlElements.clearInkToolButton;
+        if (clearInkButton) {
+            const isDisabled = !isDrawingUnlocked || !canClearInk;
+            clearInkButton.disabled = isDisabled;
+            clearInkButton.active = false; // Nunca está "activo"
+        } else {
+             console.warn("[GM LOG] -> Clear Ink button element not found.");
         }
-        if (this.controlElements.catFoodToolButton) {
-            this.controlElements.catFoodToolButton.disabled = !isCatFoodUnlocked || (!canUseFood && !this.catFoodManager.isActive);
-            this.controlElements.catFoodToolButton.active = this.catFoodManager.isActive;
+
+        // Estado Comida
+        const catFoodButton = this.controlElements.catFoodToolButton;
+        if (catFoodButton) {
+            const isDisabled = !isCatFoodUnlocked;
+            const isActive = this.catFoodManager.isActive; // Leer estado actual
+            console.log(`[GM LOG] -> Comida Check: catFoodManager.isActive=${isActive}`);
+            console.log(`[GM LOG] -> Comida SETTING: disabled=${isDisabled}, active=${isActive}`);
+            catFoodButton.disabled = isDisabled;
+            catFoodButton.active = isActive; // Asignar propiedad
+            // Log asíncrono para verificar atributo (se mantiene por ahora)
+            setTimeout(() => {
+                const hasActiveAttr = catFoodButton.hasAttribute('active');
+                console.log(`[GM LOG] -> Comida DOM Check (async): Has 'active' attribute? ${hasActiveAttr}. Expected: ${isActive}`);
+            }, 0);
+        } else {
+             console.warn("[GM LOG] -> Cat Food button element not found.");
         }
+        console.log("--- [GM LOG] updateToolButtonStates END ---");
+        // --- FIN setTimeout ELIMINADO ---
      }
 
-    // --- Getters (sin cambios) ---
+    // --- Getters ---
     public getQuizSystem(): QuizSystem { return this.quizSystem; }
     public getPhysicsManager(): PhysicsManager { return this.physicsManager; }
     public getStateMachine(): StateMachine { return this.stateMachine; }
@@ -387,5 +488,8 @@ export class GameManager {
     public getCatFoodManager(): CatFoodManager { return this.catFoodManager; }
     public getContainerElement(): HTMLElement { return this.containerElement; }
     public getCurrentState(): IState | null { return this.stateMachine.getCurrentState(); }
+    // Getter para los elementos de control
+    public getControlElements(): ControlElements | null { return this.controlElements; }
+
 
 } // Fin clase GameManager

@@ -27,7 +27,6 @@ export class ShopPopup extends LitElement {
   // --- Propiedades (Inputs) ---
   @property({ type: Array }) items: ShopItemJsonData[] = [];
   @property({ type: Object }) playerDataSnapshot: PlayerData | null = null;
-  // <<< CORRECCIÓN: Especificar nombre del atributo en minúscula >>>
   @property({ type: Boolean, reflect: true, attribute: 'visible' }) isVisible = false;
 
   // --- Estado Interno ---
@@ -38,16 +37,18 @@ export class ShopPopup extends LitElement {
   // --- Estilos Encapsulados ---
   static styles: CSSResultGroup = css`
     :host {
-      /* Estilos del overlay base */
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      display: flex;
+      /* --- CAMBIO: Ocultar completamente por defecto --- */
+      display: none; /* <-- AÑADIDO: Elimina del layout cuando no es visible */
       opacity: 0;
       visibility: hidden;
+      /* ----------------------------------------------- */
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
       justify-content: center;
       align-items: flex-start; /* Alinear arriba por defecto */
       text-align: center;
-      transition: opacity 0.4s ease-in-out, visibility 0s linear 0.4s;
+      /* Ajuste Transición: Aplicar solo a opacity */
+      transition: opacity 0.4s ease-in-out /* , visibility 0s linear 0.4s */ ;
       z-index: 101;
       padding: 5vh 1rem;
       box-sizing: border-box;
@@ -55,15 +56,17 @@ export class ShopPopup extends LitElement {
       overflow-y: auto;
     }
 
-    /* Selector CSS correcto que ahora coincidirá con el atributo */
     :host([visible]) {
-      opacity: 1 !important; /* <-- AÑADIR !important */
-      visibility: visible !important; /* <-- AÑADIR !important */
-      transition: opacity 0.4s ease-in-out, visibility 0s linear 0s;
+      /* --- CAMBIO: Mostrar como flex cuando es visible --- */
+      display: flex; /* <-- AÑADIDO: Vuelve a mostrar el elemento */
+      opacity: 1;
+      visibility: visible;
+       /* Ajuste Transición: Visibilidad cambia inmediatamente al mostrar */
+      transition: opacity 0.4s ease-in-out /*, visibility 0s linear 0s */;
       pointer-events: auto;
+      /* ----------------------------------------------- */
     }
-      
-    /* ... (Resto de los estilos sin cambios) ... */
+
     .shop-content-box {
       background-color: rgba(17, 24, 39, 0.97);
       border-radius: 1rem; /* --shop-border-radius */
@@ -132,12 +135,13 @@ export class ShopPopup extends LitElement {
   // --- Ciclo de Vida ---
   connectedCallback(): void {
     super.connectedCallback();
-    this.addEventListener('click', this._handleBackdropClick);
+    // Quitar listener de backdrop aquí, ya que :host controla su visibilidad
+    // this.addEventListener('click', this._handleBackdropClick);
   }
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
-    this.removeEventListener('click', this._handleBackdropClick);
+    // this.removeEventListener('click', this._handleBackdropClick);
   }
 
   protected updated(changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
@@ -148,15 +152,11 @@ export class ShopPopup extends LitElement {
     if (changedProperties.has('_selectedItemId') || changedProperties.has('playerDataSnapshot')) {
       this._updateTooltipData();
     }
-    // <<< CORRECCIÓN: No necesitamos llamar a toggleAttribute manualmente si usamos reflect: true >>>
-    // if (changedProperties.has('isVisible')) {
-    //   // console.log(`[ShopPopup.updated] isVisible cambió a: ${this.isVisible}. Toggleando atributo 'visible'.`);
-    //   this.toggleAttribute('visible', this.isVisible);
-    // }
+    // No necesitamos toggleAttribute si usamos reflect: true
   }
 
   // --- Lógica Interna ---
-  private _groupItemsByCategory() { /* ... (sin cambios) ... */
+  private _groupItemsByCategory() {
     const grouped: ItemsByCategory = {};
     this.items.forEach(item => {
       const category = item.category || 'general';
@@ -168,7 +168,7 @@ export class ShopPopup extends LitElement {
     }
     this._itemsByCategory = grouped;
   }
-  private _updateTooltipData() { /* ... (sin cambios) ... */
+  private _updateTooltipData() {
     this._selectedItemData = this._selectedItemId ? this.items.find(item => item.id === this._selectedItemId) ?? null : null;
     const tooltip = this.shadowRoot?.querySelector('shop-tooltip');
     if (tooltip) {
@@ -178,29 +178,25 @@ export class ShopPopup extends LitElement {
   }
 
   // --- Manejadores de Eventos ---
-  private _handleItemSelection(event: CustomEvent) { /* ... (sin cambios) ... */
+  private _handleItemSelection(event: CustomEvent) {
     const itemId = event.detail?.itemId;
     if (this._selectedItemId === itemId) { this._selectedItemId = null; }
     else { this._selectedItemId = itemId; }
   }
-  private _handleBuyRequest(event: CustomEvent) { /* ... (sin cambios) ... */
+  private _handleBuyRequest(event: CustomEvent) {
     const itemId = event.detail?.itemId;
     if (itemId) {
       this.dispatchEvent(new CustomEvent('buy-item-requested', { detail: { itemId: itemId }, bubbles: true, composed: true }));
     }
   }
-  private _handleCloseClick() { /* ... (sin cambios) ... */
+  private _handleCloseClick() {
     this.dispatchEvent(new CustomEvent('close-requested'));
   }
-  private _handleBackdropClick(event: MouseEvent) { /* ... (sin cambios) ... */
-    if (event.target === this) { this.dispatchEvent(new CustomEvent('close-requested')); }
-  }
+  // Eliminado _handleBackdropClick ya que :host maneja su propia visibilidad/interacción
 
   // --- Template HTML ---
   render() {
-    // <<< CORRECCIÓN: No necesitamos retornar nothing, CSS maneja la visibilidad >>>
-    // if (!this.isVisible) { return nothing; }
-
+    // El return es el mismo, ya que el CSS maneja la visibilidad del :host
     return html`
       <div class="shop-content-box" @click=${(e: Event) => e.stopPropagation()}>
         <button class="shop-close-btn" @click=${this._handleCloseClick} title="Cerrar Tienda (Esc)">&times;</button>
