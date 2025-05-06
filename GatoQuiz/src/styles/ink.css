@@ -1,0 +1,84 @@
+/* src/styles/ink.css */
+/* Estilos para el sistema de dibujo con tinta */
+
+#drawing-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 15; /* Debajo de UI pero encima de fondo */
+  pointer-events: none;
+  background-color: transparent;
+}
+
+#drawing-canvas.active {
+  pointer-events: auto;
+  cursor: crosshair;
+  z-index: 25; /* Encima de la UI del quiz al dibujar */
+}
+
+/* Estilos para la barra de tinta (Base, pueden ser sobreescritos por quiz-elements.css) */
+.ink-label-base {
+  font-size: 0.7rem; font-weight: 600; color: #ec4899; text-transform: uppercase;
+  letter-spacing: 0.05em; margin-bottom: 0.15rem; z-index: 22;
+  /* Visibilidad controlada por UIManager/JS */
+}
+.ink-bar-container-base {
+  width: 150px; /* Ancho base, ajustado en quiz-elements.css */
+  height: 15px; /* Altura base, ajustado en quiz-elements.css */
+  background-color: transparent; /* Hacer transparente por defecto */
+  border-radius: 7.5px;
+  overflow: hidden; position: relative; z-index: 22; border: 1px solid #4b5563;
+  /* Visibilidad controlada por UIManager/JS */
+  transition: background-color 0.3s ease-out; /* Añadir transición para el fondo */
+}
+
+/* Estilo para el segmento visible de la barra de tinta */
+.ink-bar-segment {
+  position: absolute; /* Posicionar absolutamente dentro del contenedor */
+  top: 0;
+  left: 0;
+  height: 100%; /* Ocupa toda la altura del contenedor */
+  border-radius: inherit; /* Heredar redondeo del contenedor */
+  min-width: 0px; /* Permitir que sea 0% */
+  /* La transición de width y color se maneja en UIManager.ts/CSS para efecto arcoíris */
+}
+/* Ya no se necesitan clases .full ni .current específicas aquí */
+
+
+/* --- Atenuar UI del Quiz cuando el pincel está activo --- */
+/* Selectores más específicos para asegurar que se apliquen sobre estilos base */
+#drawing-canvas.active + #app .game-container .question-box-base,
+#drawing-canvas.active + #app .game-container .options-container-base {
+  opacity: 0.3;
+  pointer-events: none;
+  transition: opacity 0.3s ease-in-out;
+}
+
+/* Estilos por defecto (cuando no se está dibujando) */
+.game-container .question-box-base,
+.game-container .options-container-base {
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity 0.3s ease-in-out;
+}
+
+/* .game-container.ui-faded ya se define en layout.css */
+
+
+/* =========================================== */
+/* ========== MEDIA QUERIES (MÓVIL) ========== */
+/* =========================================== */
+
+/* No se requieren ajustes específicos para ink.css aquí,
+   ya que el canvas es pantalla completa y la barra/etiqueta
+   se ajustan en quiz-elements.css */
+
+@media (max-width: 768px) {
+  /* No changes needed specifically for ink.css */
+}
+
+@media (max-width: 480px) {
+  /* No changes needed specifically for ink.css */
+}

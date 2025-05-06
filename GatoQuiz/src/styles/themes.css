@@ -1,0 +1,327 @@
+/* src/styles/themes.css */
+
+/* --- Estilos Base para Elementos Comunes (Pueden ser sobreescritos por temas) --- */
+
+/* Ajuste: Mover estilos de .quiz-wrapper y .quiz-content-container a layout.css
+   si no estaban ya ahí, para mantener la estructura limpia.
+   Si están aquí, podrían necesitar ajustes responsivos también. */
+   .quiz-wrapper {
+    position: relative; /* Necesario para los pseudo-elementos de patrones */
+    border-radius: 1rem; /* Redondeo base */
+    width: 90%;
+    max-width: 600px;
+    box-sizing: border-box; /* Añadido */
+  }
+  
+  .quiz-content-container {
+    position: relative; /* Para que el z-index funcione */
+    z-index: 1; /* Contenido encima de los patrones de fondo */
+    width: 100%; /* Añadido */
+    box-sizing: border-box; /* Añadido */
+  }
+  
+  /* --- Tema: Retro 8-Bit --- */
+  
+  .theme-retro {
+    /* Estilos específicos para el contenedor principal del tema retro si son necesarios */
+    /* background-color: rgba(17, 24, 39, 0.7); */
+    /* backdrop-filter: blur(3px); */
+    --brad: 0.4rem; /* Variable para el efecto card */
+  }
+  
+  /* Estilo Card Glow específico para el tema retro */
+  .theme-retro-card {
+    --bg: #1f2937; /* Color base oscuro para el card retro */
+    position: relative;
+    border-radius: var(--brad);
+    background: color-mix(in srgb, var(--bg), #fff 5%);
+    border: none;
+    color: inherit;
+    font: inherit;
+    text-align: inherit;
+    display: block;
+    width: 100%;
+    cursor: default;
+    /* Añadir transición para box-shadow si afecta el glow de dificultad */
+    transition: box-shadow 0.3s ease-out;
+  }
+  
+  .theme-retro-card .card__backdrop {
+    --grad: hsl(from var(--bg) h s l);
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(
+        150% var(--gh, 0%) at 25% 100%,
+        var(--grad),
+        transparent
+      ),
+      radial-gradient(
+        150% calc(300% - var(--gh, 0%) + 25%) at 75% 100%,
+        var(--grad),
+        transparent
+      );
+    transition: --gh 1s ease;
+    z-index: 1; /* Detrás del contenido */
+    animation: wobble 3s infinite alternate; /* Animación de brillo */
+  }
+  
+  .theme-retro-card .card__backdrop::before {
+    content: "";
+    position: absolute;
+    inset: 0.1rem;
+    background: rgba(0 0 0 / 0.2);
+    border-radius: var(--brad);
+    backdrop-filter: blur(10px) contrast(1.5);
+    z-index: 2;
+  }
+  
+  .theme-retro-card .card__backdrop::after {
+    --p: 0.12rem; --p2x: calc(var(--p) * 2);
+    content: "";
+    position: absolute;
+    inset: 0.15em;
+    background-image: radial-gradient(circle at center, #000 50%, #fff 1px);
+    background-size: var(--p2x) var(--p2x);
+    border-radius: var(--brad);
+    mix-blend-mode: color-burn;
+    z-index: 3;
+    opacity: 0.5;
+  }
+  
+  .theme-retro-card .card__content {
+    position: relative;
+    text-wrap: balance;
+    z-index: 10; /* Encima del backdrop */
+    padding: 1rem; /* Espaciado interno del card */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 4em;
+  }
+  
+  /* Animación para el brillo del card retro */
+  @keyframes wobble {
+    from { --gh: 25%; }
+    to { --gh: 300%; }
+  }
+  
+  /* Estilo Botón 8-bit específico para el tema retro */
+  .theme-retro-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    white-space: normal;
+    word-wrap: break-word;
+    word-break: break-word; /* Añadido */
+    padding: 1rem 1.2rem;
+    min-height: 4rem;
+    line-height: 1.3;
+    color: white;
+    font-family: 'Press Start 2P', cursive; /* Fuente pixelada */
+    font-size: 0.8rem; /* Ajustar tamaño de fuente pixelada */
+    background-color: #3b82f6; /* Azul */
+    border: 3px solid #1e293b; /* Borde oscuro */
+    box-shadow: 4px 4px 0px #1e293b; /* Sombra pixelada */
+    border-radius: 0; /* Sin redondeo */
+    cursor: pointer;
+    transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.1s ease, opacity 0.2s ease; /* Añadir opacity */
+    width: 100%;
+    margin-bottom: 0; /* Quitar margen, el gap del contenedor lo maneja */
+    -webkit-tap-highlight-color: transparent; /* Quitar highlight azul */
+  }
+  
+  .theme-retro-button:hover {
+    /* Hover solo para escritorio */
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px #1e293b;
+    background-color: #2563eb;
+  }
+  
+  .theme-retro-button:active {
+    transform: translate(4px, 4px);
+    box-shadow: none;
+    background-color: #1d4ed8;
+  }
+  
+  .theme-retro-button:disabled {
+    background-color: #6b7280; /* Gris */
+    border-color: #374151;
+    box-shadow: 2px 2px 0px #374151;
+    color: #d1d5db;
+    cursor: not-allowed;
+    transform: none !important; /* Evitar transform en :active */
+    opacity: 0.6; /* Ligeramente más opaco */
+  }
+  
+  .theme-retro-button.option-hint-disabled { /* Estilo para opción eliminada por pista */
+    background-color: #4b5563;
+    border-color: #1f2937;
+    box-shadow: 2px 2px 0px #1f2937;
+    opacity: 0.5 !important; /* Asegurar opacidad baja */
+  }
+  
+  .theme-retro-button.option-hint-disabled:hover,
+  .theme-retro-button.option-hint-disabled:active {
+    transform: none;
+    box-shadow: 2px 2px 0px #1f2937;
+    background-color: #4b5563;
+  }
+  
+  /* --- Tema: Limpio y Moderno --- */
+  
+  .theme-clean {
+    /* Estilos específicos para el contenedor principal del tema limpio */
+    /* background-color: rgba(31, 41, 55, 0.8); */
+    /* backdrop-filter: blur(8px); */
+    /* border-color: rgba(96, 165, 250, 0.4); */
+  }
+  
+  /* Estilo Card Limpio (sin efecto glow) */
+  .theme-clean-card {
+    /* Las clases ya están definidas en themes.json
+       wrapperClass: "mb-4 w-full p-5 bg-white bg-opacity-10 backdrop-blur-sm rounded-xl shadow-lg border border-white border-opacity-20 theme-clean-card"
+       Las media queries ajustarán el padding/margen en los archivos base/quiz-elements */
+    /* Podríamos añadir una transición si el box-shadow cambia con el glow de dificultad */
+     transition: box-shadow 0.3s ease-out;
+  }
+  
+  /* Estilo Botón Limpio */
+  .theme-clean-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    white-space: normal;
+    word-wrap: break-word;
+    word-break: break-word; /* Añadido */
+    padding: 0.9rem 1rem;
+    min-height: 3.5rem;
+    line-height: 1.4;
+    color: white;
+    /* Ajuste: Usar fuente base Poppins si Inter no está importada */
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600; /* Semi-bold */
+    font-size: 1rem;
+    background-image: linear-gradient(to right, #3b82f6, #2563eb); /* Gradiente azul */
+    border: none; /* Sin borde */
+    border-radius: 0.75rem; /* Redondeado */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.1); /* Sombra suave + inset */
+    cursor: pointer;
+    transition: background-image 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease, opacity 0.2s ease; /* Añadir opacity */
+    width: 100%;
+    margin-bottom: 0; /* Quitar margen, el gap del contenedor lo maneja */
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .theme-clean-button:hover {
+    background-image: linear-gradient(to right, #60a5fa, #3b82f6); /* Gradiente más claro al pasar el mouse */
+    transform: translateY(-2px); /* Levantar ligeramente */
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  }
+  
+  .theme-clean-button:active {
+    transform: translateY(0px) scale(0.98); /* Volver a la posición original y encoger */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(0, 0, 0, 0.1); /* Sombra más pequeña */
+  }
+  
+  .theme-clean-button:disabled {
+    background-image: linear-gradient(to right, #9ca3af, #6b7280); /* Gradiente gris */
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none !important; /* Evitar transform en :active */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .theme-clean-button.option-hint-disabled { /* Estilo para opción eliminada por pista */
+    background-image: linear-gradient(to right, #6b7280, #4b5563); /* Gris más oscuro */
+    opacity: 0.5 !important; /* Más transparente */
+  }
+  
+  .theme-clean-button.option-hint-disabled:hover,
+  .theme-clean-button.option-hint-disabled:active {
+    transform: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background-image: linear-gradient(to right, #6b7280, #4b5563);
+  }
+  
+  /* Ajustes específicos para el layout del tema limpio si son necesarios */
+  .theme-clean .top-ui-container {
+    /* Ejemplo: Podríamos añadir más padding o cambiar el fondo aquí */
+  }
+  
+  .theme-clean .options-container {
+    /* Los estilos de grid ya están en themes.json, podríamos añadir más aquí */
+  }
+  
+  /* =========================================== */
+  /* ========== MEDIA QUERIES (MÓVIL) ========== */
+  /* =========================================== */
+  
+  @media (max-width: 768px) {
+      /* Ajustar Tema Retro */
+      .theme-retro-button {
+        padding: 0.8rem 1rem; /* Reducir padding */
+        min-height: 3.5rem; /* Reducir altura mínima */
+        font-size: 0.7rem; /* Reducir fuente pixelada */
+        line-height: 1.2; /* Ajustar interlineado */
+        border-width: 2px; /* Borde más fino */
+        box-shadow: 3px 3px 0px #1e293b; /* Sombra más pequeña */
+      }
+      .theme-retro-button:hover { /* Ajustar hover (aunque no aplique en táctil) */
+          transform: translate(1px, 1px);
+          box-shadow: 2px 2px 0px #1e293b;
+      }
+      .theme-retro-button:active {
+          transform: translate(3px, 3px); /* Ajustar efecto active */
+          box-shadow: none;
+      }
+      .theme-retro-button:disabled {
+          box-shadow: 2px 2px 0px #374151;
+      }
+      .theme-retro-button.option-hint-disabled {
+          box-shadow: 2px 2px 0px #1f2937;
+      }
+       .theme-retro-card .card__content {
+        padding: 0.8rem; /* Reducir padding interno del card */
+        min-height: 3.5em; /* Reducir altura mínima */
+      }
+  
+      /* Ajustar Tema Limpio */
+      .theme-clean-button {
+        padding: 0.8rem 0.8rem; /* Reducir padding */
+        min-height: 3rem; /* Reducir altura mínima */
+        font-size: 0.9rem; /* Reducir fuente */
+        border-radius: 0.6rem; /* Reducir redondeo */
+      }
+      /* Ajustar padding/margen del card limpio si se definió aquí (parece que no) */
+      /* .theme-clean-card { padding: ...; } */
+  }
+  
+  @media (max-width: 480px) {
+      /* Ajustar Tema Retro */
+      .theme-retro-button {
+        padding: 0.7rem 0.8rem;
+        min-height: 3rem;
+        font-size: 0.65rem; /* Fuente muy pequeña, ¡cuidado legibilidad! */
+        line-height: 1.1;
+        border-width: 2px;
+        box-shadow: 2px 2px 0px #1e293b;
+      }
+       .theme-retro-button:active {
+          transform: translate(2px, 2px);
+      }
+      .theme-retro-card .card__content {
+        padding: 0.6rem;
+        min-height: 3em;
+      }
+  
+      /* Ajustar Tema Limpio */
+      .theme-clean-button {
+        padding: 0.7rem 0.7rem;
+        min-height: 2.8rem;
+        font-size: 0.85rem;
+        border-radius: 0.5rem;
+      }
+  }

@@ -1,0 +1,134 @@
+/* src/styles/shop.css - v7: Valores Finales Usuario, Grid Fijo, Scroll Oculto */
+
+/* Variables globales para la tienda, definidas en el popup para especificidad */
+
+
+/* Contenedor del contenido de la tienda */
+#shop-content.shop-content-box {
+  background-color: rgba(17, 24, 39, 0.97);
+  border-radius: var(--shop-border-radius);
+  border: 1px solid #4b5563;
+  box-shadow: var(--shop-box-shadow);
+  width: 90%;
+  max-width: var(--shop-max-width);
+  position: relative;
+  color: #e5e7eb;
+  max-height: 85vh; /* Altura máxima total */
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: hidden; /* Ocultar overflow aquí */
+}
+
+/* Botón de cierre (X) */
+#shop-close-button.shop-close-btn {
+  position: absolute; top: var(--shop-close-button-top); right: var(--shop-close-button-right);
+  background: none; border: none; color: #9ca3af;
+  font-size: 2rem; line-height: 1; cursor: pointer;
+  transition: color 0.2s ease, transform 0.1s ease;
+  padding: 0.25rem; z-index: 10;
+  -webkit-tap-highlight-color: transparent;
+}
+#shop-close-button.shop-close-btn:hover { color: #e5e7eb; transform: scale(1.1); }
+#shop-close-button.shop-close-btn:active { transform: scale(0.95); }
+
+/* Título y Score */
+#shop-title.shop-title-text,
+#shop-player-score.shop-score-text,
+.shop-section-title {
+  text-align: center;
+  flex-shrink: 0; /* No encoger estos elementos */
+}
+#shop-title.shop-title-text {
+  font-size: var(--shop-title-font-size);
+  font-weight: var(--shop-title-font-weight);
+  margin-bottom: var(--shop-section-title-margin-y);
+  color: #e5e7eb;
+}
+#shop-player-score.shop-score-text {
+  font-size: var(--shop-score-font-size);
+  font-weight: var(--shop-score-font-weight);
+  margin-bottom: var(--shop-section-title-margin-y);
+  color: #a5b4fc;
+}
+
+/* Contenedor general de ítems (Scrollable) */
+#shop-items-container {
+  overflow-y: auto; /* Permitir scroll vertical */
+  flex-grow: 1; /* Ocupar espacio disponible */
+  display: flex;
+  flex-direction: column;
+  gap: var(--shop-section-title-margin-y);
+  padding-left: var(--shop-items-gap);
+  padding-right: var(--shop-items-gap);
+  padding-bottom: var(--shop-items-gap);
+  box-sizing: border-box;
+  margin-bottom: 0;
+
+  /* Ocultar la barra de scroll */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+#shop-items-container::-webkit-scrollbar {
+  display: none; /* Webkit */
+}
+
+/* Título de cada sección */
+.shop-section-title {
+  font-size: var(--shop-section-title-font-size);
+  font-weight: var(--shop-section-title-font-weight);
+  color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em;
+  margin-top: var(--shop-section-title-margin-top);
+  margin-bottom: calc(var(--shop-section-title-margin-y) * 1.5); /* Ajustar separación */
+  padding-bottom: 0.25rem; border-bottom: 1px solid #4b5563;
+}
+.shop-section-title:first-of-type { margin-top: 0; }
+
+/* Contenedor de ítems (Grid) por sección */
+.shop-section-items {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* 4 columnas fijas */
+  gap: var(--shop-grid-gap);
+  align-items: center; /* Centrar verticalmente */
+  justify-items: center; /* Centrar horizontalmente */
+  flex-shrink: 0; /* No encoger la sección */
+}
+
+/* Ítem individual */
+.shop-item {
+  background-color: rgba(55, 65, 81, 0.7); border: 2px solid #4b5563;
+  border-radius: var(--shop-item-border-radius);
+  padding: var(--shop-item-padding); cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  text-align: center;
+  aspect-ratio: 1 / 1; /* Cuadrado fluido */
+  width: 100%; /* Ocupa celda del grid */
+  max-width: 6rem; /* Límite opcional */
+  position: relative; box-shadow: var(--shop-item-box-shadow);
+  flex-shrink: 0; -webkit-tap-highlight-color: transparent; box-sizing: border-box;
+  overflow: hidden;
+}
+.shop-item:hover { background-color: rgba(75, 85, 99, 0.8); }
+.shop-item:active { transform: scale(0.95); background-color: rgba(75, 85, 99, 0.9); }
+
+/* Icono */
+.shop-item-icon {
+  font-size: var(--shop-item-icon-font-size); /* Tamaño fluido */
+  line-height: 1;
+}
+
+/* Estados de Ítems */
+.shop-item.disabled { opacity: 0.5; cursor: default; border-color: #374151; }
+.shop-item.disabled:active { transform: none; }
+.shop-item.disabled:hover { background-color: rgba(55, 65, 81, 0.7); border-color: #374151; transform: none; box-shadow: var(--shop-item-box-shadow); }
+.shop-item.purchased { border-color: #f59e0b; opacity: 0.7; cursor: default; }
+.shop-item.purchased:active { transform: none; }
+.shop-item.purchased:hover { background-color: rgba(55, 65, 81, 0.7); border-color: #f59e0b; transform: none; box-shadow: var(--shop-item-box-shadow); }
+.shop-item.max-level { border-color: #34d399; opacity: 0.8; cursor: default; }
+.shop-item.max-level:active { transform: none; }
+.shop-item.max-level:hover { background-color: rgba(55, 65, 81, 0.7); border-color: #34d399; transform: none; box-shadow: var(--shop-item-box-shadow); }
+.shop-item.selected { border-color: #facc15; box-shadow: var(--shop-item-selected-box-shadow); transform: scale(1.05); }
+.shop-item.selected:active { transform: scale(1.02); }
+
+

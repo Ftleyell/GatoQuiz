@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GatoQuiz Interactivo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@400;600;700;900&display=swap" rel="stylesheet">
+    </head>
+  <body> <canvas id="drawing-canvas"></canvas>
+
+    <div id="app">
+      </div>
+
+    <div id="cat-container"></div>
+
+    <div id="right-controls" class="control-container">
+        <div id="drawing-buttons-container">
+            <tool-button
+              toolId="brush"
+              icon="🖌️"
+              titleText="Activar/Desactivar Pincel (B)"
+              id="toggle-brush-button">
+            </tool-button>
+            <tool-button
+              toolId="clear-ink"
+              icon="🗑️"
+              titleText="Borrar Trazos (C)"
+              id="clear-ink-button"
+              disabled>
+            </tool-button>
+        </div>
+
+        <div id="cat-food-ui-container" class="hidden">
+             <tool-button
+               toolId="cat-food"
+               icon="🍲"
+               titleText="Activar/Desactivar Comida (F)"
+               id="cat-food-button">
+             </tool-button>
+             <div id="cat-food-bar-container">
+                 <div id="cat-food-bar-fill"></div>
+             </div>
+        </div>
+    </div>
+
+    <button id="shop-button" class="shop-button-standalone" title="Abrir Tienda (S)">🛒</button>
+
+    <div id="blur-backdrop" class="blur-backdrop"></div>
+
+    <shop-popup id="shop-popup" class="overlay shop-overlay">
+        </shop-popup>
+
+    <div id="explanation-overlay" class="overlay">
+      <div class="overlay-content-wrapper">
+          <p id="explanation-text-content"></p>
+          <p class="overlay-continue-prompt">CLICK O TECLA PARA CONTINUAR</p>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

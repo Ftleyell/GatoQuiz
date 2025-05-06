@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    // --- CAMBIO: Ligeramente más moderno, recomendado por Lit ---
+    "target": "ES2021",
+    // --- CAMBIO: Necesario para compatibilidad con decoradores de Lit ---
+    "useDefineForClassFields": false,
+    "module": "ESNext",
+    "lib": ["ES2021", "DOM", "DOM.Iterable"], // Ajustado para coincidir con target
+    // --- NUEVO: Habilita el uso de decoradores (@customElement, @property) ---
+    "experimentalDecorators": true,
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    // --- CAMBIO: Deshabilitado temporalmente para evitar problemas con imports
+    //     que solo registran componentes (ej. import './mi-componente.js') ---
+    "noUncheckedSideEffectImports": false
+  },
+  "include": ["src"]
+}

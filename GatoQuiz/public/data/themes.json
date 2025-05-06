@@ -1,0 +1,118 @@
+[
+    {
+      "id": "clean",
+      "name": "Limpio y Moderno",
+      "description": "Un tema más simple y decorado.",
+      "elements": {
+        "quizWrapper": {
+          "baseClass": "quiz-wrapper",
+          "themeClass": "theme-clean"
+        },
+        "topUIContainer": {
+          "baseClass": "top-ui-container flex justify-between items-center w-full mb-4 p-3 bg-blue-900 bg-opacity-50 rounded-lg shadow-md"
+        },
+        "statusRow": {
+          "baseClass": "flex justify-between items-center w-full"
+        },
+        "livesDisplay": {
+          "baseClass": "quiz-lives flex items-center gap-1.5 text-lg text-white"
+        },
+        "scoreDisplay": {
+          "baseClass": "quiz-score text-3xl font-bold text-white"
+        },
+        "comboDisplay": {
+          "baseClass": "quiz-combo text-xl font-semibold text-cyan-300",
+          "initialDisplay": "none"
+        },
+        "inkArea": {
+          "baseClass": "flex flex-col items-center"
+        },
+        "inkLabel": {
+          "baseClass": "text-xs font-semibold uppercase tracking-wider text-cyan-200 mb-1",
+          "text": "Tinta"
+        },
+        "inkBarContainer": {
+          "baseClass": "w-32 h-2.5 bg-blue-800 rounded-full overflow-hidden border border-blue-700"
+        },
+        "inkBarFill": {
+          "baseClass": "h-full bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full transition-width duration-300 ease-out"
+        },
+        "questionBox": {
+          "wrapperClass": "mb-4 w-full p-5 bg-white bg-opacity-10 backdrop-blur-sm rounded-xl shadow-lg border border-white border-opacity-20 theme-clean-card",
+          "contentClass": "flex flex-col items-center gap-2",
+          "difficultyLabelClass": "difficulty-label text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-white bg-opacity-20 text-cyan-100",
+          "questionTextClass": "question-text text-xl font-medium text-center text-white"
+        },
+        "optionsContainer": {
+          "baseClass": "options-container w-full grid grid-cols-1 md:grid-cols-2 gap-3"
+        },
+        "optionButton": {
+          "baseClass": "option-button theme-clean-button"
+        },
+        "feedbackArea": {
+          "baseClass": "feedback-area mt-4 text-lg h-8 text-center font-semibold",
+          "correctClass": "text-green-300",
+          "incorrectClass": "text-red-300",
+          "shieldClass": "text-cyan-300"
+        }
+      }
+    },
+    {
+      "id": "inverted",
+      "name": "Invertido Alto Contraste",
+      "description": "Fondo claro, texto oscuro, colores vibrantes.",
+      "elements": {
+        "quizWrapper": {
+          "baseClass": "quiz-wrapper",
+          "themeClass": "theme-inverted" 
+        },
+        "topUIContainer": {
+          "baseClass": "top-ui-container flex justify-between items-center w-full mb-4 p-3 bg-gray-200 rounded-lg shadow-inner"
+        },
+        "statusRow": {
+          "baseClass": "flex justify-between items-center w-full"
+        },
+        "livesDisplay": {
+          "baseClass": "quiz-lives flex items-center gap-1.5 text-lg text-red-600"
+        },
+        "scoreDisplay": {
+          "baseClass": "quiz-score text-3xl font-bold text-indigo-700"
+        },
+        "comboDisplay": {
+          "baseClass": "quiz-combo text-xl font-semibold text-purple-700",
+          "initialDisplay": "none"
+        },
+        "inkArea": {
+          "baseClass": "flex flex-col items-center"
+        },
+        "inkLabel": {
+          "baseClass": "text-xs font-semibold uppercase tracking-wider text-pink-700 mb-1",
+          "text": "Tinta"
+        },
+        "inkBarContainer": {
+          "baseClass": "w-32 h-2.5 bg-gray-300 rounded-full overflow-hidden border border-gray-400"
+        },
+        "inkBarFill": {
+          "baseClass": "h-full bg-gradient-to-r from-pink-500 to-fuchsia-600 rounded-full transition-width duration-300 ease-out"
+        },
+        "questionBox": {
+          "wrapperClass": "mb-4 w-full p-5 bg-white rounded-xl shadow-md border border-gray-300 theme-inverted-card",
+          "contentClass": "flex flex-col items-center gap-2",
+          "difficultyLabelClass": "difficulty-label text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-gray-700 text-gray-100",
+          "questionTextClass": "question-text text-xl font-medium text-center text-gray-800"
+        },
+        "optionsContainer": {
+          "baseClass": "options-container w-full grid grid-cols-1 md:grid-cols-2 gap-3"
+        },
+        "optionButton": {
+          "baseClass": "option-button theme-inverted-button"
+        },
+        "feedbackArea": {
+          "baseClass": "feedback-area mt-4 text-lg h-8 text-center font-semibold",
+          "correctClass": "text-green-600",
+          "incorrectClass": "text-red-700",
+          "shieldClass": "text-blue-700"
+        }
+      }
+    }
+  ]

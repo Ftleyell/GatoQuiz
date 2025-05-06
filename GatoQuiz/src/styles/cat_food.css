@@ -1,0 +1,94 @@
+/* src/styles/cat_food.css */
+
+/* Contenedor principal UI comida */
+#cat-food-ui-container {
+  display: flex;
+  flex-direction: column; /* O row si se prefiere en layout.css */
+  align-items: center;
+  gap: 0;
+  position: relative;
+  width: auto;
+  height: auto;
+}
+
+/* Botón (Referencia por ID, pero sin estilos específicos aquí) */
+#cat-food-button {
+  position: relative;
+  z-index: 2;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Barra de progreso de comida - POSICIÓN ABSOLUTA DENTRO DEL BOTÓN */
+#cat-food-bar-container {
+  position: absolute;
+  bottom: 0.3rem;
+  left: 0.55rem;
+  width: calc(100% - 1rem);
+  height: 0.6rem;
+  z-index: 16;
+  pointer-events: none; /* Que no bloquee clics */
+  background-color: #374151;
+  overflow: hidden;
+  border: 1px solid #4b5563;
+  border-radius: 0.3rem; /* Coincide con el redondeo base del tool-button */
+}
+
+/* Relleno de la barra */
+#cat-food-bar-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0%; /* Controlado por JS */
+  background-image: linear-gradient(to right, #f97316, #fcd34d);
+  border-radius: inherit; /* Heredar redondeo */
+  transition: width 0.3s ease-out;
+}
+
+/* --- REGLA #cat-food-button.active ELIMINADA --- */
+/* El estilo activo ahora se maneja completamente dentro de tool-button.ts */
+
+
+/* Bolita de Comida (Visual) */
+.food-pellet {
+  width: 8px;
+  height: 8px;
+  background-color: #A0522D; /* Sienna Brown */
+  border-radius: 50%;
+  position: absolute;
+  z-index: 12;
+  pointer-events: none;
+  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Clase hidden (asegúrate que esté definida globalmente en base.css) */
+/* .hidden { display: none !important; } */
+
+
+/* =========================================== */
+/* ========== MEDIA QUERIES (MÓVIL) ========== */
+/* =========================================== */
+
+@media (max-width: 768px) {
+  #cat-food-bar-container {
+    bottom: 0.4rem;
+    left: 0.33rem;
+    width: calc(100% - 8px);
+    height: .5rem;
+    /* Ajustar redondeo si es necesario para móvil */
+    border-radius: 0.25rem; /* Ejemplo más pequeño */
+    z-index: 16;
+}
+}
+
+@media (max-width: 480px) {
+  #cat-food-bar-container {
+    bottom: 0.4rem;
+    left: 0.33rem;
+    width: calc(100% - 8px);
+    height: .5rem;
+     /* Ajustar redondeo si es necesario para móvil */
+    border-radius: 0.25rem; /* Ejemplo más pequeño */
+    z-index: 16;
+}
+}

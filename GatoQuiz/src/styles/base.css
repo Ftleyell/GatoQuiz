@@ -1,0 +1,177 @@
+/* src/styles/base.css */
+/* Estilos globales, fuentes, body, variables CSS, animaciones */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&display=swap');
+/* Importar otras fuentes usadas */
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
+/* Importar fuente pixelada si se usa en algún tema y no está en index.html */
+/* @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap'); */
+
+
+:root {
+  /* Variables CSS para efectos dinámicos (GDD Alpha) */
+  --flare-intensity: 0; /* Controla el brillo/flare del score (0 a 1) */
+  --combo-font-size: 2.5rem; /* Tamaño base del combo (modificado por JS y media queries) */
+  --element-glow-intensity: 0; /* Controla el glow de qbox/botones (0 a 1) */
+  /* --ink-percentage: 0%; - Variable no usada */
+  --score-font-size: 2.5rem; /* Tamaño base del score (modificado por media queries) */
+  --score-line-height: 1.1; /* Altura de línea del score */
+  /* Variables para dificultad (GDD Alpha) */
+  --difficulty-glow-color: transparent; /* Color del glow de dificultad */
+  --difficulty-glow-blur: 0px; /* Desenfoque del glow de dificultad */
+  --difficulty-glow-spread: 0px; /* Propagación (no usada en Alpha, pero podría añadirse) */
+
+  /* Variables CSS para las sombras del flare del score (GDD Alpha) */
+  --flare-shadow:
+    0 0 5px hsla(0, 0%, 100%, calc(var(--flare-intensity) * 0.5)),
+    0 0 10px hsla(55, 100%, 70%, calc(var(--flare-intensity) * 0.8)),
+    0 0 15px hsla(40, 100%, 60%, calc(var(--flare-intensity) * 0.6)),
+    0 0 20px hsla(10, 100%, 55%, calc(var(--flare-intensity) * 0.4));
+  --flare-shadow-pulse: /* Sombra durante la animación de pulso */
+    0 0 5px hsla(0, 0%, 100%, calc(var(--flare-intensity) * 0.5)),
+    0 0 12px hsla(50, 100%, 75%, calc(var(--flare-intensity) * 0.7)),
+    0 0 18px hsla(35, 100%, 65%, calc(var(--flare-intensity) * 0.5)),
+    0 0 24px hsla(5, 100%, 60%, calc(var(--flare-intensity) * 0.3));
+}
+
+body {
+  margin: 0;
+  /* Ajuste: Usar Geist como fuente principal si se quiere */
+  /* font-family: "Geist", sans-serif; */
+  font-family: 'Poppins', sans-serif; /* Mantener Poppins como principal por ahora */
+  position: relative;
+  min-height: 100vh;
+  background-color: #111827; /* Fondo oscuro inicial */
+  color: #e5e7eb; /* Color de texto base */
+  overflow: hidden; /* Evitar scroll */
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -webkit-tap-highlight-color: transparent; /* Quitar highlight azul global */
+  transition: background-color 0.8s ease-in-out; /* Transición de fondo */
+}
+
+#app {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  z-index: 20; /* Contenedor principal de la aplicación */
+}
+
+/* Utilidad para ocultar elementos (IMPORTANTE PARA JS) */
+.hidden {
+  display: none !important;
+}
+
+
+/* Estilos para Game Over (usados por GameOverState.ts) */
+.game-over-container {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 100%; /* Ocupar ancho disponible del overlay */
+  height: auto; /* Adaptar altura al contenido */
+  text-align: center; padding: 1rem; box-sizing: border-box;
+  color: white; border-radius: 0.5rem;
+  pointer-events: auto; /* Asegurar que sea clickeable */
+  cursor: pointer; /* Indicar que se puede clickear para reiniciar */
+}
+.game-over-text {
+    color: #ef4444; font-size: 3rem; font-weight: 900; line-height: 1.2;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5); margin-bottom: 0.5rem;
+    animation: pulseHeart 1.8s infinite ease-in-out;
+}
+.final-score {
+    font-size: 1.5rem; color: #facc15; margin-bottom: 2rem;
+}
+.restart-prompt {
+    font-size: 1rem; color: #d1d5db;
+    animation: fadeInOut 2s infinite ease-in-out;
+}
+
+
+/* --- Animaciones Globales --- */
+@keyframes pulseHeart {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+@keyframes shieldPulse {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.1); opacity: 1; }
+}
+@keyframes hintPulse {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.85; }
+  50% { transform: scale(1.08) rotate(5deg); opacity: 1; }
+}
+@keyframes difficultyPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.9; }
+}
+@keyframes pulseFlare {
+  0%, 100% { text-shadow: var(--flare-shadow); opacity: 1; }
+  50% { text-shadow: var(--flare-shadow-pulse); opacity: 0.85; }
+}
+.score-pulsing {
+  animation: pulseFlare 1.5s infinite ease-in-out;
+}
+@keyframes scorePulseAnim {
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 0.7; }
+  100% { transform: translate(-50%, -50%) scale(200); opacity: 0; }
+}
+#score-pulse.pulsing {
+   animation: scorePulseAnim 0.6s ease-out forwards;
+}
+@keyframes fadeInOut {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+}
+
+
+/* --- Estilos para Estados del Body (Clase añadida por JS) --- */
+/* Ya NO controlamos la visibilidad de #right-controls o #shop-button aquí */
+/* Mantenemos esto por si se usa para otros estilos específicos de estado */
+/* body.state-quizgameplay { ... } */
+/* body.state-mainmenu-whiskers { ... } (Estilos de mainmenu.css aplican aquí) */
+/* body.state-gameover { ... } */
+/* body.state-loading { ... } */
+/* body.state-results { ... } */
+
+
+/* --- Animaciones Fade In/Out para transiciones de estado --- */
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+/* Clases para aplicar a los contenedores de estado */
+.state-fade-out {
+  animation: fadeOut 0.5s ease-out forwards;
+  pointer-events: none;
+}
+.state-fade-in {
+  opacity: 0;
+  animation: fadeIn 0.5s ease-in forwards;
+}
+
+
+/* =========================================== */
+/* ========== MEDIA QUERIES (MÓVIL) ========== */
+/* =========================================== */
+
+/* Ajustes responsivos para Game Over */
+@media (max-width: 768px) {
+    .game-over-text { font-size: 2.5rem; }
+    .final-score { font-size: 1.3rem; margin-bottom: 1.5rem; }
+    .restart-prompt { font-size: 0.9rem; }
+}
+
+@media (max-width: 480px) {
+     .game-over-text { font-size: 2rem; }
+     .final-score { font-size: 1.1rem; margin-bottom: 1rem; }
+     .restart-prompt { font-size: 0.8rem; }
+}
