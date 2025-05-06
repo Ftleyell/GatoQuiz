@@ -1,4 +1,5 @@
 // src/main.ts
+import './game/components/ui/test-element'; // Importa para registrar el custom element
 import './styles/base.css';
 import './styles/layout.css';
 import './styles/quiz-elements.css';
